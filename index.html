@@ -928,8 +928,9 @@
       transform: scale(0.96);
     }
 
-    /* Footer cố định liên kết Google Sheet */
+    /* Footer liên kết Google Sheet (đã ẩn theo yêu cầu, giữ nguyên cấu trúc hoạt động) */
     .app-footer {
+      display: none !important;
       margin-top: 14px;
       margin-bottom: 24px;
     }
@@ -1115,8 +1116,8 @@
       </div>
     </main>
 
-    <!-- Footer liên kết Google Sheet cố định -->
-    <footer class="app-footer">
+    <!-- Footer liên kết Google Sheet (ẩn hiển thị nhưng giữ nguyên cấu trúc DOM và logic) -->
+    <footer class="app-footer" style="display: none;">
       <div class="footer-card">
         <div class="footer-title">
           <span>📊</span>
