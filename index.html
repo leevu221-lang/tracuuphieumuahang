@@ -814,6 +814,72 @@
       font-weight: 700;
       cursor: pointer;
     }
+
+    /* Footer cố định liên kết Google Sheet */
+    .app-footer {
+      margin-top: 14px;
+      margin-bottom: 24px;
+    }
+
+    .footer-card {
+      background: var(--card-bg);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .footer-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--gray-600);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .footer-sheet-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      padding: 8px 10px;
+      border-radius: 6px;
+      text-decoration: none;
+      color: #166534;
+      font-size: 12px;
+      font-weight: 600;
+      transition: var(--transition);
+    }
+
+    .footer-sheet-link:hover, .footer-sheet-link:active {
+      background: #dcfce7;
+      border-color: #86efac;
+    }
+
+    .sheet-name-text {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .sheet-arrow {
+      background: #16a34a;
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 7px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
   </style>
 </head>
 <body>
@@ -932,6 +998,27 @@
       </div>
     </main>
 
+    <!-- Footer liên kết Google Sheet cố định -->
+    <footer class="app-footer">
+      <div class="footer-card">
+        <div class="footer-title">
+          <span>📊</span>
+          <span>Google Sheet Dữ Liệu Gốc</span>
+        </div>
+        <a 
+          href="https://docs.google.com/spreadsheets/d/17rloLx_U9GhO_QNdpfhsMNEzKnMzCVli9sieVRlmKDU/edit?usp=sharing" 
+          target="_blank" 
+          class="footer-sheet-link"
+          id="footerSheetLink"
+          title="Mở Google Sheet trên tab mới"
+        >
+          <span style="font-size: 14px;">📄</span>
+          <span class="sheet-name-text">1841 - PHIẾU MUA HÀNG EVENT</span>
+          <span class="sheet-arrow">Mở Sheet ↗</span>
+        </a>
+      </div>
+    </footer>
+
   </div>
 
   <!-- Modal Cấu hình -->
@@ -939,8 +1026,15 @@
     <div class="modal-content">
       <h3 class="modal-title"><span>⚙️</span> <span>Cấu Hình Kết Nối Google Sheet</span></h3>
       <div class="form-group">
-        <label class="form-label">Google Sheet ID:</label>
-        <input type="text" class="form-control" id="cfgSheetId" value="17rloLx_U9GhO_QNdpfhsMNEzKnMzCVli9sieVRlmKDU">
+        <label class="form-label">Google Sheet Gốc:</label>
+        <a 
+          href="https://docs.google.com/spreadsheets/d/17rloLx_U9GhO_QNdpfhsMNEzKnMzCVli9sieVRlmKDU/edit?usp=sharing" 
+          target="_blank" 
+          style="display:block;font-size:12px;color:var(--primary);margin-bottom:6px;word-break:break-all;font-weight:600;"
+        >
+          https://docs.google.com/spreadsheets/d/17rloLx_U9GhO_QNdpfhsMNEzKnMzCVli9sieVRlmKDU/edit?usp=sharing ↗
+        </a>
+        <input type="text" class="form-control" id="cfgSheetId" value="17rloLx_U9GhO_QNdpfhsMNEzKnMzCVli9sieVRlmKDU" readonly style="background:#f1f5f9;cursor:not-allowed;">
       </div>
       <div class="form-group">
         <label class="form-label">Apps Script Web App URL (Đồng bộ Sheet):</label>
@@ -961,8 +1055,10 @@
 
   <script>
     /**
-     * CONFIGURATION (ĐÃ GHIM CỐ ĐỊNH LINK WEB APP ĐỒNG BỘ GOOGLE SHEET)
+     * CONFIGURATION (ĐÃ GHIM CỐ ĐỊNH LINK WEB APP VÀ GOOGLE SHEET)
      */
+    const FIXED_SHEET_URL = 'https://docs.google.com/spreadsheets/d/17rloLx_U9GhO_QNdpfhsMNEzKnMzCVli9sieVRlmKDU/edit?usp=sharing';
+    const FIXED_SHEET_ID = '17rloLx_U9GhO_QNdpfhsMNEzKnMzCVli9sieVRlmKDU';
     const DEFAULT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxi7SWvqxz5WmoANrf2CX4oFg6PM14ybl8KQYVOAav8hZD9vL4rb925ak9P2JbC9Fz6Vw/exec';
 
     let storedWebAppUrl = localStorage.getItem('pmh_webapp_url');
@@ -972,8 +1068,9 @@
     }
 
     const CONFIG = {
-      defaultSheetId: '17rloLx_U9GhO_QNdpfhsMNEzKnMzCVli9sieVRlmKDU',
-      sheetId: localStorage.getItem('pmh_sheet_id') || '17rloLx_U9GhO_QNdpfhsMNEzKnMzCVli9sieVRlmKDU',
+      sheetUrl: FIXED_SHEET_URL,
+      defaultSheetId: FIXED_SHEET_ID,
+      sheetId: FIXED_SHEET_ID,
       webAppUrl: storedWebAppUrl
     };
 
@@ -1019,6 +1116,7 @@
       btnRefresh: document.getElementById('btnRefresh'),
       btnSettings: document.getElementById('btnSettings'),
       linkOpenSheet: document.getElementById('linkOpenSheet'),
+      footerSheetLink: document.getElementById('footerSheetLink'),
       dateSelect: document.getElementById('dateSelect'),
       btnPrevDate: document.getElementById('btnPrevDate'),
       btnNextDate: document.getElementById('btnNextDate'),
@@ -1616,6 +1714,7 @@
       localStorage.setItem('pmh_webapp_url', newWebApp);
 
       els.linkOpenSheet.href = `https://docs.google.com/spreadsheets/d/${newSheetId}/edit?usp=sharing`;
+      if (els.footerSheetLink) els.footerSheetLink.href = `https://docs.google.com/spreadsheets/d/${newSheetId}/edit?usp=sharing`;
       els.settingsModal.classList.remove('active');
 
       loadData();
@@ -1624,7 +1723,9 @@
     document.addEventListener('DOMContentLoaded', () => {
       els.cfgSheetId.value = CONFIG.sheetId;
       els.cfgWebAppUrl.value = CONFIG.webAppUrl;
-      els.linkOpenSheet.href = `https://docs.google.com/spreadsheets/d/${CONFIG.sheetId}/edit?usp=sharing`;
+      const sheetUrl = `https://docs.google.com/spreadsheets/d/${CONFIG.sheetId}/edit?usp=sharing`;
+      els.linkOpenSheet.href = sheetUrl;
+      if (els.footerSheetLink) els.footerSheetLink.href = sheetUrl;
       loadData();
     });
 
