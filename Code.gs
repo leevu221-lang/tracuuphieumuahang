@@ -50,7 +50,8 @@ function doGet(e) {
   if (e && e.parameter && (e.parameter.action === "markUsed" || e.parameter.action === "mark")) {
     const row = parseInt(e.parameter.row || e.parameter.rowIndex, 10);
     const isUsed = (e.parameter.used === "true" || e.parameter.used === "1");
-    const res = markVoucher(row, isUsed);
+    const targetCode = e.parameter.code ? String(e.parameter.code).trim() : "";
+    const res = markVoucher(row, isUsed, targetCode);
     return ContentService.createTextOutput(JSON.stringify(res))
       .setMimeType(ContentService.MimeType.JSON);
   }
@@ -213,10 +214,35 @@ function getSheetData() {
  * - Cột C: Thời gian sử dụng (dd/MM/yyyy HH:mm:ss)
  * - Cột A: Gạch ngang chữ (line-through) nếu đã dùng
  */
-function markVoucher(rowIndex, isUsed) {
+function markVoucher(rowIndex, isUsed, targetCode) {
   try {
     const sheet = getTargetSheet();
-    const targetRow = parseInt(rowIndex, 10);
+    let targetRow = parseInt(rowIndex, 10);
+    const lastRow = sheet.getLastRow();
+
+    // Nếu có targetCode, kiểm tra xem targetRow có chứa targetCode không.
+    // Nếu không khớp (do thêm/xóa dòng), quét toàn bộ cột A để tìm chính xác dòng chứa mã
+    if (targetCode) {
+      let matched = false;
+      if (!isNaN(targetRow) && targetRow >= 1 && targetRow <= lastRow) {
+        const val = String(sheet.getRange(targetRow, 1).getValue());
+        if (val.indexOf(targetCode) !== -1) {
+          matched = true;
+        }
+      }
+
+      if (!matched) {
+        const colA = sheet.getRange(1, 1, lastRow, 1).getValues();
+        for (let i = 0; i < colA.length; i++) {
+          if (String(colA[i][0]).indexOf(targetCode) !== -1) {
+            targetRow = i + 1;
+            matched = true;
+            break;
+          }
+        }
+      }
+    }
+
     if (isNaN(targetRow) || targetRow < 1 || targetRow > sheet.getMaxRows()) {
       return { success: false, message: "Dòng không hợp lệ: " + rowIndex };
     }

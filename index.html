@@ -1212,23 +1212,44 @@
       clientId: 'c_' + Math.random().toString(36).substr(2, 9)
     };
 
-    function getLocalUsedMap() {
+    /**
+     * BỘ NHỚ TRẠNG THÁI PHIẾU (LOCAL STATUS STORE CÓ TIMESTAMP)
+     * Giữ trạng thái Thao tác (Đã dùng / Hoàn lại) để chống bị GViz cũ ghi đè ngược
+     */
+    function getLocalStatusMap() {
       try {
-        return JSON.parse(localStorage.getItem('pmh_used_vouchers') || '{}');
+        return JSON.parse(localStorage.getItem('pmh_voucher_status_v2') || '{}');
       } catch (e) {
         return {};
       }
     }
 
-    function saveLocalUsed(code, isUsed, timeStr) {
-      const map = getLocalUsedMap();
-      if (isUsed) {
-        map[code] = { used: true, time: timeStr || new Date().toLocaleString('vi-VN') };
-      } else {
-        delete map[code];
-      }
-      localStorage.setItem('pmh_used_vouchers', JSON.stringify(map));
+    function saveLocalStatus(code, isUsed, timeStr, timestamp) {
+      if (!code) return;
+      const map = getLocalStatusMap();
+      map[code] = {
+        used: !!isUsed,
+        time: isUsed ? (timeStr || new Date().toLocaleString('vi-VN')) : '',
+        updatedAt: timestamp || Date.now()
+      };
+      try {
+        localStorage.setItem('pmh_voucher_status_v2', JSON.stringify(map));
+      } catch (e) {}
     }
+
+    // Di chuyển dữ liệu cũ nếu có
+    try {
+      const oldUsed = JSON.parse(localStorage.getItem('pmh_used_vouchers') || '{}');
+      if (Object.keys(oldUsed).length > 0 && !localStorage.getItem('pmh_voucher_status_v2')) {
+        const newMap = {};
+        for (const k in oldUsed) {
+          if (oldUsed[k] && oldUsed[k].used) {
+            newMap[k] = { used: true, time: oldUsed[k].time || '', updatedAt: Date.now() };
+          }
+        }
+        localStorage.setItem('pmh_voucher_status_v2', JSON.stringify(newMap));
+      }
+    } catch (e) {}
 
     /**
      * DOM ELEMENTS
@@ -1285,9 +1306,13 @@
      * TOAST NOTIFICATION
      */
     let toastTimeout = null;
-    function showToast(code) {
+    function showToast(code, isUndo = false) {
       if (toastTimeout) clearTimeout(toastTimeout);
-      els.toastCode.textContent = code;
+      if (isUndo) {
+        els.toastBox.innerHTML = `<span>🔄</span> <span>Đã hoàn lại mã: <span class="toast-code">${code}</span> (Chưa dùng)</span>`;
+      } else {
+        els.toastBox.innerHTML = `<span>✅</span> <span>Đã sao chép: <span class="toast-code">${code}</span> & đánh dấu đã dùng!</span>`;
+      }
       els.toastBox.classList.add('show');
       toastTimeout = setTimeout(() => {
         els.toastBox.classList.remove('show');
@@ -1430,7 +1455,7 @@
       const items = [];
       const datesSet = {};
       const productsSet = {};
-      const localUsedMap = getLocalUsedMap();
+      const localStatusMap = getLocalStatusMap();
 
       const lineRegex = /^Ngày\s+(\d{1,2}\/\d{1,2}\/\d{4})\s*:\s*(?:Mã\s*Phiếu\s*mua\s*hàng\s*(\d+)\s*-\s*dùng\s*cho\s*)?([^:]+?)\s*:\s*([A-Za-z0-9]+)\s*$/i;
 
@@ -1465,9 +1490,19 @@
             }
           }
 
-          if (localUsedMap[code]) {
-            isUsed = true;
-            if (!usedTime) usedTime = localUsedMap[code].time;
+          // QUY TẮC ĐỒNG BỘ CHỐNG GHI ĐÈ NGƯỢC (RECONCILIATION):
+          // Nếu có thao tác người dùng (đã dùng HOẶC hoàn lại) gần đây (< 10 phút),
+          // luôn ưu tiên trạng thái mới nhất của người dùng thay vì cache cũ của Google Sheets GViz
+          if (localStatusMap[code] && localStatusMap[code].updatedAt) {
+            const ageMs = Date.now() - localStatusMap[code].updatedAt;
+            if (ageMs < 10 * 60 * 1000) {
+              isUsed = !!localStatusMap[code].used;
+              if (isUsed && localStatusMap[code].time) {
+                usedTime = localStatusMap[code].time;
+              } else if (!isUsed) {
+                usedTime = "";
+              }
+            }
           }
 
           datesSet[dateStr] = true;
@@ -1709,81 +1744,97 @@
 
     window.handleCopyAndMark = function(rowIndex, code) {
       copyToClipboard(code).then(() => {
-        showToast(code);
+        showToast(code, false);
       }).catch(() => {
-        showToast(code);
+        showToast(code, false);
       });
 
-      const item = state.items.find(i => i.rowIndex === rowIndex);
+      let item = state.items.find(i => (code && i.code === code) || i.rowIndex == rowIndex);
       const now = new Date();
       const pad = (n) => (n < 10 ? '0' + n : n);
       const timeStr = pad(now.getDate()) + '/' + pad(now.getMonth() + 1) + ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes());
+      const nowTs = Date.now();
 
       if (item) {
         item.isUsed = true;
         item.usedTime = timeStr;
       }
 
-      saveLocalUsed(code, true, timeStr);
+      saveLocalStatus(code, true, timeStr, nowTs);
       updateCachedPayload();
       renderVouchers();
 
       // 1. Đồng bộ thời gian thực siêu tốc đến các trình duyệt khác (50ms - 100ms)
-      broadcastRealtimeState(rowIndex, true, code, timeStr);
+      broadcastRealtimeState(item ? item.rowIndex : rowIndex, true, code, timeStr, nowTs);
 
       // 2. Ghi vĩnh viễn vào Google Sheet
-      syncToGoogleSheet(rowIndex, true, code);
+      syncToGoogleSheet(item ? item.rowIndex : rowIndex, true, code);
     };
 
     window.handleCopyAgain = function(code) {
       copyToClipboard(code).then(() => {
-        showToast(code);
+        showToast(code, false);
       });
     };
 
     window.handleUndo = function(rowIndex, code) {
-      const item = state.items.find(i => i.rowIndex === rowIndex);
+      let item = state.items.find(i => (code && i.code === code) || i.rowIndex == rowIndex);
+      const nowTs = Date.now();
+
       if (item) {
         item.isUsed = false;
         item.usedTime = '';
       }
 
-      saveLocalUsed(code, false);
+      // Lưu trạng thái Hoàn lại (isUsed = false) có timestamp vào Local Storage
+      // Nhờ đó khi GViz đồng bộ ngầm, nó KHÔNG BAO GIỜ bị ghi đè ngược lại là 'Đã dùng'
+      saveLocalStatus(code, false, '', nowTs);
       updateCachedPayload();
       renderVouchers();
 
-      // 1. Đồng bộ thời gian thực siêu tốc đến các trình duyệt khác
-      broadcastRealtimeState(rowIndex, false, code, '');
+      // Hiển thị thông báo Toast hoàn tác tức thì
+      showToast(code, true);
+
+      // 1. Đồng bộ thời gian thực siêu tốc đến tất cả các trình duyệt khác
+      broadcastRealtimeState(item ? item.rowIndex : rowIndex, false, code, '', nowTs);
 
       // 2. Gỡ đánh dấu trong Google Sheet
-      syncToGoogleSheet(rowIndex, false, code);
+      syncToGoogleSheet(item ? item.rowIndex : rowIndex, false, code);
     };
 
     /**
      * PHÁT TÍN HIỆU ĐỒNG BỘ THỜI GIAN THỰC (BROADCAST REALTIME ĐẾN TRÌNH DUYỆT B)
      */
-    function broadcastRealtimeState(rowIndex, isUsed, code, timeStr) {
+    function broadcastRealtimeState(rowIndex, isUsed, code, timeStr, timestamp) {
+      const nowTs = timestamp || Date.now();
       const payload = {
         action: 'markUsed',
         rowIndex: rowIndex,
-        isUsed: isUsed,
+        isUsed: !!isUsed,
         code: code,
-        time: timeStr,
-        senderId: state.clientId
+        time: timeStr || '',
+        senderId: state.clientId,
+        timestamp: nowTs
       };
 
-      // A. Tab khác trên cùng thiết bị (0ms)
+      // Kênh A. Cùng trình duyệt qua BroadcastChannel (0ms)
       try {
         if (window.broadcastChannel) {
           window.broadcastChannel.postMessage(payload);
         }
       } catch (e) {}
 
-      // B. Mọi trình duyệt và thiết bị khác qua SSE (50ms - 100ms)
+      // Kênh B. Cùng trình duyệt đa tab qua localStorage storage event (0ms, tối ưu cho iPhone/Safari)
+      try {
+        localStorage.setItem('pmh_sync_cross_tab', JSON.stringify({ ...payload, _t: nowTs }));
+      } catch (e) {}
+
+      // Kênh C. Mọi thiết bị & trình duyệt khác qua ntfy.sh (50ms - 100ms)
+      // Dùng Content-Type: text/plain để không bị CORS OPTIONS preflight chặn lại
       try {
         fetch(`https://ntfy.sh/${REALTIME_TOPIC}`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'text/plain' },
           body: JSON.stringify(payload)
         }).catch(() => {});
       } catch (e) {}
@@ -1792,17 +1843,16 @@
     /**
      * ÁP DỤNG TRẠNG THÁI KHI TRÌNH DUYỆT KHÁC THAO TÁC (RECEIVE REMOTE EVENT)
      */
-    function applyVoucherStateFromRemote(code, isUsed, timeStr, rowIndex) {
-      let item = state.items.find(i => i.code === code);
-      if (!item && rowIndex) {
-        item = state.items.find(i => i.rowIndex === rowIndex);
-      }
+    function applyVoucherStateFromRemote(code, isUsed, timeStr, rowIndex, timestamp) {
+      const nowTs = timestamp || Date.now();
+      saveLocalStatus(code, isUsed, timeStr, nowTs);
+
+      let item = state.items.find(i => (code && i.code === code) || i.rowIndex == rowIndex);
 
       if (item) {
         if (item.isUsed !== isUsed) {
           item.isUsed = isUsed;
           item.usedTime = isUsed ? (timeStr || formatShortTime(new Date().toLocaleTimeString('vi-VN'))) : '';
-          saveLocalUsed(item.code, isUsed, item.usedTime);
           updateCachedPayload();
           renderVouchers();
 
@@ -1815,14 +1865,14 @@
 
           // Nháy chấm báo hiệu đồng bộ
           els.syncDot.className = 'sync-dot updating';
-          els.syncText.textContent = `⚡ Trình duyệt khác vừa dùng mã: ${item.code}`;
+          els.syncText.textContent = isUsed 
+            ? `⚡ Trình duyệt khác vừa dùng mã: ${item.code}` 
+            : `🔄 Trình duyệt khác vừa hoàn lại mã: ${item.code}`;
           setTimeout(() => {
             els.syncDot.className = 'sync-dot';
             els.syncText.textContent = 'Đã kết nối trực tiếp';
           }, 3000);
         }
-      } else {
-        saveLocalUsed(code, isUsed, timeStr);
       }
     }
 
@@ -1837,13 +1887,28 @@
           window.broadcastChannel.onmessage = (e) => {
             const data = e.data;
             if (data && data.action === 'markUsed' && data.senderId !== state.clientId) {
-              applyVoucherStateFromRemote(data.code, data.isUsed, data.time, data.rowIndex);
+              applyVoucherStateFromRemote(data.code, data.isUsed, data.time, data.rowIndex, data.timestamp);
             }
           };
         }
       } catch (e) {}
 
-      // 2. Lắng nghe mọi thiết bị khác qua Server-Sent Events (50 - 100ms)
+      // 2. Lắng nghe đa tab qua storage event (0ms cho thiết bị di động Safari / Chrome)
+      if (!window._hasStorageListener) {
+        window._hasStorageListener = true;
+        window.addEventListener('storage', (e) => {
+          if (e.key === 'pmh_sync_cross_tab' && e.newValue) {
+            try {
+              const data = JSON.parse(e.newValue);
+              if (data && data.action === 'markUsed' && data.senderId !== state.clientId) {
+                applyVoucherStateFromRemote(data.code, data.isUsed, data.time, data.rowIndex, data.timestamp);
+              }
+            } catch (err) {}
+          }
+        });
+      }
+
+      // 3. Lắng nghe mọi thiết bị khác qua Server-Sent Events (50 - 100ms)
       if (typeof EventSource !== 'undefined') {
         try {
           if (window.realtimeEventSource) {
@@ -1858,7 +1923,7 @@
               if (res.event === 'message' && res.message) {
                 const data = JSON.parse(res.message);
                 if (data && data.action === 'markUsed' && data.senderId !== state.clientId) {
-                  applyVoucherStateFromRemote(data.code, data.isUsed, data.time, data.rowIndex);
+                  applyVoucherStateFromRemote(data.code, data.isUsed, data.time, data.rowIndex, data.timestamp);
                 }
               }
             } catch (err) {}
@@ -1874,7 +1939,7 @@
         } catch (e) {}
       }
 
-      // 3. Polling dự phòng từ Google Sheet GViz mỗi 4 giây
+      // 4. Polling dự phòng từ Google Sheet GViz mỗi 4 giây
       if (!window.pollInterval) {
         window.pollInterval = setInterval(() => {
           if (document.visibilityState === 'visible' && !state.isLoading) {
@@ -1915,10 +1980,25 @@
       } else if (CONFIG.webAppUrl) {
         const url = `${CONFIG.webAppUrl}?action=markUsed&row=${rowIndex}&used=${isUsed}&code=${encodeURIComponent(code)}&_=${Date.now()}`;
         
-        // Phương pháp Beacon: Chắc chắn đến được Apps Script mà không bị chặn bởi CORS
+        // 1. sendBeacon nếu trình duyệt hỗ trợ
+        let beaconSent = false;
+        if (navigator.sendBeacon) {
+          try {
+            beaconSent = navigator.sendBeacon(url);
+          } catch (e) {}
+        }
+
+        // 2. Giữ Image beacon trong window._activeBeacons để không bị Garbage Collection ngắt kết nối
+        if (!window._activeBeacons) window._activeBeacons = [];
         const ping = new Image();
+        window._activeBeacons.push(ping);
+        ping.onload = ping.onerror = function() {
+          const idx = window._activeBeacons.indexOf(ping);
+          if (idx > -1) window._activeBeacons.splice(idx, 1);
+        };
         ping.src = url;
 
+        // 3. fetch no-cors dự phòng
         try {
           fetch(url, { mode: 'no-cors' }).catch(() => {});
         } catch (e) {}
