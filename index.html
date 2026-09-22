@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Tra Cứu Mã Phiếu Mua Hàng - Siêu Thị 1841</title>
   
   <!-- SEO & Social Meta -->
@@ -36,12 +36,11 @@
       --gray-800: #1e293b;
       --gray-900: #0f172a;
       --radius-sm: 8px;
-      --radius-md: 12px;
-      --radius-lg: 16px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
       --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
-      --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
+      --transition: all 0.15s ease-in-out;
     }
 
     * {
@@ -51,166 +50,149 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    body {
-      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-      background-color: #f8fafc;
+    html, body {
+      width: 100%;
+      min-height: 100%;
+      overflow-x: hidden;
+      -webkit-text-size-adjust: 100%;
+      background-color: #f1f5f9;
       color: var(--gray-800);
-      line-height: 1.5;
-      font-size: 14px;
-      padding-bottom: 30px;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 13px;
+      line-height: 1.45;
     }
 
-    /* Container */
+    /* Container: Chiều rộng co giãn hoàn hảo trên mọi kích thước màn hình */
     .app-container {
-      max-width: 900px;
+      width: 100%;
+      max-width: 680px;
       margin: 0 auto;
-      padding: 14px 16px;
+      padding: 8px 10px 30px 10px;
     }
 
-    /* Header */
+    /* Header gọn gàng tối ưu cho điện thoại */
     .app-header {
       background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
       color: #ffffff;
-      padding: 16px 20px;
+      padding: 10px 12px;
       border-radius: var(--radius-md);
-      box-shadow: var(--shadow-md);
-      margin-bottom: 14px;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 8px;
       position: relative;
       overflow: hidden;
-    }
-
-    .app-header::before {
-      content: '';
-      position: absolute;
-      top: -40px;
-      right: -40px;
-      width: 150px;
-      height: 150px;
-      background: radial-gradient(circle, rgba(79, 70, 229, 0.4) 0%, rgba(255,255,255,0) 70%);
-      border-radius: 50%;
-      pointer-events: none;
     }
 
     .header-top {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 8px;
-      flex-wrap: wrap;
-      gap: 10px;
+      gap: 8px;
     }
 
     .app-title-wrap {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 8px;
+      min-width: 0;
+      flex: 1;
     }
 
     .app-icon {
-      width: 42px;
-      height: 42px;
+      width: 32px;
+      height: 32px;
       background: linear-gradient(135deg, #6366f1, #4f46e5);
-      border-radius: 12px;
+      border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 22px;
-      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+      font-size: 17px;
+      flex-shrink: 0;
     }
 
     .app-title {
-      font-size: 18px;
+      font-size: 14px;
       font-weight: 800;
-      letter-spacing: -0.3px;
+      letter-spacing: -0.2px;
       color: #ffffff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .app-subtitle {
-      font-size: 12px;
+      font-size: 11px;
       color: #94a3b8;
       font-weight: 500;
-      display: flex;
-      align-items: center;
-      gap: 6px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .header-actions {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 5px;
+      flex-shrink: 0;
     }
 
     .btn-sheet-link {
       background: rgba(16, 185, 129, 0.2);
       color: #34d399;
       border: 1px solid rgba(16, 185, 129, 0.4);
-      padding: 6px 12px;
-      border-radius: var(--radius-sm);
-      font-size: 12px;
+      padding: 5px 8px;
+      border-radius: 6px;
+      font-size: 11px;
       font-weight: 700;
       text-decoration: none;
       display: inline-flex;
       align-items: center;
-      gap: 5px;
+      gap: 4px;
+      white-space: nowrap;
       transition: var(--transition);
-    }
-
-    .btn-sheet-link:hover {
-      background: rgba(16, 185, 129, 0.35);
-      color: #ffffff;
-      transform: translateY(-1px);
     }
 
     .btn-header-action {
       background: rgba(255, 255, 255, 0.12);
       color: #ffffff;
       border: 1px solid rgba(255, 255, 255, 0.15);
-      padding: 6px 12px;
-      border-radius: var(--radius-sm);
-      font-size: 12px;
+      padding: 5px 8px;
+      border-radius: 6px;
+      font-size: 11px;
       font-weight: 600;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 4px;
       transition: var(--transition);
-    }
-
-    .btn-header-action:hover {
-      background: rgba(255, 255, 255, 0.22);
-      transform: translateY(-1px);
     }
 
     .header-sub-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 11px;
+      font-size: 10.5px;
       color: #94a3b8;
       border-top: 1px solid rgba(255, 255, 255, 0.08);
-      padding-top: 8px;
-      margin-top: 4px;
+      padding-top: 6px;
+      margin-top: 6px;
     }
 
     .sync-indicator {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      font-size: 12px;
+      gap: 5px;
       font-weight: 600;
     }
 
     .sync-dot {
-      width: 8px;
-      height: 8px;
+      width: 7px;
+      height: 7px;
       border-radius: 50%;
       background: #10b981;
-      box-shadow: 0 0 8px #10b981;
     }
 
     .sync-dot.updating {
       background: var(--warning);
-      box-shadow: 0 0 8px var(--warning);
       animation: pulse 1s infinite;
     }
 
@@ -219,129 +201,100 @@
       50% { opacity: 0.3; }
     }
 
-    /* Controls Section */
+    /* Card điều khiển gọn gàng */
     .controls-card {
       background: #ffffff;
       border-radius: var(--radius-md);
-      padding: 16px;
+      padding: 10px 12px;
       box-shadow: var(--shadow-sm);
       border: 1px solid var(--gray-200);
-      margin-bottom: 14px;
+      margin-bottom: 8px;
     }
 
-    /* Date Filter Row */
+    /* Hàng chọn ngày */
     .date-row {
       display: flex;
-      gap: 8px;
+      gap: 4px;
       align-items: center;
-      margin-bottom: 12px;
-      flex-wrap: wrap;
-    }
-
-    .date-label {
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--gray-600);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      min-width: 85px;
-    }
-
-    .date-selector-group {
-      display: flex;
-      flex: 1;
-      gap: 6px;
-      align-items: center;
-      min-width: 250px;
+      margin-bottom: 8px;
+      width: 100%;
     }
 
     .date-nav-btn {
       background: var(--gray-100);
       border: 1px solid var(--gray-200);
       color: var(--gray-700);
-      width: 36px;
-      height: 38px;
-      border-radius: var(--radius-sm);
+      width: 32px;
+      height: 34px;
+      border-radius: 6px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 14px;
+      font-size: 13px;
       cursor: pointer;
-      transition: var(--transition);
+      flex-shrink: 0;
       font-weight: bold;
-    }
-
-    .date-nav-btn:hover {
-      background: var(--gray-200);
-      color: var(--gray-900);
     }
 
     .date-select {
       flex: 1;
-      height: 38px;
+      height: 34px;
       background: var(--gray-50);
       border: 1.5px solid var(--gray-200);
-      border-radius: var(--radius-sm);
-      padding: 0 12px;
-      font-size: 14px;
-      font-weight: 600;
+      border-radius: 6px;
+      padding: 0 8px;
+      font-size: 13px;
+      font-weight: 700;
       color: var(--gray-800);
       outline: none;
       cursor: pointer;
-      transition: var(--transition);
+      min-width: 0;
     }
 
     .date-select:focus {
       border-color: var(--primary);
       background: #ffffff;
-      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
     }
 
     .btn-today {
       background: var(--primary-light);
       color: var(--primary);
       border: 1px solid #c7d2fe;
-      height: 38px;
-      padding: 0 14px;
-      border-radius: var(--radius-sm);
-      font-size: 13px;
+      height: 34px;
+      padding: 0 10px;
+      border-radius: 6px;
+      font-size: 12px;
       font-weight: 700;
       cursor: pointer;
       white-space: nowrap;
-      transition: var(--transition);
+      flex-shrink: 0;
     }
 
-    .btn-today:hover {
-      background: #e0e7ff;
-    }
-
-    /* Search Box */
+    /* Ô tìm kiếm */
     .search-wrap {
       position: relative;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
+      width: 100%;
     }
 
     .search-icon {
       position: absolute;
-      left: 14px;
+      left: 10px;
       top: 50%;
       transform: translateY(-50%);
-      font-size: 16px;
+      font-size: 14px;
       color: var(--gray-400);
       pointer-events: none;
     }
 
     .search-input {
       width: 100%;
-      height: 44px;
-      padding: 0 40px 0 42px;
+      height: 38px;
+      padding: 0 34px 0 32px;
       background: var(--gray-50);
       border: 1.5px solid var(--gray-200);
-      border-radius: var(--radius-sm);
-      font-size: 14px;
+      border-radius: 6px;
+      font-size: 13.5px;
       font-weight: 500;
       color: var(--gray-900);
       outline: none;
@@ -351,69 +304,62 @@
     .search-input:focus {
       background: #ffffff;
       border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
     }
 
     .search-input::placeholder {
       color: var(--gray-400);
-      font-weight: 400;
+      font-size: 12.5px;
     }
 
     .btn-clear-search {
       position: absolute;
-      right: 12px;
+      right: 8px;
       top: 50%;
       transform: translateY(-50%);
       background: var(--gray-200);
       color: var(--gray-600);
       border: none;
-      width: 22px;
-      height: 22px;
+      width: 20px;
+      height: 20px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 11px;
+      font-size: 10px;
       cursor: pointer;
       display: none;
-      transition: var(--transition);
     }
 
-    .btn-clear-search:hover {
-      background: var(--gray-300);
-      color: var(--gray-900);
-    }
-
-    /* Filter Tabs & Stats */
+    /* Tabs & Thống kê */
     .filter-stats-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
+      gap: 6px;
+      width: 100%;
     }
 
     .filter-tabs {
       display: inline-flex;
       background: var(--gray-100);
-      padding: 3px;
-      border-radius: var(--radius-sm);
-      gap: 3px;
+      padding: 2px;
+      border-radius: 6px;
+      gap: 2px;
+      flex-shrink: 0;
     }
 
     .filter-tab {
       border: none;
       background: transparent;
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11.5px;
       font-weight: 600;
       color: var(--gray-600);
       cursor: pointer;
-      transition: var(--transition);
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 4px;
     }
 
     .filter-tab.active {
@@ -425,9 +371,9 @@
     .badge-count {
       background: var(--gray-200);
       color: var(--gray-700);
-      font-size: 11px;
-      padding: 1px 6px;
-      border-radius: 10px;
+      font-size: 10px;
+      padding: 0 5px;
+      border-radius: 8px;
       font-weight: 700;
     }
 
@@ -437,81 +383,82 @@
     }
 
     .stats-summary {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 600;
       color: var(--gray-500);
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 8px;
+      white-space: nowrap;
     }
 
     .stat-item {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 3px;
     }
 
     .stat-dot {
-      width: 8px;
-      height: 8px;
+      width: 7px;
+      height: 7px;
       border-radius: 50%;
     }
 
     .dot-avail { background: var(--success); }
     .dot-used { background: var(--gray-400); }
 
-    /* Progress bar */
+    /* Thanh tiến độ */
     .progress-bar-wrap {
       width: 100%;
-      height: 5px;
+      height: 4px;
       background: var(--gray-100);
-      border-radius: 10px;
+      border-radius: 8px;
       overflow: hidden;
-      margin-top: 10px;
+      margin-top: 8px;
     }
 
     .progress-bar-fill {
       height: 100%;
       background: linear-gradient(90deg, var(--success), var(--primary));
       width: 0%;
-      transition: width 0.4s ease;
+      transition: width 0.3s ease;
     }
 
-    /* Voucher Cards List */
+    /* Danh sách thẻ phiếu (VOUCHER LIST) */
     .voucher-list {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
+      width: 100%;
     }
 
+    /* Thẻ phiếu: Cấu trúc 2 dòng siêu gọn gàng cho điện thoại */
     .voucher-card {
       background: #ffffff;
       border-radius: var(--radius-md);
       border: 1.5px solid var(--gray-200);
-      padding: 14px 16px;
+      padding: 10px 12px;
       box-shadow: var(--shadow-sm);
       transition: var(--transition);
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      position: relative;
+      gap: 6px;
+      width: 100%;
     }
 
     .voucher-card:hover {
       border-color: #cbd5e1;
-      box-shadow: var(--shadow-md);
     }
 
-    /* Card used state */
     .voucher-card.is-used {
       background: #fafbfc;
-      border-color: #e5e7eb;
-      opacity: 0.92;
+      border-color: #e2e8f0;
+      opacity: 0.9;
     }
 
     .voucher-card.is-used .voucher-code {
       text-decoration: line-through;
-      color: var(--gray-500);
+      color: var(--gray-400);
       background: #f1f5f9;
       border-color: #e2e8f0;
     }
@@ -520,78 +467,83 @@
       color: var(--gray-600);
     }
 
-    /* Card Main Info */
+    /* Dòng 1: Tên sản phẩm + Tag mã phiếu */
     .card-header-row {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
       gap: 8px;
+      width: 100%;
     }
 
     .product-title {
-      font-size: 14px;
+      font-size: 13.5px;
       font-weight: 700;
       color: var(--gray-900);
       line-height: 1.35;
       flex: 1;
+      word-break: break-word;
     }
 
     .product-title mark {
       background-color: #fef08a;
       color: #854d0e;
-      padding: 1px 3px;
-      border-radius: 3px;
+      padding: 0 2px;
+      border-radius: 2px;
     }
 
     .voucher-tag {
-      font-size: 11px;
+      font-size: 10.5px;
       font-weight: 700;
-      padding: 2px 8px;
-      border-radius: 6px;
+      padding: 2px 6px;
+      border-radius: 4px;
       white-space: nowrap;
       background: var(--primary-light);
       color: var(--primary);
+      flex-shrink: 0;
     }
 
-    /* Code Box & Actions */
+    /* Dòng 2: Mã phiếu + Trạng thái + Nút bấm (NẰM CHUNG 1 HÀNG) */
     .code-action-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 10px;
-      flex-wrap: wrap;
+      gap: 6px;
+      width: 100%;
     }
 
     .code-box-group {
       display: flex;
       align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
+      gap: 6px;
+      min-width: 0;
+      flex: 1;
     }
 
     .voucher-code {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 18px;
+      font-size: 15px;
       font-weight: 800;
-      letter-spacing: 1.5px;
+      letter-spacing: 1px;
       color: var(--primary);
       background: #f5f3ff;
       border: 1.5px dashed #c4b5fd;
-      padding: 6px 14px;
-      border-radius: var(--radius-sm);
+      padding: 5px 10px;
+      border-radius: 6px;
       display: inline-block;
       user-select: all;
-      transition: var(--transition);
+      white-space: nowrap;
     }
 
     .status-badge {
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 700;
-      padding: 3px 8px;
-      border-radius: 20px;
+      padding: 2px 6px;
+      border-radius: 12px;
       display: inline-flex;
       align-items: center;
-      gap: 5px;
+      gap: 3px;
+      white-space: nowrap;
     }
 
     .status-badge.available {
@@ -604,74 +556,66 @@
       color: var(--gray-600);
     }
 
-    /* Actions */
+    /* Nút hành động */
     .card-actions {
       display: flex;
       align-items: center;
-      gap: 6px;
-      margin-left: auto;
+      gap: 5px;
+      flex-shrink: 0;
     }
 
     .btn-copy {
       background: linear-gradient(135deg, #10b981 0%, #059669 100%);
       color: #ffffff;
       border: none;
-      padding: 9px 18px;
-      border-radius: var(--radius-sm);
-      font-size: 13px;
+      height: 33px;
+      padding: 0 14px;
+      border-radius: 6px;
+      font-size: 12px;
       font-weight: 700;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      box-shadow: 0 2px 6px rgba(16, 185, 129, 0.35);
-      transition: var(--transition);
+      gap: 5px;
+      box-shadow: 0 2px 4px rgba(16, 185, 129, 0.25);
       white-space: nowrap;
-    }
-
-    .btn-copy:hover {
-      background: linear-gradient(135deg, #059669 0%, #047857 100%);
-      transform: translateY(-1px);
-      box-shadow: 0 4px 10px rgba(16, 185, 129, 0.45);
+      transition: var(--transition);
     }
 
     .btn-copy:active {
-      transform: translateY(1px);
+      transform: scale(0.97);
     }
 
     .btn-copy-again {
       background: var(--gray-100);
       color: var(--gray-700);
       border: 1px solid var(--gray-300);
-      padding: 7px 12px;
-      border-radius: var(--radius-sm);
-      font-size: 12px;
+      height: 31px;
+      padding: 0 8px;
+      border-radius: 6px;
+      font-size: 11px;
       font-weight: 600;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 5px;
-      transition: var(--transition);
-    }
-
-    .btn-copy-again:hover {
-      background: var(--gray-200);
-      color: var(--gray-900);
+      gap: 3px;
+      white-space: nowrap;
     }
 
     .btn-undo {
       background: transparent;
       color: var(--gray-500);
       border: 1px dashed var(--gray-300);
-      padding: 7px 10px;
-      border-radius: var(--radius-sm);
-      font-size: 12px;
+      height: 31px;
+      padding: 0 8px;
+      border-radius: 6px;
+      font-size: 11px;
       font-weight: 600;
       cursor: pointer;
-      transition: var(--transition);
       display: inline-flex;
       align-items: center;
-      gap: 4px;
+      gap: 3px;
+      white-space: nowrap;
     }
 
     .btn-undo:hover {
@@ -684,27 +628,27 @@
     .empty-state {
       background: #ffffff;
       border-radius: var(--radius-md);
-      padding: 40px 20px;
+      padding: 30px 16px;
       text-align: center;
       color: var(--gray-500);
       border: 1.5px dashed var(--gray-300);
-      margin-top: 10px;
+      margin-top: 6px;
     }
 
     .empty-icon {
-      font-size: 42px;
-      margin-bottom: 12px;
+      font-size: 36px;
+      margin-bottom: 8px;
     }
 
     .empty-title {
-      font-size: 16px;
+      font-size: 14px;
       font-weight: 700;
       color: var(--gray-800);
-      margin-bottom: 4px;
+      margin-bottom: 3px;
     }
 
     .empty-desc {
-      font-size: 13px;
+      font-size: 12px;
       color: var(--gray-500);
     }
 
@@ -714,48 +658,49 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 50px 20px;
+      padding: 40px 16px;
       background: #ffffff;
       border-radius: var(--radius-md);
       border: 1px solid var(--gray-200);
     }
 
     .spinner {
-      width: 38px;
-      height: 38px;
-      border: 3.5px solid var(--gray-200);
+      width: 32px;
+      height: 32px;
+      border: 3px solid var(--gray-200);
       border-top-color: var(--primary);
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
     }
 
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
 
-    /* Toast Notification */
+    /* Toast Thông báo */
     .toast {
       position: fixed;
-      bottom: 20px;
+      bottom: 16px;
       left: 50%;
       transform: translateX(-50%) translateY(100px);
       background: #0f172a;
       color: #ffffff;
-      padding: 12px 20px;
-      border-radius: 30px;
-      font-size: 13px;
+      padding: 10px 16px;
+      border-radius: 24px;
+      font-size: 12.5px;
       font-weight: 600;
       display: flex;
       align-items: center;
-      gap: 8px;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.35);
+      gap: 6px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
       z-index: 9999;
       opacity: 0;
-      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
       pointer-events: none;
       white-space: nowrap;
       border: 1px solid rgba(255, 255, 255, 0.15);
+      max-width: 90vw;
     }
 
     .toast.show {
@@ -767,22 +712,22 @@
       font-family: 'JetBrains Mono', monospace;
       color: #34d399;
       font-weight: 800;
-      background: rgba(255, 255, 255, 0.1);
-      padding: 2px 6px;
+      background: rgba(255, 255, 255, 0.12);
+      padding: 1px 5px;
       border-radius: 4px;
     }
 
-    /* Settings Modal */
+    /* Modal Cấu hình */
     .modal-backdrop {
       position: fixed;
       inset: 0;
       background: rgba(15, 23, 42, 0.6);
-      backdrop-filter: blur(4px);
+      backdrop-filter: blur(3px);
       display: none;
       align-items: center;
       justify-content: center;
       z-index: 9999;
-      padding: 16px;
+      padding: 14px;
     }
 
     .modal-backdrop.active {
@@ -792,44 +737,43 @@
     .modal-content {
       background: #ffffff;
       border-radius: var(--radius-md);
-      max-width: 520px;
+      max-width: 440px;
       width: 100%;
-      padding: 22px;
-      box-shadow: var(--shadow-lg);
+      padding: 18px;
+      box-shadow: var(--shadow-md);
       border: 1px solid var(--gray-200);
     }
 
     .modal-title {
-      font-size: 17px;
+      font-size: 15px;
       font-weight: 800;
       color: var(--gray-900);
-      margin-bottom: 12px;
+      margin-bottom: 10px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
     }
 
     .form-group {
-      margin-bottom: 14px;
+      margin-bottom: 12px;
     }
 
     .form-label {
       display: block;
-      font-size: 12px;
+      font-size: 11.5px;
       font-weight: 700;
       color: var(--gray-700);
-      margin-bottom: 5px;
+      margin-bottom: 4px;
     }
 
     .form-control {
       width: 100%;
-      height: 40px;
-      padding: 0 12px;
+      height: 36px;
+      padding: 0 10px;
       border: 1.5px solid var(--gray-300);
-      border-radius: var(--radius-sm);
-      font-size: 13px;
+      border-radius: 6px;
+      font-size: 12.5px;
       outline: none;
-      transition: var(--transition);
     }
 
     .form-control:focus {
@@ -837,24 +781,25 @@
     }
 
     .form-help {
-      font-size: 11px;
+      font-size: 10.5px;
       color: var(--gray-500);
-      margin-top: 4px;
+      margin-top: 3px;
     }
 
     .modal-actions {
       display: flex;
       justify-content: flex-end;
-      gap: 8px;
-      margin-top: 20px;
+      gap: 6px;
+      margin-top: 16px;
     }
 
     .btn-secondary {
       background: var(--gray-100);
       color: var(--gray-700);
       border: 1px solid var(--gray-300);
-      padding: 8px 16px;
-      border-radius: var(--radius-sm);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
       font-weight: 600;
       cursor: pointer;
     }
@@ -863,34 +808,11 @@
       background: var(--primary);
       color: #ffffff;
       border: none;
-      padding: 8px 18px;
-      border-radius: var(--radius-sm);
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 12px;
       font-weight: 700;
       cursor: pointer;
-    }
-
-    /* Responsive */
-    @media (max-width: 480px) {
-      .app-container {
-        padding: 8px;
-      }
-      .code-action-row {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-      .card-actions {
-        width: 100%;
-        margin-left: 0;
-        margin-top: 4px;
-      }
-      .btn-copy {
-        width: 100%;
-        justify-content: center;
-      }
-      .btn-copy-again {
-        flex: 1;
-        justify-content: center;
-      }
     }
   </style>
 </head>
@@ -903,11 +825,9 @@
       <div class="header-top">
         <div class="app-title-wrap">
           <div class="app-icon">🏷️</div>
-          <div>
-            <h1 class="app-title">Tra Cứu Mã Phiếu Mua Hàng</h1>
-            <p class="app-subtitle" id="sheetInfo">
-              <span>Đang kết nối Google Sheet...</span>
-            </p>
+          <div style="min-width: 0;">
+            <h1 class="app-title">Tra Cứu Phiếu Mua Hàng</h1>
+            <p class="app-subtitle" id="sheetInfo">Đang tải...</p>
           </div>
         </div>
         <div class="header-actions">
@@ -921,9 +841,9 @@
             <span>📊</span> <span>Mở Sheet</span>
           </a>
           <button class="btn-header-action" id="btnRefresh" title="Tải lại dữ liệu">
-            <span>🔄</span> <span>Tải lại</span>
+            <span>🔄</span>
           </button>
-          <button class="btn-header-action" id="btnSettings" title="Cấu hình kết nối">
+          <button class="btn-header-action" id="btnSettings" title="Cài đặt kết nối">
             <span>⚙️</span>
           </button>
         </div>
@@ -931,7 +851,7 @@
       <div class="header-sub-row">
         <div class="sync-indicator">
           <span class="sync-dot" id="syncDot"></span>
-          <span id="syncText">Đang kết nối trực tiếp...</span>
+          <span id="syncText">Đang kết nối...</span>
         </div>
         <div id="totalCouponsBadge">
           Siêu thị 1841 • 330 phiếu
@@ -939,38 +859,33 @@
       </div>
     </header>
 
-    <!-- Controls Card: Date selector, Search, and Tabs -->
+    <!-- Controls Card: Chọn ngày, Tìm kiếm, Tab lọc -->
     <div class="controls-card">
 
-      <!-- Date selector row -->
+      <!-- Hàng chọn ngày -->
       <div class="date-row">
-        <label class="date-label" for="dateSelect">
-          <span>📅</span> <span>Ngày:</span>
-        </label>
-        <div class="date-selector-group">
-          <button class="date-nav-btn" id="btnPrevDate" title="Ngày trước">◀</button>
-          <select class="date-select" id="dateSelect">
-            <option value="">Đang tải danh sách ngày...</option>
-          </select>
-          <button class="date-nav-btn" id="btnNextDate" title="Ngày sau">▶</button>
-          <button class="btn-today" id="btnToday">Hôm nay</button>
-        </div>
+        <button class="date-nav-btn" id="btnPrevDate" title="Ngày trước">◀</button>
+        <select class="date-select" id="dateSelect">
+          <option value="">Đang tải ngày...</option>
+        </select>
+        <button class="date-nav-btn" id="btnNextDate" title="Ngày sau">▶</button>
+        <button class="btn-today" id="btnToday">Hôm nay</button>
       </div>
 
-      <!-- Search Input -->
+      <!-- Ô tìm kiếm -->
       <div class="search-wrap">
         <span class="search-icon">🔍</span>
         <input 
           type="text" 
           class="search-input" 
           id="searchInput" 
-          placeholder="Gõ vài ký tự sản phẩm (vd: Sunhouse, Toshiba, bep ga, noi com, rapido...)"
+          placeholder="Gõ tên hoặc mã (vd: bep ga, noi com, rapido, bear...)"
           autocomplete="off"
         >
         <button class="btn-clear-search" id="btnClearSearch" title="Xóa tìm kiếm">✕</button>
       </div>
 
-      <!-- Filter tabs & Stats -->
+      <!-- Filter tabs & Thống kê -->
       <div class="filter-stats-row">
         <div class="filter-tabs">
           <button class="filter-tab active" data-status="all">
@@ -989,24 +904,23 @@
             <span class="stat-dot dot-avail"></span> Còn: <strong id="statAvail" style="color: var(--success-dark);">0</strong>
           </span>
           <span class="stat-item">
-            <span class="stat-dot dot-used"></span> Đã dùng: <strong id="statUsed">0</strong>
+            <span class="stat-dot dot-used"></span> Dùng: <strong id="statUsed">0</strong>
           </span>
         </div>
       </div>
 
-      <!-- Mini Progress bar -->
+      <!-- Thanh tiến độ -->
       <div class="progress-bar-wrap">
         <div class="progress-bar-fill" id="progressBar"></div>
       </div>
 
     </div>
 
-    <!-- Main Results Section -->
+    <!-- Danh sách kết quả phiếu -->
     <main id="mainContent">
       <div class="loading-wrap" id="loadingBox">
         <div class="spinner"></div>
-        <p style="font-weight: 600; color: var(--gray-700);">Đang đồng bộ trực tiếp với Google Sheet...</p>
-        <p style="font-size: 12px; color: var(--gray-400); margin-top: 4px;">Vui lòng chờ trong giây lát</p>
+        <p style="font-weight: 700; color: var(--gray-800); font-size: 13px;">Đang kết nối trực tiếp Google Sheet...</p>
       </div>
 
       <div class="voucher-list" id="voucherList" style="display: none;"></div>
@@ -1014,25 +928,23 @@
       <div class="empty-state" id="emptyState" style="display: none;">
         <div class="empty-icon">🔎</div>
         <h3 class="empty-title">Không tìm thấy phiếu phù hợp</h3>
-        <p class="empty-desc" id="emptyDesc">Thử đổi từ khóa tìm kiếm hoặc chọn ngày khác xem nhé.</p>
+        <p class="empty-desc" id="emptyDesc">Thử đổi từ khóa tìm kiếm hoặc chọn ngày khác nhé.</p>
       </div>
     </main>
 
   </div>
 
-  <!-- Settings Modal -->
+  <!-- Modal Cấu hình -->
   <div class="modal-backdrop" id="settingsModal">
     <div class="modal-content">
       <h3 class="modal-title"><span>⚙️</span> <span>Cấu Hình Kết Nối Google Sheet</span></h3>
       <div class="form-group">
         <label class="form-label">Google Sheet ID:</label>
         <input type="text" class="form-control" id="cfgSheetId" value="17rloLx_U9GhO_QNdpfhsMNEzKnMzCVli9sieVRlmKDU">
-        <p class="form-help">Mã ID nằm giữa <code>/d/</code> và <code>/edit</code> trên đường dẫn Google Sheet.</p>
       </div>
       <div class="form-group">
-        <label class="form-label">Apps Script Web App URL (Đồng bộ ghi vào Sheet):</label>
+        <label class="form-label">Apps Script Web App URL (Đồng bộ Sheet):</label>
         <input type="text" class="form-control" id="cfgWebAppUrl" placeholder="https://script.google.com/macros/s/.../exec">
-        <p class="form-help">Nhập URL Web App nếu bạn muốn khi nhấn "Sao chép" trên GitHub Pages sẽ tự động tick Checkbox trực tiếp vào Google Sheet.</p>
       </div>
       <div class="modal-actions">
         <button class="btn-secondary" id="btnCloseSettings">Đóng</button>
@@ -1041,10 +953,10 @@
     </div>
   </div>
 
-  <!-- Toast Notification -->
+  <!-- Toast Thông báo -->
   <div class="toast" id="toastBox">
     <span>✅</span>
-    <span>Đã sao chép mã: <span class="toast-code" id="toastCode"></span> & đánh dấu đã dùng!</span>
+    <span>Đã sao chép: <span class="toast-code" id="toastCode"></span> & đánh dấu đã dùng!</span>
   </div>
 
   <script>
@@ -1066,13 +978,10 @@
       products: [],
       selectedDate: '',
       searchQuery: '',
-      statusFilter: 'all', // 'all' | 'available' | 'used'
+      statusFilter: 'all',
       isLoading: false
     };
 
-    /**
-     * LOCAL STORAGE FOR USED STATUS (Cho bản web GitHub Pages)
-     */
     function getLocalUsedMap() {
       try {
         return JSON.parse(localStorage.getItem('pmh_used_vouchers') || '{}');
@@ -1129,7 +1038,7 @@
     };
 
     /**
-     * TIẾNG VIỆT KHÔNG DẤU
+     * TÌM KIẾM KHÔNG DẤU TIẾNG VIỆT
      */
     function boDauTiengViet(str) {
       if (!str) return '';
@@ -1142,20 +1051,20 @@
     }
 
     /**
-     * TOAST MESSAGE
+     * TOAST NOTIFICATION
      */
     let toastTimeout = null;
-    function showToast(code, message) {
+    function showToast(code) {
       if (toastTimeout) clearTimeout(toastTimeout);
       els.toastCode.textContent = code;
       els.toastBox.classList.add('show');
       toastTimeout = setTimeout(() => {
         els.toastBox.classList.remove('show');
-      }, 3000);
+      }, 2500);
     }
 
     /**
-     * CLIPBOARD COPY
+     * COPY TO CLIPBOARD
      */
     function copyToClipboard(text) {
       if (navigator.clipboard && window.isSecureContext) {
@@ -1181,7 +1090,7 @@
     }
 
     /**
-     * LOAD DATA: GOOGLE APPS SCRIPT HOẶC DIRECT GVIZ JSONP
+     * LOAD DATA: GVIZ JSONP
      */
     function loadData() {
       state.isLoading = true;
@@ -1191,7 +1100,6 @@
       els.syncDot.className = 'sync-dot updating';
       els.syncText.textContent = 'Đang đồng bộ...';
 
-      // 1. Kiểm tra nếu đang chạy bên trong Google Apps Script
       if (typeof google !== 'undefined' && google.script && google.script.run) {
         google.script.run
           .withSuccessHandler(onDataLoaded)
@@ -1200,7 +1108,6 @@
         return;
       }
 
-      // 2. Chạy trên GitHub Pages hoặc trình duyệt: Tải TRỰC TIẾP từ Google Sheet qua GViz JSONP
       loadDirectFromGoogleSheet();
     }
 
@@ -1212,7 +1119,6 @@
         delete window[callbackName];
         const scriptEl = document.getElementById('gviz-script');
         if (scriptEl) scriptEl.remove();
-
         parseGvizData(res);
       };
 
@@ -1225,15 +1131,12 @@
       script.id = 'gviz-script';
       script.src = gvizUrl;
       script.onerror = function() {
-        console.warn('Lỗi kết nối trực tiếp Google Sheet GViz, tải dữ liệu lưu trữ...');
+        console.warn('Dùng dữ liệu đệm do lỗi kết nối trực tiếp.');
         onDataLoaded(getFallbackData());
       };
       document.head.appendChild(script);
     }
 
-    /**
-     * PARSE DỮ LIỆU TỪ GOOGLE SHEET TRỰC TIẾP
-     */
     function parseGvizData(res) {
       if (!res || !res.table || !res.table.rows) {
         onDataLoaded(getFallbackData());
@@ -1261,12 +1164,10 @@
           const product = match[3].trim();
           const code = match[4].trim();
 
-          // Kiểm tra xem trên sheet hoặc local đã tick chưa
           const colBVal = row.c[1] ? row.c[1].v : false;
           let isUsed = (colBVal === true || String(colBVal).toUpperCase() === "TRUE");
           let usedTime = row.c[2] ? String(row.c[2].v || "") : "";
 
-          // Kiểm tra thêm từ local storage
           if (localUsedMap[code]) {
             isUsed = true;
             if (!usedTime) usedTime = localUsedMap[code].time;
@@ -1296,7 +1197,7 @@
 
       onDataLoaded({
         success: true,
-        sheetName: "PMH (Trực tiếp)",
+        sheetName: "1841 - PHIẾU MUA HÀNG EVENT",
         dates: dates,
         products: Object.keys(productsSet).sort(),
         items: items
@@ -1310,7 +1211,7 @@
       els.syncText.textContent = 'Đã kết nối trực tiếp';
 
       if (!res || !res.success) {
-        showError('Không thể đọc dữ liệu: ' + (res ? res.message : 'Lỗi không xác định'));
+        showError('Không thể tải dữ liệu');
         return;
       }
 
@@ -1318,7 +1219,7 @@
       state.dates = res.dates || [];
       state.products = res.products || [];
 
-      els.sheetInfo.innerHTML = `<span>Liên kết: 1841 - PHIẾU MUA HÀNG EVENT</span>`;
+      els.sheetInfo.textContent = 'Trang tính: ' + (res.sheetName || 'PMH');
       els.totalCouponsBadge.textContent = state.items.length + ' phiếu • Siêu thị 1841';
 
       populateDates();
@@ -1329,8 +1230,8 @@
       state.isLoading = false;
       els.loadingBox.style.display = 'none';
       els.syncDot.className = 'sync-dot updating';
-      els.syncText.textContent = 'Lỗi kết nối';
-      showError('Lỗi kết nối Google Sheet: ' + err);
+      els.syncText.textContent = 'Lỗi tải';
+      showError('Lỗi kết nối Google Sheet');
     }
 
     function showError(msg) {
@@ -1338,34 +1239,29 @@
       els.emptyDesc.textContent = msg;
     }
 
-    /**
-     * POPULATE DATES DROPDOWN
-     */
     function populateDates() {
       els.dateSelect.innerHTML = '';
 
       if (state.dates.length === 0) {
         const opt = document.createElement('option');
         opt.value = '';
-        opt.textContent = 'Không có dữ liệu ngày';
+        opt.textContent = 'Không có ngày';
         els.dateSelect.appendChild(opt);
         return;
       }
 
-      // Tùy chọn tất cả các ngày
       const allOpt = document.createElement('option');
       allOpt.value = 'ALL';
-      allOpt.textContent = '🌟 Tất cả các ngày (' + state.dates.length + ' ngày)';
+      allOpt.textContent = 'Tất cả các ngày (' + state.dates.length + ')';
       els.dateSelect.appendChild(allOpt);
 
       state.dates.forEach(d => {
         const opt = document.createElement('option');
         opt.value = d;
-        opt.textContent = '📅 Ngày ' + d;
+        opt.textContent = 'Ngày ' + d;
         els.dateSelect.appendChild(opt);
       });
 
-      // Mặc định: kiểm tra ngày hôm nay
       const now = new Date();
       const pad = (n) => (n < 10 ? '0' + n : n);
       const todayStr = pad(now.getDate()) + '/' + pad(now.getMonth() + 1) + '/' + now.getFullYear();
@@ -1379,21 +1275,16 @@
       els.dateSelect.value = state.selectedDate;
     }
 
-    /**
-     * FILTER & RENDER VOUCHERS
-     */
     function renderVouchers() {
       const queryClean = boDauTiengViet(state.searchQuery);
       const selDate = state.selectedDate;
       const statusFilt = state.statusFilter;
 
-      // 1. Lọc theo Ngày
       const dateItems = state.items.filter(item => {
         if (!selDate || selDate === 'ALL') return true;
         return item.date === selDate;
       });
 
-      // Đếm số lượng
       const totalCount = dateItems.length;
       const availCount = dateItems.filter(i => !i.isUsed).length;
       const usedCount = dateItems.filter(i => i.isUsed).length;
@@ -1408,7 +1299,6 @@
       const pct = totalCount > 0 ? Math.round((usedCount / totalCount) * 100) : 0;
       els.progressBar.style.width = pct + '%';
 
-      // 2. Lọc tiếp theo từ khóa và trạng thái
       const filtered = dateItems.filter(item => {
         if (statusFilt === 'available' && item.isUsed) return false;
         if (statusFilt === 'used' && !item.isUsed) return false;
@@ -1426,14 +1316,13 @@
         return true;
       });
 
-      // 3. Hiển thị danh sách
       if (filtered.length === 0) {
         els.voucherList.style.display = 'none';
         els.emptyState.style.display = 'block';
         if (queryClean) {
-          els.emptyDesc.textContent = 'Không tìm thấy sản phẩm nào khớp với từ khóa "' + state.searchQuery + '".';
+          els.emptyDesc.textContent = 'Không có sản phẩm nào khớp từ khóa "' + state.searchQuery + '".';
         } else {
-          els.emptyDesc.textContent = 'Không có phiếu nào trong mục lọc này.';
+          els.emptyDesc.textContent = 'Không có phiếu nào trong mục này.';
         }
         return;
       }
@@ -1448,9 +1337,6 @@
       });
     }
 
-    /**
-     * TẠO ELEMENT THẺ PHIẾU
-     */
     function createVoucherCard(item) {
       const card = document.createElement('div');
       card.className = 'voucher-card' + (item.isUsed ? ' is-used' : '');
@@ -1482,10 +1368,10 @@
       } else {
         actionButtonsHtml = `
           <button class="btn-copy-again" onclick="handleCopyAgain('${item.code}')" title="Sao chép lại mã">
-            <span>📋</span> <span>Sao chép lại</span>
+            <span>📋</span>
           </button>
-          <button class="btn-undo" onclick="handleUndo(${item.rowIndex}, '${item.code}')" title="Bỏ đánh dấu đã sử dụng">
-            <span>↩️</span> <span>Hoàn tác</span>
+          <button class="btn-undo" onclick="handleUndo(${item.rowIndex}, '${item.code}')" title="Bỏ đánh dấu">
+            <span>↩️</span>
           </button>
         `;
       }
@@ -1493,14 +1379,12 @@
       card.innerHTML = `
         <div class="card-header-row">
           <div class="product-title">${titleHtml}</div>
-          <div style="display: flex; align-items: center; gap: 6px;">
-            ${tagHtml}
-          </div>
+          ${tagHtml}
         </div>
 
         <div class="code-action-row">
           <div class="code-box-group">
-            <span class="voucher-code" id="code-${item.rowIndex}">${item.code}</span>
+            <span class="voucher-code">${item.code}</span>
             ${statusHtml}
           </div>
           <div class="card-actions">
@@ -1512,22 +1396,17 @@
       return card;
     }
 
-    /**
-     * HÀNH ĐỘNG SAO CHÉP VÀ ĐÁNH DẤU
-     */
     window.handleCopyAndMark = function(rowIndex, code) {
-      // 1. Copy clipboard
       copyToClipboard(code).then(() => {
-        showToast(code, 'Đã sao chép và đánh dấu đã dùng!');
+        showToast(code);
       }).catch(() => {
-        showToast(code, 'Đã sao chép mã!');
+        showToast(code);
       });
 
-      // 2. Cập nhật trạng thái
       const item = state.items.find(i => i.rowIndex === rowIndex);
       const now = new Date();
       const pad = (n) => (n < 10 ? '0' + n : n);
-      const timeStr = pad(now.getDate()) + '/' + pad(now.getMonth() + 1) + ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds());
+      const timeStr = pad(now.getDate()) + '/' + pad(now.getMonth() + 1) + ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes());
 
       if (item) {
         item.isUsed = true;
@@ -1537,13 +1416,12 @@
       saveLocalUsed(code, true, timeStr);
       renderVouchers();
 
-      // 3. Đồng bộ về Google Sheet (nếu có Apps Script)
       syncToGoogleSheet(rowIndex, true, code);
     };
 
     window.handleCopyAgain = function(code) {
       copyToClipboard(code).then(() => {
-        showToast(code, 'Đã sao chép lại mã!');
+        showToast(code);
       });
     };
 
@@ -1562,41 +1440,37 @@
 
     function syncToGoogleSheet(rowIndex, isUsed, code) {
       els.syncDot.className = 'sync-dot updating';
-      els.syncText.textContent = 'Đang lưu Sheet...';
+      els.syncText.textContent = 'Đang lưu...';
 
       if (typeof google !== 'undefined' && google.script && google.script.run) {
         google.script.run
           .withSuccessHandler(() => {
             els.syncDot.className = 'sync-dot';
-            els.syncText.textContent = 'Đã kết nối Sheet';
+            els.syncText.textContent = 'Đã kết nối trực tiếp';
           })
-          .withFailureHandler((err) => {
+          .withFailureHandler(() => {
             els.syncDot.className = 'sync-dot updating';
-            els.syncText.textContent = 'Lỗi lưu Sheet';
+            els.syncText.textContent = 'Lỗi lưu';
           })
           .markVoucher(rowIndex, isUsed);
       } else if (CONFIG.webAppUrl) {
-        // Gửi qua Web App URL nếu có cài đặt
         fetch(`${CONFIG.webAppUrl}?action=markUsed&row=${rowIndex}&used=${isUsed}&code=${code}`, { mode: 'no-cors' })
           .then(() => {
             els.syncDot.className = 'sync-dot';
-            els.syncText.textContent = 'Đã gửi đến Sheet';
+            els.syncText.textContent = 'Đã kết nối trực tiếp';
           })
           .catch(() => {
             els.syncDot.className = 'sync-dot';
-            els.syncText.textContent = 'Đã lưu cục bộ';
+            els.syncText.textContent = 'Đã kết nối trực tiếp';
           });
       } else {
         setTimeout(() => {
           els.syncDot.className = 'sync-dot';
-          els.syncText.textContent = 'Đã lưu máy';
-        }, 300);
+          els.syncText.textContent = 'Đã kết nối trực tiếp';
+        }, 200);
       }
     }
 
-    /**
-     * HELPERS
-     */
     function escapeHtml(text) {
       if (!text) return '';
       return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -1682,7 +1556,6 @@
       loadData();
     });
 
-    // Settings modal events
     els.btnSettings.addEventListener('click', () => {
       els.cfgSheetId.value = CONFIG.sheetId;
       els.cfgWebAppUrl.value = CONFIG.webAppUrl;
@@ -1716,29 +1589,13 @@
       loadData();
     });
 
-    /**
-     * DỮ LIỆU DỰ PHÒNG KHI OFFLINE
-     */
     function getFallbackData() {
       const sampleDates = ["18/09/2026", "19/09/2026", "20/09/2026", "21/09/2026", "22/09/2026", "23/09/2026", "24/09/2026", "25/09/2026", "26/09/2026", "27/09/2026"];
-      const sampleProds = [
-        "Bếp gas đôi Sunhouse SHB3105MD",
-        "Bếp nướng điện Sunhouse SHD4607",
-        "Bếp điện từ đơn Kangaroo KG20IH10N",
-        "Máy lọc không khí Midea KJ400GVN",
-        "Máy xay thịt Bear CH-5H03P36",
-        "Nồi chiên không dầu Kangaroo 6.5L KGAF65M1G",
-        "Nồi cơm nắp gài Toshiba RC-18JH1TVN(N) 1.8L",
-        "Nồi cơm điện tử Toshiba RC-18DH2PV(W) 1.8L",
-        "Nồi lẩu đa năng Kangaroo KG40EH2 4 lít",
-        "Quạt đứng Midea FS40-24EVN(K)",
-        "Bình đun siêu tốc Rapido RK2015-C 2L"
-      ];
       return {
         success: true,
-        sheetName: "PMH (Bộ nhớ đệm)",
+        sheetName: "1841 - PHIẾU MUA HÀNG EVENT",
         dates: sampleDates,
-        products: sampleProds,
+        products: [],
         items: []
       };
     }
