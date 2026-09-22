@@ -1122,12 +1122,14 @@
 
     function saveLocalStatus(code, isUsed, timeStr, timestamp) {
       if (!code) return;
+      const cleanCode = String(code).trim().toUpperCase();
       const map = getLocalStatusMap();
-      map[code] = {
+      map[cleanCode] = {
         used: !!isUsed,
         time: isUsed ? (timeStr || new Date().toLocaleString('vi-VN')) : '',
         updatedAt: timestamp || Date.now()
       };
+      map[code] = map[cleanCode];
       try {
         localStorage.setItem('pmh_voucher_status_v2', JSON.stringify(map));
       } catch (e) {}
@@ -1387,14 +1389,16 @@
           }
 
           // QUY TẮC ĐỒNG BỘ CHỐNG GHI ĐÈ NGƯỢC (RECONCILIATION):
-          // Nếu có thao tác người dùng (đã dùng HOẶC hoàn lại) gần đây (< 10 phút),
+          // Nếu có thao tác người dùng (đã dùng HOẶC hoàn lại) gần đây (< 15 phút),
           // luôn ưu tiên trạng thái mới nhất của người dùng thay vì cache cũ của Google Sheets GViz
-          if (localStatusMap[code] && localStatusMap[code].updatedAt) {
-            const ageMs = Date.now() - localStatusMap[code].updatedAt;
-            if (ageMs < 10 * 60 * 1000) {
-              isUsed = !!localStatusMap[code].used;
-              if (isUsed && localStatusMap[code].time) {
-                usedTime = localStatusMap[code].time;
+          const cleanCode = String(code || '').trim().toUpperCase();
+          const savedStatus = localStatusMap[cleanCode] || localStatusMap[code];
+          if (savedStatus && savedStatus.updatedAt) {
+            const ageMs = Date.now() - savedStatus.updatedAt;
+            if (ageMs < 15 * 60 * 1000) {
+              isUsed = !!savedStatus.used;
+              if (isUsed && savedStatus.time) {
+                usedTime = savedStatus.time;
               } else if (!isUsed) {
                 usedTime = "";
               }
@@ -1713,26 +1717,34 @@
         timestamp: nowTs
       };
 
-      // Kênh A. Cùng trình duyệt qua BroadcastChannel (0ms)
+      const payloadStr = JSON.stringify(payload);
+
+      // Kênh 1. Cùng trình duyệt qua BroadcastChannel (0ms)
       try {
         if (window.broadcastChannel) {
           window.broadcastChannel.postMessage(payload);
         }
       } catch (e) {}
 
-      // Kênh B. Cùng trình duyệt đa tab qua localStorage storage event (0ms, tối ưu cho iPhone/Safari)
+      // Kênh 2. Cùng trình duyệt đa tab qua localStorage storage event (0ms, tối ưu cho iPhone/Safari)
       try {
         localStorage.setItem('pmh_sync_cross_tab', JSON.stringify({ ...payload, _t: nowTs }));
       } catch (e) {}
 
-      // Kênh C. Mọi thiết bị & trình duyệt khác qua ntfy.sh (50ms - 100ms)
-      // Dùng Content-Type: text/plain để không bị CORS OPTIONS preflight chặn lại
+      // Kênh 3. HTTP POST qua ntfy.sh (phát sóng siêu tốc đến mọi thiết bị/trình duyệt khác)
       try {
         fetch(`https://ntfy.sh/${REALTIME_TOPIC}`, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify(payload)
+          body: payloadStr
         }).catch(() => {});
+      } catch (e) {}
+
+      // Kênh 4. navigator.sendBeacon dự phòng
+      try {
+        if (navigator.sendBeacon) {
+          navigator.sendBeacon(`https://ntfy.sh/${REALTIME_TOPIC}`, payloadStr);
+        }
       } catch (e) {}
     }
 
@@ -1740,14 +1752,20 @@
      * ÁP DỤNG TRẠNG THÁI KHI TRÌNH DUYỆT KHÁC THAO TÁC (RECEIVE REMOTE EVENT)
      */
     function applyVoucherStateFromRemote(code, isUsed, timeStr, rowIndex, timestamp) {
+      if (!code) return;
       const nowTs = timestamp || Date.now();
       saveLocalStatus(code, isUsed, timeStr, nowTs);
 
-      let item = state.items.find(i => (code && i.code === code) || i.rowIndex == rowIndex);
+      if (!state.items || state.items.length === 0) {
+        return;
+      }
+
+      const cleanCode = String(code).trim().toUpperCase();
+      let item = state.items.find(i => (cleanCode && String(i.code).trim().toUpperCase() === cleanCode) || i.rowIndex == rowIndex);
 
       if (item) {
         if (item.isUsed !== isUsed) {
-          item.isUsed = isUsed;
+          item.isUsed = !!isUsed;
           item.usedTime = isUsed ? (timeStr || formatShortTime(new Date().toLocaleTimeString('vi-VN'))) : '';
           updateCachedPayload();
           renderVouchers();
@@ -1773,10 +1791,31 @@
     }
 
     /**
-     * KHỞI TẠO LẮNG NGHE ĐỒNG BỘ THỜI GIAN THỰC
+     * KHỞI TẠO LẮNG NGHE ĐỒNG BỘ THỜI GIAN THỰC ĐA KÊNH
      */
+    let lastPollNtfyTs = Math.floor((Date.now() - 10 * 60 * 1000) / 1000); // 10 phút trước
+    const processedMsgIds = new Set();
+
+    function handleRealtimeIncomingMessage(rawMessageStr, msgId) {
+      if (!rawMessageStr) return;
+      if (msgId) {
+        if (processedMsgIds.has(msgId)) return;
+        processedMsgIds.add(msgId);
+        if (processedMsgIds.size > 200) {
+          const first = processedMsgIds.values().next().value;
+          processedMsgIds.delete(first);
+        }
+      }
+      try {
+        let data = typeof rawMessageStr === 'string' ? JSON.parse(rawMessageStr) : rawMessageStr;
+        if (data && data.action === 'markUsed' && data.senderId !== state.clientId) {
+          applyVoucherStateFromRemote(data.code, data.isUsed, data.time, data.rowIndex, data.timestamp);
+        }
+      } catch (err) {}
+    }
+
     function initRealtimeSync() {
-      // 1. Lắng nghe cùng trình duyệt qua BroadcastChannel
+      // 1. Lắng nghe cùng trình duyệt qua BroadcastChannel (0ms)
       try {
         if (window.BroadcastChannel && !window.broadcastChannel) {
           window.broadcastChannel = new BroadcastChannel('pmh_sync_channel');
@@ -1789,7 +1828,7 @@
         }
       } catch (e) {}
 
-      // 2. Lắng nghe đa tab qua storage event (0ms cho thiết bị di động Safari / Chrome)
+      // 2. Lắng nghe đa tab qua storage event (0ms, tối ưu cho iPhone/Safari)
       if (!window._hasStorageListener) {
         window._hasStorageListener = true;
         window.addEventListener('storage', (e) => {
@@ -1804,38 +1843,85 @@
         });
       }
 
-      // 3. Lắng nghe mọi thiết bị khác qua Server-Sent Events (50 - 100ms)
-      if (typeof EventSource !== 'undefined') {
+      // 3. Engine A: WebSocket Realtime (0ms - 30ms latency)
+      if (typeof WebSocket !== 'undefined') {
         try {
-          if (window.realtimeEventSource) {
-            window.realtimeEventSource.close();
+          if (window.realtimeWebSocket) {
+            try { window.realtimeWebSocket.close(); } catch (e) {}
           }
-          const sse = new EventSource(`https://ntfy.sh/${REALTIME_TOPIC}/sse`);
-          window.realtimeEventSource = sse;
+          const ws = new WebSocket(`wss://ntfy.sh/${REALTIME_TOPIC}/ws?since=10m`);
+          window.realtimeWebSocket = ws;
 
-          sse.onmessage = (e) => {
+          ws.onmessage = (e) => {
             try {
               const res = JSON.parse(e.data);
               if (res.event === 'message' && res.message) {
-                const data = JSON.parse(res.message);
-                if (data && data.action === 'markUsed' && data.senderId !== state.clientId) {
-                  applyVoucherStateFromRemote(data.code, data.isUsed, data.time, data.rowIndex, data.timestamp);
-                }
+                handleRealtimeIncomingMessage(res.message, res.id);
               }
             } catch (err) {}
           };
 
-          sse.onerror = () => {
-            setTimeout(() => {
-              if (document.visibilityState === 'visible') {
-                initRealtimeSync();
-              }
-            }, 3000);
+          ws.onerror = ws.onclose = () => {
+            window.realtimeWebSocket = null;
           };
         } catch (e) {}
       }
 
-      // 4. Polling dự phòng từ Google Sheet GViz mỗi 4 giây
+      // 4. Engine B: Server-Sent Events (SSE) có ?since=10m replay (dự phòng song song)
+      if (typeof EventSource !== 'undefined') {
+        try {
+          if (window.realtimeEventSource) {
+            try { window.realtimeEventSource.close(); } catch (e) {}
+          }
+          const sse = new EventSource(`https://ntfy.sh/${REALTIME_TOPIC}/sse?since=10m`);
+          window.realtimeEventSource = sse;
+
+          const sseHandler = (e) => {
+            try {
+              const res = JSON.parse(e.data);
+              if (res.event === 'message' && res.message) {
+                handleRealtimeIncomingMessage(res.message, res.id);
+              }
+            } catch (err) {}
+          };
+
+          sse.onmessage = sseHandler;
+          sse.addEventListener('message', sseHandler);
+        } catch (e) {}
+      }
+
+      // 5. Engine C: HTTP Fast-Polling mỗi 2 giây (Chống 100% rớt mạng, chặn WebSocket hoặc chặn SSE)
+      async function pollNtfyEvents() {
+        if (document.visibilityState !== 'visible') return;
+        try {
+          const res = await fetch(`https://ntfy.sh/${REALTIME_TOPIC}/json?poll=1&since=${lastPollNtfyTs}`);
+          if (res.ok) {
+            const text = await res.text();
+            if (!text.trim()) return;
+            const lines = text.trim().split('\n');
+            lines.forEach(line => {
+              if (!line.trim()) return;
+              try {
+                const item = JSON.parse(line);
+                if (item.time && item.time > lastPollNtfyTs) {
+                  lastPollNtfyTs = item.time;
+                }
+                if (item.event === 'message' && item.message) {
+                  handleRealtimeIncomingMessage(item.message, item.id);
+                }
+              } catch (err) {}
+            });
+          }
+        } catch (e) {}
+      }
+
+      pollNtfyEvents();
+
+      if (!window.ntfyPollInterval) {
+        window.ntfyPollInterval = setInterval(pollNtfyEvents, 2000);
+      }
+
+      // 6. Polling dự phòng từ Google Sheet GViz mỗi 4 giây
       if (!window.pollInterval) {
         window.pollInterval = setInterval(() => {
           if (document.visibilityState === 'visible' && !state.isLoading) {
