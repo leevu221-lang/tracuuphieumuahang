@@ -467,6 +467,16 @@
       color: var(--gray-600);
     }
 
+    .voucher-card.flash-updated {
+      animation: pulse-realtime 1.2s ease-in-out;
+    }
+
+    @keyframes pulse-realtime {
+      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
+      50% { transform: scale(1.02); box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); border-color: #f59e0b; }
+      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+    }
+
     /* Dòng 1: Tên sản phẩm + Tag mã phiếu */
     .card-header-row {
       display: flex;
@@ -1075,6 +1085,11 @@
     };
 
     /**
+     * THÔNG TIN KÊNH ĐỒNG BỘ THỜI GIAN THỰC (REALTIME PUB/SUB)
+     */
+    const REALTIME_TOPIC = 'pmh_sync_17rloLx_' + (CONFIG.sheetId ? CONFIG.sheetId.slice(-6) : 'lmKDU');
+
+    /**
      * STATE MANAGEMENT
      */
     const state = {
@@ -1084,7 +1099,8 @@
       selectedDate: '',
       searchQuery: '',
       statusFilter: 'all',
-      isLoading: false
+      isLoading: false,
+      clientId: 'c_' + Math.random().toString(36).substr(2, 9)
     };
 
     function getLocalUsedMap() {
@@ -1603,6 +1619,10 @@
       updateCachedPayload();
       renderVouchers();
 
+      // 1. Đồng bộ thời gian thực siêu tốc đến các trình duyệt khác (50ms - 100ms)
+      broadcastRealtimeState(rowIndex, true, code, timeStr);
+
+      // 2. Ghi vĩnh viễn vào Google Sheet
       syncToGoogleSheet(rowIndex, true, code);
     };
 
@@ -1623,8 +1643,137 @@
       updateCachedPayload();
       renderVouchers();
 
+      // 1. Đồng bộ thời gian thực siêu tốc đến các trình duyệt khác
+      broadcastRealtimeState(rowIndex, false, code, '');
+
+      // 2. Gỡ đánh dấu trong Google Sheet
       syncToGoogleSheet(rowIndex, false, code);
     };
+
+    /**
+     * PHÁT TÍN HIỆU ĐỒNG BỘ THỜI GIAN THỰC (BROADCAST REALTIME ĐẾN TRÌNH DUYỆT B)
+     */
+    function broadcastRealtimeState(rowIndex, isUsed, code, timeStr) {
+      const payload = {
+        action: 'markUsed',
+        rowIndex: rowIndex,
+        isUsed: isUsed,
+        code: code,
+        time: timeStr,
+        senderId: state.clientId
+      };
+
+      // A. Tab khác trên cùng thiết bị (0ms)
+      try {
+        if (window.broadcastChannel) {
+          window.broadcastChannel.postMessage(payload);
+        }
+      } catch (e) {}
+
+      // B. Mọi trình duyệt và thiết bị khác qua SSE (50ms - 100ms)
+      try {
+        fetch(`https://ntfy.sh/${REALTIME_TOPIC}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }).catch(() => {});
+      } catch (e) {}
+    }
+
+    /**
+     * ÁP DỤNG TRẠNG THÁI KHI TRÌNH DUYỆT KHÁC THAO TÁC (RECEIVE REMOTE EVENT)
+     */
+    function applyVoucherStateFromRemote(code, isUsed, timeStr, rowIndex) {
+      let item = state.items.find(i => i.code === code);
+      if (!item && rowIndex) {
+        item = state.items.find(i => i.rowIndex === rowIndex);
+      }
+
+      if (item) {
+        if (item.isUsed !== isUsed) {
+          item.isUsed = isUsed;
+          item.usedTime = isUsed ? (timeStr || formatShortTime(new Date().toLocaleTimeString('vi-VN'))) : '';
+          saveLocalUsed(item.code, isUsed, item.usedTime);
+          updateCachedPayload();
+          renderVouchers();
+
+          // Hiệu ứng nháy viền thẻ trực quan
+          const card = document.getElementById('card-row-' + item.rowIndex);
+          if (card) {
+            card.classList.add('flash-updated');
+            setTimeout(() => card.classList.remove('flash-updated'), 1500);
+          }
+
+          // Nháy chấm báo hiệu đồng bộ
+          els.syncDot.className = 'sync-dot updating';
+          els.syncText.textContent = `⚡ Trình duyệt khác vừa dùng mã: ${item.code}`;
+          setTimeout(() => {
+            els.syncDot.className = 'sync-dot';
+            els.syncText.textContent = 'Đã kết nối trực tiếp';
+          }, 3000);
+        }
+      } else {
+        saveLocalUsed(code, isUsed, timeStr);
+      }
+    }
+
+    /**
+     * KHỞI TẠO LẮNG NGHE ĐỒNG BỘ THỜI GIAN THỰC
+     */
+    function initRealtimeSync() {
+      // 1. Lắng nghe cùng trình duyệt qua BroadcastChannel
+      try {
+        if (window.BroadcastChannel && !window.broadcastChannel) {
+          window.broadcastChannel = new BroadcastChannel('pmh_sync_channel');
+          window.broadcastChannel.onmessage = (e) => {
+            const data = e.data;
+            if (data && data.action === 'markUsed' && data.senderId !== state.clientId) {
+              applyVoucherStateFromRemote(data.code, data.isUsed, data.time, data.rowIndex);
+            }
+          };
+        }
+      } catch (e) {}
+
+      // 2. Lắng nghe mọi thiết bị khác qua Server-Sent Events (50 - 100ms)
+      if (typeof EventSource !== 'undefined') {
+        try {
+          if (window.realtimeEventSource) {
+            window.realtimeEventSource.close();
+          }
+          const sse = new EventSource(`https://ntfy.sh/${REALTIME_TOPIC}/sse`);
+          window.realtimeEventSource = sse;
+
+          sse.onmessage = (e) => {
+            try {
+              const res = JSON.parse(e.data);
+              if (res.event === 'message' && res.message) {
+                const data = JSON.parse(res.message);
+                if (data && data.action === 'markUsed' && data.senderId !== state.clientId) {
+                  applyVoucherStateFromRemote(data.code, data.isUsed, data.time, data.rowIndex);
+                }
+              }
+            } catch (err) {}
+          };
+
+          sse.onerror = () => {
+            setTimeout(() => {
+              if (document.visibilityState === 'visible') {
+                initRealtimeSync();
+              }
+            }, 3000);
+          };
+        } catch (e) {}
+      }
+
+      // 3. Polling dự phòng từ Google Sheet GViz mỗi 4 giây
+      if (!window.pollInterval) {
+        window.pollInterval = setInterval(() => {
+          if (document.visibilityState === 'visible' && !state.isLoading) {
+            loadData(false);
+          }
+        }, 4000);
+      }
+    }
 
     function updateCachedPayload() {
       try {
@@ -1845,7 +1994,10 @@
       // Bước 1: Nạp cache tức thì (0.01s người dùng thấy danh sách ngay lập tức)
       loadCachedData();
 
-      // Bước 2: Đồng bộ ngầm bản mới nhất từ Google Sheet (phản hồi trong 0.2 - 0.4s)
+      // Bước 2: Khởi động kết nối đồng bộ thời gian thực siêu tốc giữa các trình duyệt (SSE + BroadcastChannel)
+      initRealtimeSync();
+
+      // Bước 3: Đồng bộ ngầm bản mới nhất từ Google Sheet (phản hồi trong 0.2 - 0.4s)
       loadData(!state.items || state.items.length === 0);
     });
 
