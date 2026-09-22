@@ -961,12 +961,20 @@
 
   <script>
     /**
-     * CONFIGURATION
+     * CONFIGURATION (ĐÃ GHIM CỐ ĐỊNH LINK WEB APP ĐỒNG BỘ GOOGLE SHEET)
      */
+    const DEFAULT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxi7SWvqxz5WmoANrf2CX4oFg6PM14ybl8KQYVOAav8hZD9vL4rb925ak9P2JbC9Fz6Vw/exec';
+
+    let storedWebAppUrl = localStorage.getItem('pmh_webapp_url');
+    if (!storedWebAppUrl || !storedWebAppUrl.startsWith('https://script.google.com/')) {
+      storedWebAppUrl = DEFAULT_WEB_APP_URL;
+      try { localStorage.setItem('pmh_webapp_url', DEFAULT_WEB_APP_URL); } catch (e) {}
+    }
+
     const CONFIG = {
       defaultSheetId: '17rloLx_U9GhO_QNdpfhsMNEzKnMzCVli9sieVRlmKDU',
       sheetId: localStorage.getItem('pmh_sheet_id') || '17rloLx_U9GhO_QNdpfhsMNEzKnMzCVli9sieVRlmKDU',
-      webAppUrl: localStorage.getItem('pmh_webapp_url') || ''
+      webAppUrl: storedWebAppUrl
     };
 
     /**
@@ -1090,7 +1098,7 @@
     }
 
     /**
-     * LOAD DATA: GVIZ JSONP
+     * LOAD DATA: ƯU TIÊN WEB APP API -> FALLBACK GVIZ JSONP
      */
     function loadData() {
       state.isLoading = true;
@@ -1100,6 +1108,7 @@
       els.syncDot.className = 'sync-dot updating';
       els.syncText.textContent = 'Đang đồng bộ...';
 
+      // 1. Chạy trong Google Apps Script
       if (typeof google !== 'undefined' && google.script && google.script.run) {
         google.script.run
           .withSuccessHandler(onDataLoaded)
@@ -1108,6 +1117,24 @@
         return;
       }
 
+      // 2. Tải trực tiếp từ Web App URL (Đồng bộ thời gian thực 100% giữa mọi trình duyệt)
+      if (CONFIG.webAppUrl) {
+        fetch(`${CONFIG.webAppUrl}?action=getData&_=${Date.now()}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data && data.success && data.items && data.items.length > 0) {
+              onDataLoaded(data);
+            } else {
+              loadDirectFromGoogleSheet();
+            }
+          })
+          .catch(() => {
+            loadDirectFromGoogleSheet();
+          });
+        return;
+      }
+
+      // 3. Fallback qua GViz JSONP
       loadDirectFromGoogleSheet();
     }
 
