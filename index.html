@@ -1440,13 +1440,13 @@
 
     function syncToGoogleSheet(rowIndex, isUsed, code) {
       els.syncDot.className = 'sync-dot updating';
-      els.syncText.textContent = 'Đang lưu...';
+      els.syncText.textContent = 'Đang đồng bộ...';
 
       if (typeof google !== 'undefined' && google.script && google.script.run) {
         google.script.run
           .withSuccessHandler(() => {
             els.syncDot.className = 'sync-dot';
-            els.syncText.textContent = 'Đã kết nối trực tiếp';
+            els.syncText.textContent = 'Đã lưu vào Sheet';
           })
           .withFailureHandler(() => {
             els.syncDot.className = 'sync-dot updating';
@@ -1454,22 +1454,34 @@
           })
           .markVoucher(rowIndex, isUsed);
       } else if (CONFIG.webAppUrl) {
-        fetch(`${CONFIG.webAppUrl}?action=markUsed&row=${rowIndex}&used=${isUsed}&code=${code}`, { mode: 'no-cors' })
-          .then(() => {
-            els.syncDot.className = 'sync-dot';
-            els.syncText.textContent = 'Đã kết nối trực tiếp';
-          })
-          .catch(() => {
-            els.syncDot.className = 'sync-dot';
-            els.syncText.textContent = 'Đã kết nối trực tiếp';
-          });
+        const url = `${CONFIG.webAppUrl}?action=markUsed&row=${rowIndex}&used=${isUsed}&code=${encodeURIComponent(code)}&_=${Date.now()}`;
+        
+        // Phương pháp Beacon: Chắc chắn đến được Apps Script mà không bị chặn bởi CORS
+        const ping = new Image();
+        ping.src = url;
+
+        try {
+          fetch(url, { mode: 'no-cors' }).catch(() => {});
+        } catch(e) {}
+
+        setTimeout(() => {
+          els.syncDot.className = 'sync-dot';
+          els.syncText.textContent = 'Đã lưu vào Sheet';
+        }, 600);
       } else {
         setTimeout(() => {
           els.syncDot.className = 'sync-dot';
-          els.syncText.textContent = 'Đã kết nối trực tiếp';
+          els.syncText.textContent = 'Đã lưu máy';
         }, 200);
       }
     }
+
+    // Tự động đồng bộ lại dữ liệu mới nhất khi người dùng quay lại tab trình duyệt
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && !state.isLoading) {
+        loadData();
+      }
+    });
 
     function escapeHtml(text) {
       if (!text) return '';

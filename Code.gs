@@ -43,13 +43,33 @@ function showDialog() {
 }
 
 /**
- * 4. Mở qua link Web App (Có thể mở trên điện thoại, máy tính bảng hoặc trình duyệt)
+ * 4. Mở qua link Web App và API tiếp nhận dữ liệu từ GitHub Pages
  */
 function doGet(e) {
+  // API: Cập nhật trạng thái phiếu mua hàng khi nhấn từ xa (trên GitHub Pages/điện thoại)
+  if (e && e.parameter && (e.parameter.action === "markUsed" || e.parameter.action === "mark")) {
+    const row = parseInt(e.parameter.row || e.parameter.rowIndex, 10);
+    const isUsed = (e.parameter.used === "true" || e.parameter.used === "1");
+    const res = markVoucher(row, isUsed);
+    return ContentService.createTextOutput(JSON.stringify(res))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // API: Lấy danh sách phiếu mua hàng dạng JSON
+  if (e && e.parameter && e.parameter.action === "getData") {
+    const data = getSheetData();
+    return ContentService.createTextOutput(JSON.stringify(data))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
   return getAppHtmlOutput()
     .setTitle("Hệ Thống Tra Cứu Phiếu Mua Hàng")
     .addMetaTag("viewport", "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no")
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+function doPost(e) {
+  return doGet(e);
 }
 
 /**
