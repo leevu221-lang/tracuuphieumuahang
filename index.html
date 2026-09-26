@@ -1745,11 +1745,413 @@
     .btn-primary:active {
       transform: scale(0.96);
     }
+
+    /* ==========================================================================
+       HỆ THỐNG NHÂN BẢN ỨNG DỤNG (CLONE SYSTEM) & LINK GỐC ADMIN QUẢN LÝ
+       ========================================================================== */
+    
+    /* 1. Thanh Admin Top Banner (Trên link gốc) */
+    .admin-top-banner {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: #ffffff;
+      border-radius: 16px;
+      padding: 12px 18px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      box-shadow: 0 4px 15px rgba(15, 23, 42, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      flex-wrap: wrap;
+    }
+
+    .admin-banner-left {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .admin-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 13.5px;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+      color: #38bdf8;
+    }
+
+    .admin-badge-icon {
+      font-size: 16px;
+    }
+
+    .admin-banner-sub {
+      font-size: 11.5px;
+      color: #94a3b8;
+    }
+
+    .btn-open-clone-manager {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      color: #ffffff;
+      border: none;
+      padding: 9px 16px;
+      border-radius: 10px;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(2, 132, 199, 0.35);
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .btn-open-clone-manager:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.45);
+      background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+    }
+
+    .clone-count-badge {
+      background: rgba(255, 255, 255, 0.25);
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    /* 2. Thanh Clone Top Banner (Trên link nhân bản) */
+    .clone-top-banner {
+      background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+      color: #ffffff;
+      border-radius: 16px;
+      padding: 12px 18px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      box-shadow: 0 4px 15px rgba(4, 120, 87, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      flex-wrap: wrap;
+    }
+
+    .clone-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 800;
+      color: #6ee7b7;
+      flex-wrap: wrap;
+    }
+
+    .clone-slug-pill {
+      background: rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+      font-size: 11.5px;
+      font-family: monospace;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-weight: 600;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+    }
+
+    .clone-banner-sub {
+      font-size: 11.5px;
+      color: #a7f3d0;
+      margin-top: 3px;
+    }
+
+    .clone-banner-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn-open-clone-sheet, .btn-back-to-admin {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+      padding: 8px 14px;
+      border-radius: 9px;
+      font-size: 12px;
+      font-weight: 700;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .btn-open-clone-sheet {
+      background: rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .btn-open-clone-sheet:hover {
+      background: rgba(255, 255, 255, 0.25);
+      color: #ffffff;
+    }
+
+    .btn-back-to-admin {
+      background: #ffffff;
+      color: #065f46;
+      border: none;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    }
+
+    .btn-back-to-admin:hover {
+      background: #f0fdf4;
+      transform: translateY(-1px);
+    }
+
+    /* 3. Clone Manager Modal Styling */
+    .clone-modal-wrapper {
+      max-width: 820px !important;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .clone-steps-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin: 16px 0;
+    }
+
+    .clone-step-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .clone-step-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      background: #0284c7;
+      color: #ffffff;
+      border-radius: 50%;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .clone-step-title {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .clone-step-desc {
+      font-size: 11.5px;
+      color: #64748b;
+      line-height: 1.4;
+    }
+
+    .clone-step-desc a {
+      color: #0284c7;
+      font-weight: 600;
+      text-decoration: underline;
+    }
+
+    .clone-form-section {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 14px;
+      padding: 16px;
+      margin-top: 14px;
+    }
+
+    .clone-form-title {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: #1e293b;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .clone-slug-preview-box {
+      background: #e0f2fe;
+      border: 1px dashed #0284c7;
+      border-radius: 8px;
+      padding: 9px 12px;
+      font-size: 12px;
+      color: #0369a1;
+      margin-top: 12px;
+      word-break: break-all;
+    }
+
+    .clone-list-section {
+      margin-top: 20px;
+    }
+
+    .clone-list-title {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: #1e293b;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .clone-table-container {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      overflow-x: auto;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+    }
+
+    .clone-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      min-width: 580px;
+    }
+
+    .clone-table th {
+      background: #f8fafc;
+      padding: 10px 12px;
+      font-weight: 700;
+      color: #475569;
+      border-bottom: 1px solid #e2e8f0;
+      text-align: left;
+    }
+
+    .clone-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #f1f5f9;
+      color: #1e293b;
+      vertical-align: middle;
+    }
+
+    .clone-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .clone-table tr:hover td {
+      background: #f8fafc;
+    }
+
+    .clone-slug-tag {
+      display: inline-block;
+      background: #e0f2fe;
+      color: #0284c7;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 5px;
+      font-family: monospace;
+    }
+
+    .clone-actions-cell {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 6px;
+    }
+
+    .btn-clone-act {
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      text-decoration: none;
+      transition: all 0.15s ease;
+    }
+
+    .btn-clone-copy {
+      background: #f0fdf4;
+      color: #166534;
+      border-color: #bbf7d0;
+    }
+
+    .btn-clone-copy:hover {
+      background: #dcfce7;
+    }
+
+    .btn-clone-open {
+      background: #eff6ff;
+      color: #1d4ed8;
+      border-color: #bfdbfe;
+    }
+
+    .btn-clone-open:hover {
+      background: #dbeafe;
+    }
+
+    .btn-clone-del {
+      background: #fef2f2;
+      color: #b91c1c;
+      border-color: #fecaca;
+    }
+
+    .btn-clone-del:hover {
+      background: #fee2e2;
+    }
   </style>
 </head>
 <body>
 
   <div class="app-container mode-parallel" id="appContainer">
+
+    <!-- 1. Thanh Quản Trị Admin (Chỉ hiển thị trên Link Gốc Admin) -->
+    <div class="admin-top-banner" id="adminTopBanner">
+      <div class="admin-banner-left">
+        <div class="admin-badge">
+          <span class="admin-badge-icon">👑</span>
+          <span>TRANG CHỦ QUẢN TRỊ ADMIN (LINK GỐC)</span>
+        </div>
+        <div class="admin-banner-sub">
+          Tạo bản sao Google Trang Tính &amp; cấp link rút gọn riêng biệt cho từng chi nhánh
+        </div>
+      </div>
+      <div class="admin-banner-right">
+        <button type="button" class="btn-open-clone-manager" id="btnOpenCloneManager" title="Mở bảng quản lý & tạo bản sao mới">
+          <span>⚡</span>
+          <span>Quản Lý Nhân Bản &amp; Bản Sao Mới</span>
+          <span class="clone-count-badge" id="adminCloneCountBadge">0</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 2. Thanh Bản Sao Ứng Dụng (Chỉ hiển thị khi truy cập Link Rút Gọn của Bản Sao) -->
+    <div class="clone-top-banner" id="cloneTopBanner" style="display: none;">
+      <div class="clone-banner-left">
+        <div class="clone-badge">
+          <span>🏪</span>
+          <span id="cloneBannerTitle">BẢN SAO ỨNG DỤNG</span>
+          <span class="clone-slug-pill" id="cloneBannerSlug">slug</span>
+        </div>
+        <div class="clone-banner-sub">
+          Đang kết nối dữ liệu Google Sheet bản sao riêng biệt &amp; đồng bộ nội bộ độc lập.
+        </div>
+      </div>
+      <div class="clone-banner-right">
+        <a href="#" target="_blank" class="btn-open-clone-sheet" id="btnOpenCloneSheet" title="Mở trực tiếp Google Sheet của bản sao này">
+          <span>📊 Mở Sheet Bản Sao ↗</span>
+        </a>
+        <a href="https://leevu221-lang.github.io/tracuuphieumuahang/" class="btn-back-to-admin" id="btnBackToAdmin" title="Quay lại Trang Chủ Quản Trị Admin">
+          <span>👑 Về Link Gốc Admin</span>
+        </a>
+      </div>
+    </div>
 
     <!-- Thanh chuyển đổi chế độ xem & Điều khiển Ẩn/Hiện 2 Tab -->
     <div class="view-mode-bar-wrapper">
@@ -2157,6 +2559,128 @@ CMA_HOA_7721_TC
     </div>
   </div>
 
+  <!-- Modal Quản Lý & Tạo Bản Sao Mới (Multi-Sheet / Multi-Store) -->
+  <div class="modal-backdrop" id="cloneManagerModal">
+    <div class="modal-content clone-modal-wrapper">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; border-bottom:1px solid #e2e8f0; padding-bottom:10px;">
+        <h3 class="modal-title" style="margin-bottom:0; color:#0369a1;">
+          <span>🚀</span>
+          <span>Quản Lý Nhân Bản Ứng Dụng (Link Gốc Admin)</span>
+        </h3>
+        <button type="button" id="btnCloseCloneManager" style="background:none; border:none; font-size:22px; cursor:pointer; color:#64748b; line-height:1;">&times;</button>
+      </div>
+
+      <!-- Hướng dẫn 3 bước nhân bản Google Sheet -->
+      <div class="clone-steps-container">
+        <div class="clone-step-card">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span class="clone-step-num">1</span>
+            <span class="clone-step-title">Mở Trang Tính Gốc</span>
+          </div>
+          <div class="clone-step-desc">
+            Nhấn mở Google Sheet gốc: 
+            <a href="https://docs.google.com/spreadsheets/d/17rloLx_U9GhO_QNdpfhsMNEzKnMzCVli9sieVRlmKDU/edit?usp=sharing" target="_blank">
+              Mở Sheet Gốc ↗
+            </a>
+          </div>
+        </div>
+
+        <div class="clone-step-card">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span class="clone-step-num">2</span>
+            <span class="clone-step-title">Tạo Bản Sao (Make a copy)</span>
+          </div>
+          <div class="clone-step-desc">
+            Vào menu <b>Tệp (File)</b> &gt; chọn <b>Tạo bản sao (Make a copy)</b>. Nhớ chia sẻ quyền <i>"Bất kỳ ai có liên kết đều có thể xem/chỉnh sửa"</i>.
+          </div>
+        </div>
+
+        <div class="clone-step-card">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span class="clone-step-num">3</span>
+            <span class="clone-step-title">Đặt Tên Rút Gọn &amp; Cấp Link</span>
+          </div>
+          <div class="clone-step-desc">
+            Dán link Sheet mới vào form dưới, đặt tên rút gọn (ví dụ <code>hanoi</code>, <code>kho-q1</code>). Hệ thống sẽ cấp link nhân bản tức thì!
+          </div>
+        </div>
+      </div>
+
+      <!-- Form Đăng Ký Bản Sao Mới -->
+      <div class="clone-form-section">
+        <div class="clone-form-title">
+          <span>➕</span>
+          <span>Thêm / Cập Nhật Bản Sao Cho Chi Nhánh</span>
+        </div>
+
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Tên Rút Gọn (Slug cho Link) *:</label>
+            <input type="text" class="form-control" id="inputCloneSlug" placeholder="ví dụ: hanoi, saigon, linh-vu..." autocomplete="off">
+            <div class="form-help">Chữ cái viết thường (a-z), số (0-9) và dấu gạch ngang (-).</div>
+          </div>
+
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Tên Chi Nhánh / Đơn Vị:</label>
+            <input type="text" class="form-control" id="inputCloneName" placeholder="ví dụ: Chi Nhánh Hà Nội, Kho Q1...">
+            <div class="form-help">Hiển thị trên thanh nhận diện và tiêu đề trang.</div>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 12px; margin-bottom: 0;">
+          <label class="form-label">Link hoặc ID Google Sheet Bản Sao *:</label>
+          <input type="text" class="form-control" id="inputCloneSheetId" placeholder="Dán link Google Sheet mới tạo hoặc ID vào đây...">
+          <div class="form-help">Hệ thống tự động lọc mã ID từ link Google Sheet.</div>
+        </div>
+
+        <!-- Preview URL trực tiếp -->
+        <div class="clone-slug-preview-box" id="cloneSlugPreviewBox">
+          🔗 <b>Link nhân bản sẽ là:</b> <span id="clonePreviewUrl">https://leevu221-lang.github.io/tracuuphieumuahang/?s=...</span>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:14px;">
+          <button type="button" class="btn-primary" id="btnSaveCloneRecord" style="padding:8px 18px; font-size:12.5px;">
+            <span>💾 Lưu &amp; Cấp Link Nhân Bản Ngay</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Danh Sách Các Bản Sao Đang Hoạt Động -->
+      <div class="clone-list-section">
+        <div class="clone-list-title">
+          <span>📋 Danh Sách Bản Sao Đang Hoạt Động</span>
+          <button type="button" class="btn-secondary" id="btnRefreshClonesList" style="padding:4px 10px; font-size:11.5px;">
+            🔄 Tải lại
+          </button>
+        </div>
+
+        <div class="clone-table-container">
+          <table class="clone-table">
+            <thead>
+              <tr>
+                <th style="width: 140px;">Tên Rút Gọn (Slug)</th>
+                <th>Tên Chi Nhánh</th>
+                <th>Google Sheet ID</th>
+                <th style="width: 190px; text-align: right;">Hành Động</th>
+              </tr>
+            </thead>
+            <tbody id="cloneTableBody">
+              <tr>
+                <td colspan="4" style="text-align: center; color: #94a3b8; padding: 20px;">
+                  Đang tải danh sách bản sao...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="modal-actions" style="margin-top: 20px;">
+        <button type="button" class="btn-secondary" id="btnCloseCloneManagerBottom">Đóng</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Thông báo -->
   <div class="toast" id="toastBox">
     <span>✅</span>
@@ -2165,11 +2689,72 @@ CMA_HOA_7721_TC
 
   <script>
     /**
-     * CONFIGURATION (ĐÃ GHIM CỐ ĐỊNH LINK WEB APP VÀ GOOGLE SHEET)
+     * =========================================================================
+     * CẤU HÌNH & HỆ THỐNG NHÂN BẢN ỨNG DỤNG (CLONE / MULTI-STORE SYSTEM)
+     * =========================================================================
      */
-    const FIXED_SHEET_URL = 'https://docs.google.com/spreadsheets/d/17rloLx_U9GhO_QNdpfhsMNEzKnMzCVli9sieVRlmKDU/edit?usp=sharing';
-    const FIXED_SHEET_ID = '17rloLx_U9GhO_QNdpfhsMNEzKnMzCVli9sieVRlmKDU';
+    const MASTER_SHEET_URL = 'https://docs.google.com/spreadsheets/d/17rloLx_U9GhO_QNdpfhsMNEzKnMzCVli9sieVRlmKDU/edit?usp=sharing';
+    const MASTER_SHEET_ID = '17rloLx_U9GhO_QNdpfhsMNEzKnMzCVli9sieVRlmKDU';
     const DEFAULT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxi7SWvqxz5WmoANrf2CX4oFg6PM14ybl8KQYVOAav8hZD9vL4rb925ak9P2JbC9Fz6Vw/exec';
+
+    // Trích xuất ID Google Sheet từ URL hoặc chuỗi
+    function extractSheetId(input) {
+      if (!input) return '';
+      const trimmed = String(input).trim();
+      const match = trimmed.match(/\/d\/([a-zA-Z0-9-_]+)/);
+      if (match) return match[1];
+      return trimmed.split('/')[0].split('?')[0].split('#')[0];
+    }
+
+    // Lấy danh sách bản sao đã lưu trong LocalStorage
+    function getStoredClones() {
+      try {
+        const raw = localStorage.getItem('pmh_clones_registry');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) return parsed;
+        }
+      } catch (e) {}
+      return [];
+    }
+
+    // Lưu danh sách bản sao vào LocalStorage
+    function saveStoredClones(clones) {
+      try {
+        localStorage.setItem('pmh_clones_registry', JSON.stringify(clones || []));
+      } catch (e) {}
+    }
+
+    // Nhận diện tham số bản sao từ URL (hỗ trợ ?s=slug, ?branch=slug, #slug, hoặc trực tiếp ?sheet=ID)
+    function detectUrlCloneInfo() {
+      const urlParams = new URLSearchParams(window.location.search);
+      let slug = urlParams.get('s') || urlParams.get('slug') || urlParams.get('branch');
+      const directSheet = urlParams.get('sheet');
+      const directName = urlParams.get('name') || '';
+
+      // Kiểm tra dạng hash #hanoi
+      if (!slug && window.location.hash) {
+        const hashVal = window.location.hash.replace(/^#\/?/, '').trim().toLowerCase();
+        if (hashVal && /^[a-z0-9_-]+$/.test(hashVal)) {
+          slug = hashVal;
+        }
+      }
+
+      // Kiểm tra đường dẫn URL dạng /tracuuphieumuahang/hanoi
+      if (!slug) {
+        const pathname = window.location.pathname.replace(/^\/tracuuphieumuahang\/?/, '').replace(/^\/+|\/+$/g, '');
+        const parts = pathname.split('/').filter(Boolean);
+        if (parts.length > 0 && parts[0] !== 'index.html' && /^[a-z0-9_-]+$/.test(parts[0])) {
+          slug = parts[0];
+        }
+      }
+
+      return {
+        slug: slug ? slug.trim().toLowerCase() : '',
+        directSheet: directSheet ? directSheet.trim() : '',
+        directName: directName ? directName.trim() : ''
+      };
+    }
 
     let storedWebAppUrl = localStorage.getItem('pmh_webapp_url');
     if (!storedWebAppUrl || !storedWebAppUrl.startsWith('https://script.google.com/')) {
@@ -2177,17 +2762,48 @@ CMA_HOA_7721_TC
       try { localStorage.setItem('pmh_webapp_url', DEFAULT_WEB_APP_URL); } catch (e) {}
     }
 
+    // Khởi tạo trạng thái bản sao hiện tại
+    const urlCloneInfo = detectUrlCloneInfo();
+    let currentSheetId = MASTER_SHEET_ID;
+    let currentBranchName = '';
+    let currentCloneSlug = '';
+    let isClonedInstance = false;
+    let currentWebAppUrl = storedWebAppUrl;
+
+    if (urlCloneInfo.directSheet) {
+      currentSheetId = extractSheetId(urlCloneInfo.directSheet);
+      currentBranchName = urlCloneInfo.directName || 'Bản Sao';
+      currentCloneSlug = 'direct';
+      isClonedInstance = true;
+    } else if (urlCloneInfo.slug) {
+      currentCloneSlug = urlCloneInfo.slug;
+      isClonedInstance = true;
+      const localClones = getStoredClones();
+      const matched = localClones.find(c => c.slug === currentCloneSlug);
+      if (matched && matched.sheetId) {
+        currentSheetId = matched.sheetId;
+        currentBranchName = matched.name || matched.slug;
+        if (matched.webAppUrl) currentWebAppUrl = matched.webAppUrl;
+      } else {
+        currentBranchName = currentCloneSlug.toUpperCase();
+      }
+    }
+
     const CONFIG = {
-      sheetUrl: FIXED_SHEET_URL,
-      defaultSheetId: FIXED_SHEET_ID,
-      sheetId: FIXED_SHEET_ID,
-      webAppUrl: storedWebAppUrl
+      sheetUrl: `https://docs.google.com/spreadsheets/d/${currentSheetId}/edit?usp=sharing`,
+      defaultSheetId: MASTER_SHEET_ID,
+      sheetId: currentSheetId,
+      webAppUrl: currentWebAppUrl,
+      isClone: isClonedInstance,
+      cloneSlug: currentCloneSlug,
+      branchName: currentBranchName
     };
 
     /**
      * THÔNG TIN KÊNH ĐỒNG BỘ THỜI GIAN THỰC (REALTIME PUB/SUB)
+     * Mỗi bản sao (mỗi Google Sheet) sở hữu một kênh MQTT độc lập, không lẫn lộn giữa các chi nhánh!
      */
-    const REALTIME_TOPIC = 'pmh_sync_17rloLx_' + (CONFIG.sheetId ? CONFIG.sheetId.slice(-6) : 'lmKDU');
+    const REALTIME_TOPIC = 'pmh_sync_' + (CONFIG.sheetId ? CONFIG.sheetId.slice(-8) : 'VRlmKDU');
     const VISIBILITY_TOPIC = REALTIME_TOPIC + '_vis';
 
     // Đọc trạng thái ẩn/hiện 2 tab từ bộ nhớ cục bộ
@@ -2330,7 +2946,24 @@ CMA_HOA_7721_TC
       cfgSheetId: document.getElementById('cfgSheetId'),
       cfgWebAppUrl: document.getElementById('cfgWebAppUrl'),
       btnCloseSettings: document.getElementById('btnCloseSettings'),
-      btnSaveSettings: document.getElementById('btnSaveSettings')
+      btnSaveSettings: document.getElementById('btnSaveSettings'),
+      adminTopBanner: document.getElementById('adminTopBanner'),
+      cloneTopBanner: document.getElementById('cloneTopBanner'),
+      btnOpenCloneManager: document.getElementById('btnOpenCloneManager'),
+      adminCloneCountBadge: document.getElementById('adminCloneCountBadge'),
+      cloneBannerTitle: document.getElementById('cloneBannerTitle'),
+      cloneBannerSlug: document.getElementById('cloneBannerSlug'),
+      btnOpenCloneSheet: document.getElementById('btnOpenCloneSheet'),
+      cloneManagerModal: document.getElementById('cloneManagerModal'),
+      btnCloseCloneManager: document.getElementById('btnCloseCloneManager'),
+      btnCloseCloneManagerBottom: document.getElementById('btnCloseCloneManagerBottom'),
+      inputCloneSlug: document.getElementById('inputCloneSlug'),
+      inputCloneName: document.getElementById('inputCloneName'),
+      inputCloneSheetId: document.getElementById('inputCloneSheetId'),
+      btnSaveCloneRecord: document.getElementById('btnSaveCloneRecord'),
+      cloneTableBody: document.getElementById('cloneTableBody'),
+      btnRefreshClonesList: document.getElementById('btnRefreshClonesList'),
+      clonePreviewUrl: document.getElementById('clonePreviewUrl')
     };
 
     /**
@@ -2820,7 +3453,7 @@ CMA_HOA_7721_TC
       }
 
       if (CONFIG.webAppUrl) {
-        const url = `${CONFIG.webAppUrl}?action=markUsed&sheet=PMH2&row=${rowIndex}&used=${isUsed}&code=${encodeURIComponent(code)}&user=${encodeURIComponent(user || '')}&_=${Date.now()}`;
+        const url = `${CONFIG.webAppUrl}?action=markUsed&sheet=PMH2&row=${rowIndex}&used=${isUsed}&code=${encodeURIComponent(code)}&user=${encodeURIComponent(user || '')}&sheetId=${encodeURIComponent(CONFIG.sheetId || '')}&_=${Date.now()}`;
 
         if (navigator.sendBeacon) {
           try { navigator.sendBeacon(url); } catch (e) {}
@@ -2867,6 +3500,9 @@ CMA_HOA_7721_TC
         formData.append('action', 'savePmh2');
         formData.append('mode', mode || 'append');
         formData.append('data', rawData);
+        if (CONFIG.sheetId) {
+          formData.append('sheetId', CONFIG.sheetId);
+        }
 
         fetch(CONFIG.webAppUrl, {
           method: 'POST',
@@ -2881,7 +3517,7 @@ CMA_HOA_7721_TC
         })
         .catch((err) => {
           try {
-            const url = `${CONFIG.webAppUrl}?action=savePmh2&mode=${mode || 'append'}&data=${encodeURIComponent(rawData)}&_=${Date.now()}`;
+            const url = `${CONFIG.webAppUrl}?action=savePmh2&mode=${mode || 'append'}&sheetId=${encodeURIComponent(CONFIG.sheetId || '')}&data=${encodeURIComponent(rawData)}&_=${Date.now()}`;
             const ping = new Image();
             ping.src = url;
             resolve({ success: true });
@@ -4363,7 +4999,7 @@ CMA_HOA_7721_TC
           })
           .markVoucher(rowIndex, isUsed);
       } else if (CONFIG.webAppUrl) {
-        const url = `${CONFIG.webAppUrl}?action=markUsed&row=${rowIndex}&used=${isUsed}&code=${encodeURIComponent(code)}&_=${Date.now()}`;
+        const url = `${CONFIG.webAppUrl}?action=markUsed&row=${rowIndex}&used=${isUsed}&code=${encodeURIComponent(code)}&sheetId=${encodeURIComponent(CONFIG.sheetId || '')}&_=${Date.now()}`;
         
         // 1. sendBeacon nếu trình duyệt hỗ trợ
         let beaconSent = false;
@@ -4533,20 +5169,341 @@ CMA_HOA_7721_TC
     });
 
     /**
+     * =========================================================================
+     * CLONE SYSTEM CONTROLLER (QUẢN TRỊ BẢN SAO & TẠO LINK RÚT GỌN)
+     * =========================================================================
+     */
+    function getBaseAppUrl() {
+      const loc = window.location;
+      return (loc.origin + loc.pathname).replace(/\/+$/, '');
+    }
+
+    function getCloneShareUrl(slug) {
+      const base = getBaseAppUrl();
+      return `${base}/?s=${encodeURIComponent(slug)}`;
+    }
+
+    function updateCloneHeaderUI() {
+      if (CONFIG.isClone) {
+        if (els.adminTopBanner) els.adminTopBanner.style.display = 'none';
+        if (els.cloneTopBanner) els.cloneTopBanner.style.display = 'flex';
+        if (els.cloneBannerTitle) els.cloneBannerTitle.textContent = 'BẢN SAO: ' + (CONFIG.branchName || CONFIG.cloneSlug).toUpperCase();
+        if (els.cloneBannerSlug) els.cloneBannerSlug.textContent = CONFIG.cloneSlug;
+        const sheetUrl = `https://docs.google.com/spreadsheets/d/${CONFIG.sheetId}/edit?usp=sharing`;
+        if (els.btnOpenCloneSheet) els.btnOpenCloneSheet.href = sheetUrl;
+        if (els.linkOpenSheet) els.linkOpenSheet.href = sheetUrl;
+        if (els.footerSheetLink) els.footerSheetLink.href = sheetUrl;
+        if (els.sheetInfo) els.sheetInfo.textContent = (CONFIG.branchName || CONFIG.cloneSlug) + ' ⚡';
+        document.title = `Tra Cứu Phiếu Mua Hàng - ${CONFIG.branchName || CONFIG.cloneSlug}`;
+      } else {
+        if (els.adminTopBanner) els.adminTopBanner.style.display = 'flex';
+        if (els.cloneTopBanner) els.cloneTopBanner.style.display = 'none';
+        const clones = getStoredClones();
+        if (els.adminCloneCountBadge) els.adminCloneCountBadge.textContent = clones.length;
+        document.title = 'Tra Cứu Phiếu Mua Hàng Siêu Tốc (Link Gốc Admin Quản Trị)';
+      }
+    }
+
+    function renderClonesTable() {
+      if (!els.cloneTableBody) return;
+      const clones = getStoredClones();
+      if (els.adminCloneCountBadge) els.adminCloneCountBadge.textContent = clones.length;
+
+      if (!clones || clones.length === 0) {
+        els.cloneTableBody.innerHTML = `
+          <tr>
+            <td colspan="4" style="text-align: center; color: #94a3b8; padding: 24px;">
+              Chưa có bản sao nào được tạo. Hãy dùng form bên trên để thêm bản sao chi nhánh đầu tiên!
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      let html = '';
+      clones.forEach((c) => {
+        const shareUrl = getCloneShareUrl(c.slug);
+        const sheetUrl = `https://docs.google.com/spreadsheets/d/${c.sheetId}/edit?usp=sharing`;
+        const displayName = escapeHtml(c.name || c.slug);
+        const displaySlug = escapeHtml(c.slug);
+        const displaySheetId = escapeHtml(c.sheetId);
+
+        html += `
+          <tr>
+            <td>
+              <span class="clone-slug-tag">${displaySlug}</span>
+            </td>
+            <td>
+              <div style="font-weight:700; color:#0f172a;">${displayName}</div>
+              <div style="font-size:11px; color:#64748b;">${c.createdAt ? escapeHtml(c.createdAt) : ''}</div>
+            </td>
+            <td>
+              <a href="${sheetUrl}" target="_blank" style="color:#0284c7; font-family:monospace; font-size:11px; text-decoration:none;" title="Mở Google Sheet">${displaySheetId.slice(0, 16)}... ↗</a>
+            </td>
+            <td>
+              <div class="clone-actions-cell">
+                <button type="button" class="btn-clone-act btn-clone-copy" onclick="handleCopyCloneLink('${displaySlug}')" title="Sao chép link nhân bản để gửi cho người dùng">
+                  📋 <span>Copy Link</span>
+                </button>
+                <a href="${shareUrl}" target="_blank" class="btn-clone-act btn-clone-open" title="Mở thử bản sao này trong tab mới">
+                  ↗️ <span>Mở</span>
+                </a>
+                <button type="button" class="btn-clone-act btn-clone-del" onclick="handleDeleteClone('${displaySlug}')" title="Xóa bản sao">
+                  🗑️
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      });
+      els.cloneTableBody.innerHTML = html;
+    }
+
+    window.handleCopyCloneLink = function(slug) {
+      const shareUrl = getCloneShareUrl(slug);
+      copyToClipboard(shareUrl).then(() => {
+        showToast(`<span>📋</span> <span>Đã sao chép link bản sao: <b>${slug}</b></span>`, false, true);
+      });
+    };
+
+    window.handleDeleteClone = function(slug) {
+      if (!confirm(`Bạn có chắc chắn muốn xóa bản sao "${slug}" khỏi danh sách?`)) return;
+      const clones = getStoredClones().filter(c => c.slug !== slug);
+      saveStoredClones(clones);
+      renderClonesTable();
+
+      // Đồng bộ xóa trên Google Sheet
+      if (CONFIG.webAppUrl) {
+        fetch(`${CONFIG.webAppUrl}?action=deleteClone&slug=${encodeURIComponent(slug)}&_=${Date.now()}`, { mode: 'no-cors' }).catch(() => {});
+      }
+      showToast(`<span>🗑️</span> <span>Đã xóa bản sao: <b>${slug}</b></span>`, false, true);
+    };
+
+    function fetchClonesFromMasterGviz() {
+      return new Promise((resolve) => {
+        const callbackName = 'onClonesGvizLoaded_' + Math.floor(Math.random() * 1000000);
+        let finished = false;
+
+        const timer = setTimeout(() => {
+          if (!finished) {
+            finished = true;
+            delete window[callbackName];
+            resolve(getStoredClones());
+          }
+        }, 4000);
+
+        window[callbackName] = function(res) {
+          if (finished) return;
+          finished = true;
+          clearTimeout(timer);
+          delete window[callbackName];
+          const scriptEl = document.getElementById('gviz-clones-script');
+          if (scriptEl) scriptEl.remove();
+
+          try {
+            if (res && res.table && res.table.rows) {
+              const rows = res.table.rows;
+              const clones = [];
+              for (let i = 0; i < rows.length; i++) {
+                const r = rows[i];
+                if (!r || !r.c) continue;
+                const getVal = (idx) => (r.c[idx] ? (r.c[idx].v != null ? r.c[idx].v : r.c[idx].f) : '');
+                const slug = String(getVal(0) || '').trim().toLowerCase();
+                const name = String(getVal(1) || '').trim();
+                const sId = String(getVal(2) || '').trim();
+                const webApp = String(getVal(3) || '').trim();
+                const status = String(getVal(4) || 'active').trim().toLowerCase();
+                const createdAt = String(getVal(5) || '').trim();
+
+                if (slug && sId && slug !== 'tên rút gọn (slug)') {
+                  clones.push({
+                    slug,
+                    name: name || slug,
+                    sheetId: extractSheetId(sId),
+                    webAppUrl: webApp,
+                    status,
+                    createdAt
+                  });
+                }
+              }
+
+              if (clones.length > 0) {
+                const currentLocal = getStoredClones();
+                const map = {};
+                currentLocal.forEach(c => { if (c.slug) map[c.slug] = c; });
+                clones.forEach(c => { map[c.slug] = c; });
+                const merged = Object.values(map);
+                saveStoredClones(merged);
+                renderClonesTable();
+
+                if (CONFIG.isClone && CONFIG.cloneSlug && map[CONFIG.cloneSlug]) {
+                  const matched = map[CONFIG.cloneSlug];
+                  if (CONFIG.sheetId !== matched.sheetId) {
+                    CONFIG.sheetId = matched.sheetId;
+                    CONFIG.branchName = matched.name;
+                    updateCloneHeaderUI();
+                    loadData(true);
+                  }
+                }
+                resolve(merged);
+                return;
+              }
+            }
+          } catch (err) {
+            console.warn('Lỗi phân tích bảng Clones từ GViz:', err);
+          }
+          resolve(getStoredClones());
+        };
+
+        const gvizUrl = `https://docs.google.com/spreadsheets/d/${CONFIG.defaultSheetId}/gviz/tq?sheet=CLONES&tqx=responseHandler:${callbackName}&_=${Date.now()}`;
+        const oldScript = document.getElementById('gviz-clones-script');
+        if (oldScript) oldScript.remove();
+
+        const script = document.createElement('script');
+        script.id = 'gviz-clones-script';
+        script.src = gvizUrl;
+        script.onerror = function() {
+          if (!finished) {
+            finished = true;
+            clearTimeout(timer);
+            delete window[callbackName];
+            if (script.parentNode) script.remove();
+            resolve(getStoredClones());
+          }
+        };
+        document.head.appendChild(script);
+      });
+    }
+
+    function initCloneSystem() {
+      updateCloneHeaderUI();
+      renderClonesTable();
+
+      // Cập nhật preview URL khi người dùng gõ tên rút gọn (slug)
+      if (els.inputCloneSlug && els.clonePreviewUrl) {
+        els.inputCloneSlug.addEventListener('input', (e) => {
+          const raw = e.target.value;
+          const clean = raw.toLowerCase().replace(/[^a-z0-9_-]/g, '');
+          if (clean !== raw) e.target.value = clean;
+          els.clonePreviewUrl.textContent = clean ? getCloneShareUrl(clean) : `${getBaseAppUrl()}/?s=...`;
+        });
+      }
+
+      // Mở modal quản lý bản sao
+      if (els.btnOpenCloneManager) {
+        els.btnOpenCloneManager.addEventListener('click', () => {
+          renderClonesTable();
+          els.cloneManagerModal.classList.add('active');
+        });
+      }
+
+      // Đóng modal quản lý bản sao
+      const closeModal = () => {
+        if (els.cloneManagerModal) els.cloneManagerModal.classList.remove('active');
+      };
+      if (els.btnCloseCloneManager) els.btnCloseCloneManager.addEventListener('click', closeModal);
+      if (els.btnCloseCloneManagerBottom) els.btnCloseCloneManagerBottom.addEventListener('click', closeModal);
+      if (els.cloneManagerModal) {
+        els.cloneManagerModal.addEventListener('click', (e) => {
+          if (e.target === els.cloneManagerModal) closeModal();
+        });
+      }
+
+      // Nút tải lại danh sách bản sao
+      if (els.btnRefreshClonesList) {
+        els.btnRefreshClonesList.addEventListener('click', () => {
+          els.cloneTableBody.innerHTML = `
+            <tr>
+              <td colspan="4" style="text-align: center; color: #0284c7; padding: 20px;">
+                Đang tải lại danh sách bản sao từ Google Sheet...
+              </td>
+            </tr>
+          `;
+          fetchClonesFromMasterGviz().then(() => {
+            renderClonesTable();
+            showToast('<span>🔄</span> <span>Đã làm mới danh sách bản sao!</span>', false, true);
+          });
+        });
+      }
+
+      // Lưu bản sao mới
+      if (els.btnSaveCloneRecord) {
+        els.btnSaveCloneRecord.addEventListener('click', () => {
+          const rawSlug = (els.inputCloneSlug.value || '').trim().toLowerCase();
+          const cleanSlug = rawSlug.replace(/[^a-z0-9_-]/g, '');
+          const name = (els.inputCloneName.value || '').trim() || cleanSlug.toUpperCase();
+          const rawSheet = (els.inputCloneSheetId.value || '').trim();
+          const cleanSheetId = extractSheetId(rawSheet);
+
+          if (!cleanSlug) {
+            alert('Vui lòng nhập tên rút gọn (slug)! Chỉ gồm chữ thường a-z, số 0-9 và dấu gạch -');
+            els.inputCloneSlug.focus();
+            return;
+          }
+
+          if (!cleanSheetId) {
+            alert('Vui lòng nhập link hoặc ID Google Sheet bản sao!');
+            els.inputCloneSheetId.focus();
+            return;
+          }
+
+          const clones = getStoredClones();
+          const existingIdx = clones.findIndex(c => c.slug === cleanSlug);
+          const newClone = {
+            slug: cleanSlug,
+            name: name,
+            sheetId: cleanSheetId,
+            webAppUrl: '',
+            status: 'active',
+            createdAt: new Date().toLocaleString('vi-VN')
+          };
+
+          if (existingIdx !== -1) {
+            clones[existingIdx] = newClone;
+          } else {
+            clones.unshift(newClone);
+          }
+
+          saveStoredClones(clones);
+          renderClonesTable();
+
+          // Reset form
+          els.inputCloneSlug.value = '';
+          els.inputCloneName.value = '';
+          els.inputCloneSheetId.value = '';
+          if (els.clonePreviewUrl) els.clonePreviewUrl.textContent = `${getBaseAppUrl()}/?s=...`;
+
+          // Gửi lưu ngầm vào tab CLONES của Master Sheet qua Web App
+          if (CONFIG.webAppUrl) {
+            const saveUrl = `${CONFIG.webAppUrl}?action=saveClone&slug=${encodeURIComponent(cleanSlug)}&name=${encodeURIComponent(name)}&sheetId=${encodeURIComponent(cleanSheetId)}&_=${Date.now()}`;
+            fetch(saveUrl, { mode: 'no-cors' }).catch(() => {});
+          }
+
+          const shareUrl = getCloneShareUrl(cleanSlug);
+          showToast(`<span>🎉</span> <span>Đã tạo bản sao <b>${cleanSlug}</b> thành công!</span>`, false, true);
+        });
+      }
+
+      // Tải ngầm danh sách bản sao mới nhất từ GViz Master Sheet
+      fetchClonesFromMasterGviz();
+    }
+
+    /**
      * ĐỌC TỨC THÌ TỪ BỘ NHỚ ĐỆM (CACHE)
      * Giúp hiển thị giao diện ngay lập tức trong 0.01 giây khi vừa mở trang
      */
     function loadCachedData() {
       try {
-        const cached = localStorage.getItem('pmh_cached_payload');
+        const cacheKey = 'pmh_cached_payload_' + (CONFIG.sheetId ? CONFIG.sheetId.slice(-8) : 'default');
+        const cached = localStorage.getItem(cacheKey) || localStorage.getItem('pmh_cached_payload');
         if (cached) {
           const res = JSON.parse(cached);
           if (res && res.items && res.items.length > 0) {
             state.items = res.items;
             state.dates = res.dates || [];
             state.products = res.products || [];
-            els.sheetInfo.textContent = 'Trang tính: ' + (res.sheetName || 'PMH');
-            els.totalCouponsBadge.textContent = state.items.length + ' phiếu • Siêu thị 1841';
+            els.sheetInfo.textContent = 'Trang tính: ' + (CONFIG.branchName || res.sheetName || 'PMH');
+            els.totalCouponsBadge.textContent = state.items.length + ' phiếu • ' + (CONFIG.branchName || 'Siêu thị 1841');
             populateDates();
             renderVouchers();
             els.loadingBox.style.display = 'none';
@@ -4575,6 +5532,9 @@ CMA_HOA_7721_TC
       }
       setInterval(updateClock, 1000);
       updateClock();
+
+      // Bước 0.5: Khởi tạo hệ thống bản sao & thanh nhận diện Admin / Bản sao
+      initCloneSystem();
 
       initPmh2Controls();
       // Bước 1: Nạp cache tức thì (0.01s người dùng thấy danh sách ngay lập tức)

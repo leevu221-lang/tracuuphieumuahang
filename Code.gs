@@ -17,6 +17,7 @@ function onOpen() {
     .addItem("🔍 Mở Form Tra Cứu (Sidebar bên phải)", "showSidebar")
     .addItem("🖥️ Mở Form Tra Cứu (Cửa sổ lớn Dialog)", "showDialog")
     .addSeparator()
+    .addItem("👑 Quản Lý & Tạo Bản Sao Ứng Dụng (CLONES)", "setupClonesSheetPrompt")
     .addItem("🧹 Dọn Dẹp Sheet PMH2 (Chỉ giữ User 43751 & 7721)", "cleanPmh2SheetData")
     .addItem("⚡ Cài đặt Cột Checkbox & Định dạng Sheet", "setupSheetFormatting")
     .addItem("ℹ️ Hướng Dẫn Sử Dụng", "showHelp")
@@ -76,7 +77,8 @@ function handleApiOrHtml(e) {
     const targetCode = params.code ? String(params.code).trim() : "";
     const sheetName = params.sheet ? String(params.sheet).trim() : "";
     const user = params.user ? String(params.user).trim() : "";
-    const res = markVoucher(row, isUsed, targetCode, sheetName, user);
+    const targetSheetId = params.sheetId || (postBody && postBody.sheetId) || "";
+    const res = markVoucher(row, isUsed, targetCode, sheetName, user, targetSheetId);
     return ContentService.createTextOutput(JSON.stringify(res))
       .setMimeType(ContentService.MimeType.JSON);
   }
@@ -85,7 +87,8 @@ function handleApiOrHtml(e) {
   if (params && (params.action === "savePmh2" || params.action === "appendPmh2")) {
     const rawData = params.data || (postBody && postBody.data) || "";
     const mode = params.mode || "append"; // 'append' hoặc 'overwrite'
-    const res = savePmh2Data(rawData, mode);
+    const targetSheetId = params.sheetId || (postBody && postBody.sheetId) || "";
+    const res = savePmh2Data(rawData, mode, targetSheetId);
     return ContentService.createTextOutput(JSON.stringify(res))
       .setMimeType(ContentService.MimeType.JSON);
   }
@@ -114,6 +117,33 @@ function handleApiOrHtml(e) {
       .setMimeType(ContentService.MimeType.JSON);
   }
 
+  // API 6: Lấy danh sách các bản sao ứng dụng
+  if (params && params.action === "getClones") {
+    const res = getClonesList();
+    return ContentService.createTextOutput(JSON.stringify(res))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // API 7: Lưu hoặc tạo mới bản sao ứng dụng
+  if (params && params.action === "saveClone") {
+    const slug = params.slug || (postBody && postBody.slug);
+    const name = params.name || (postBody && postBody.name);
+    const sheetId = params.sheetId || (postBody && postBody.sheetId);
+    const webAppUrl = params.webAppUrl || (postBody && postBody.webAppUrl);
+    const status = params.status || (postBody && postBody.status);
+    const res = saveCloneRecord(slug, name, sheetId, webAppUrl, status);
+    return ContentService.createTextOutput(JSON.stringify(res))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // API 8: Xóa bản sao ứng dụng
+  if (params && params.action === "deleteClone") {
+    const slug = params.slug || (postBody && postBody.slug);
+    const res = deleteCloneRecord(slug);
+    return ContentService.createTextOutput(JSON.stringify(res))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
   return getAppHtmlOutput()
     .setTitle("Hệ Thống Tra Cứu Phiếu Mua Hàng")
     .addMetaTag("viewport", "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no")
@@ -123,8 +153,15 @@ function handleApiOrHtml(e) {
 /**
  * 5. Lấy đối tượng Sheet dữ liệu mục tiêu (hỗ trợ chỉ định SheetName hoặc sheet PMH2)
  */
-function getTargetSheet(sheetName) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+function getTargetSheet(sheetName, targetSheetId) {
+  let ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (targetSheetId && String(targetSheetId).trim()) {
+    try {
+      ss = SpreadsheetApp.openById(String(targetSheetId).trim());
+    } catch (e) {
+      console.warn("Không mở được sheetById:", targetSheetId, e);
+    }
+  }
   let sheet = null;
   if (sheetName) {
     sheet = ss.getSheetByName(sheetName);
@@ -288,9 +325,9 @@ function getSheetData() {
  * - Cột D: User thao tác
  * - Cột A: Gạch ngang chữ (line-through) nếu đã dùng
  */
-function markVoucher(rowIndex, isUsed, targetCode, sheetName, user) {
+function markVoucher(rowIndex, isUsed, targetCode, sheetName, user, targetSheetId) {
   try {
-    const sheet = getTargetSheet(sheetName);
+    const sheet = getTargetSheet(sheetName, targetSheetId);
     let targetRow = parseInt(rowIndex, 10);
     const lastRow = sheet.getLastRow();
 
@@ -458,9 +495,16 @@ function filterPmh2RawDataForTargetUsers(rawData) {
  * - TỰ ĐỘNG LỌC chỉ lưu các dòng thuộc User 43751 & 7721 (bỏ qua mọi user khác)
  * - Hỗ trợ mode = 'append' (mặc định: thêm tiếp vào cuối) hoặc 'overwrite' (ghi đè toàn bộ)
  */
-function savePmh2Data(rawData, mode) {
+function savePmh2Data(rawData, mode, targetSheetId) {
   try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (targetSheetId && String(targetSheetId).trim()) {
+      try {
+        ss = SpreadsheetApp.openById(String(targetSheetId).trim());
+      } catch (e) {
+        console.warn("Không mở được sheetById:", targetSheetId, e);
+      }
+    }
     let sheet = ss.getSheetByName("PMH2");
     if (!sheet) {
       sheet = ss.insertSheet("PMH2");
@@ -588,6 +632,158 @@ function setTabVisibility(sheet1, pmh2) {
   } catch (err) {
     return { success: false, message: err.toString() };
   }
+}
+
+/**
+ * 10. Quản lý Hệ Thống Bản Sao Ứng Dụng (Multi-Store / Multi-Sheet)
+ */
+function getClonesSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName("CLONES");
+  if (!sheet) {
+    sheet = ss.insertSheet("CLONES");
+    const headers = [["TÊN RÚT GỌN (SLUG)", "TÊN HIỂN THỊ / CHI NHÁNH", "GOOGLE SHEET ID", "WEB APP URL", "TRẠNG THÁI", "NGÀY TẠO"]];
+    const headerRange = sheet.getRange("A1:F1");
+    headerRange.setValues(headers);
+    headerRange.setFontWeight("bold");
+    headerRange.setBackground("#0369a1");
+    headerRange.setFontColor("#FFFFFF");
+    headerRange.setHorizontalAlignment("center");
+    sheet.setFrozenRows(1);
+    sheet.setColumnWidth(1, 160);
+    sheet.setColumnWidth(2, 220);
+    sheet.setColumnWidth(3, 340);
+    sheet.setColumnWidth(4, 250);
+    sheet.setColumnWidth(5, 120);
+    sheet.setColumnWidth(6, 160);
+  }
+  return sheet;
+}
+
+function getClonesList() {
+  try {
+    const sheet = getClonesSheet();
+    const lastRow = sheet.getLastRow();
+    if (lastRow <= 1) {
+      return { success: true, clones: [] };
+    }
+    const values = sheet.getRange(2, 1, lastRow - 1, 6).getValues();
+    const clones = values.map(function(row, idx) {
+      return {
+        rowIndex: idx + 2,
+        slug: String(row[0] || "").trim().toLowerCase(),
+        name: String(row[1] || "").trim(),
+        sheetId: String(row[2] || "").trim(),
+        webAppUrl: String(row[3] || "").trim(),
+        status: String(row[4] || "active").trim().toLowerCase(),
+        createdAt: String(row[5] || "").trim()
+      };
+    }).filter(function(c) { return c.slug && c.sheetId; });
+
+    return { success: true, clones: clones };
+  } catch (err) {
+    return { success: false, message: err.toString(), clones: [] };
+  }
+}
+
+function saveCloneRecord(slug, name, sheetId, webAppUrl, status) {
+  try {
+    if (!slug || !sheetId) {
+      return { success: false, message: "Thiếu tên rút gọn (slug) hoặc Sheet ID" };
+    }
+    const cleanSlug = String(slug).trim().toLowerCase().replace(/[^a-z0-9_-]/g, "");
+    if (!cleanSlug) {
+      return { success: false, message: "Tên rút gọn không hợp lệ (chỉ gồm chữ cái a-z, số 0-9 và dấu gạch -)" };
+    }
+
+    // Tự trích xuất ID nếu người dùng dán cả URL Google Sheet
+    let cleanSheetId = String(sheetId).trim();
+    const match = cleanSheetId.match(/\/d\/([a-zA-Z0-9-_]+)/);
+    if (match) {
+      cleanSheetId = match[1];
+    }
+
+    const cleanName = String(name || cleanSlug).trim();
+    const cleanWebApp = String(webAppUrl || "").trim();
+    const cleanStatus = String(status || "active").trim().toLowerCase();
+    const nowStr = Utilities.formatDate(new Date(), "Asia/Ho_Chi_Minh", "dd/MM/yyyy HH:mm:ss");
+
+    const sheet = getClonesSheet();
+    const lastRow = sheet.getLastRow();
+    let targetRow = -1;
+
+    if (lastRow > 1) {
+      const existingSlugs = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+      for (let i = 0; i < existingSlugs.length; i++) {
+        if (String(existingSlugs[i][0]).trim().toLowerCase() === cleanSlug) {
+          targetRow = i + 2;
+          break;
+        }
+      }
+    }
+
+    if (targetRow !== -1) {
+      sheet.getRange(targetRow, 1, 1, 6).setValues([[cleanSlug, cleanName, cleanSheetId, cleanWebApp, cleanStatus, nowStr]]);
+    } else {
+      sheet.appendRow([cleanSlug, cleanName, cleanSheetId, cleanWebApp, cleanStatus, nowStr]);
+    }
+    SpreadsheetApp.flush();
+
+    return {
+      success: true,
+      clone: {
+        slug: cleanSlug,
+        name: cleanName,
+        sheetId: cleanSheetId,
+        webAppUrl: cleanWebApp,
+        status: cleanStatus,
+        createdAt: nowStr
+      },
+      message: "Đã lưu bản sao thành công!"
+    };
+  } catch (err) {
+    return { success: false, message: err.toString() };
+  }
+}
+
+function deleteCloneRecord(slug) {
+  try {
+    if (!slug) return { success: false, message: "Thiếu tên rút gọn cần xóa" };
+    const cleanSlug = String(slug).trim().toLowerCase();
+    const sheet = getClonesSheet();
+    const lastRow = sheet.getLastRow();
+    if (lastRow <= 1) return { success: false, message: "Danh sách bản sao đang trống" };
+
+    const values = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+    let foundRow = -1;
+    for (let i = 0; i < values.length; i++) {
+      if (String(values[i][0]).trim().toLowerCase() === cleanSlug) {
+        foundRow = i + 2;
+        break;
+      }
+    }
+
+    if (foundRow === -1) {
+      return { success: false, message: "Không tìm thấy bản sao: " + cleanSlug };
+    }
+
+    sheet.deleteRow(foundRow);
+    SpreadsheetApp.flush();
+    return { success: true, message: "Đã xóa bản sao: " + cleanSlug };
+  } catch (err) {
+    return { success: false, message: err.toString() };
+  }
+}
+
+function setupClonesSheetPrompt() {
+  const sheet = getClonesSheet();
+  SpreadsheetApp.getUi().alert(
+    "Quản Lý Bản Sao Ứng Dụng",
+    "Trang tính CLONES đã được thiết lập sẵn sàng.\n\n" +
+    "Bạn có thể xem hoặc chỉnh sửa trực tiếp danh sách bản sao tại sheet CLONES, " +
+    "hoặc sử dụng giao diện trên web tại link Admin: https://leevu221-lang.github.io/tracuuphieumuahang/",
+    SpreadsheetApp.getUi().ButtonSet.OK
+  );
 }
 
 /**
