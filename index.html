@@ -1714,17 +1714,17 @@
             </div>
             <div style="margin: 0 0 10px 0; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
               <span style="display:inline-flex;align-items:center;gap:5px;background:#e0f2fe;color:#0369a1;padding:4px 10px;border-radius:12px;font-size:11.5px;font-weight:700;border:1px solid #bae6fd;">
-                ⚡ Tự động lưu & đóng khung ngay khi dán dữ liệu
+                ⚡ Tự động lọc chỉ lưu User 43751 & 7721 • Tự lưu & đóng ngay
               </span>
             </div>
             <p class="drawer-subtext">
-              Chỉ cần <strong>dán (Paste / Ctrl+V)</strong> nội dung tin nhắn bot/danh sách vào ô bên dưới. Hệ thống sẽ <strong>tự động lưu vào Sheet "PMH2" và tự đóng khung ngay</strong>.
+              Chỉ cần <strong>dán (Paste / Ctrl+V)</strong> nội dung tin nhắn bot/danh sách vào ô bên dưới. Hệ thống sẽ <strong>tự động lọc lấy các phiếu thuộc User 43751 & 7721</strong> để lưu vào Sheet "PMH2" (bỏ qua mọi user khác) và <strong>tự đóng khung ngay</strong>.
             </p>
             <textarea 
               id="txtPastePmh2" 
               class="drawer-textarea" 
               rows="6" 
-              placeholder="⚡ Dán nội dung bot vào đây (Sẽ TỰ ĐỘNG LƯU VÀ ĐÓNG LẠI sau khi dán)...
+              placeholder="⚡ Dán nội dung bot vào đây (Tự động lọc chỉ lưu User 43751 & 7721, tự lưu & đóng lại)...
 Ví dụ:
 CMA_LINH_43751_TC
 ➜ PMH MM200 : OXIL5VY5SA
@@ -2690,6 +2690,75 @@ CMA_HOA_7721_TC
 
       let isSavingPmh2 = false;
 
+      /**
+       * Tự động lọc dữ liệu thô: CHỈ GIỮ LẠI các khối dòng thuộc User 43751 & 7721
+       * Loại bỏ các dòng của user khác (12241, 161987,...) và các dòng lẻ loi
+       */
+      function filterPmh2RawDataForTargetUsers(rawData) {
+        if (!rawData || typeof rawData !== 'string') return '';
+        const targetUsers = ['43751', '7721'];
+        const lines = rawData.split(/\r?\n/).map(l => l.trimEnd());
+        const resultLines = [];
+
+        function isVoucherOrStatus(l) {
+          return l.includes('PMH') || 
+                 l.includes('➜') || 
+                 l.includes('❌') || 
+                 /hết lượt|không tồn tại|thất bại|không hợp lệ/i.test(l);
+        }
+
+        function isSeparator(l) {
+          return /^[━\-=─_~*#]{3,}$/.test(l);
+        }
+
+        for (let i = 0; i < lines.length; i++) {
+          const trimmed = lines[i].trim();
+          if (!trimmed) continue;
+
+          const isVoucher = isVoucherOrStatus(trimmed);
+          const isSep = isSeparator(trimmed);
+
+          // Kiểm tra dòng định danh User mục tiêu (43751 hoặc 7721)
+          const matchedUser = targetUsers.find(u => trimmed.includes(u));
+
+          if (matchedUser && !isVoucher && !isSep) {
+            resultLines.push(lines[i].trim());
+
+            let j = i + 1;
+            while (j < lines.length) {
+              const nextTrimmed = lines[j].trim();
+              if (!nextTrimmed) {
+                j++;
+                continue;
+              }
+
+              const nextIsVoucher = isVoucherOrStatus(nextTrimmed);
+              const nextIsSep = isSeparator(nextTrimmed);
+              const nextIsTargetUser = targetUsers.some(u => nextTrimmed.includes(u)) && !nextIsVoucher && !nextIsSep;
+
+              // Nếu gặp User khác hoặc User mục tiêu tiếp theo -> dừng khối hiện tại
+              if (nextIsTargetUser || (!nextIsVoucher && !nextIsSep)) {
+                break;
+              }
+
+              if (nextIsVoucher) {
+                resultLines.push(lines[j].trim());
+                j++;
+              } else if (nextIsSep) {
+                resultLines.push(lines[j].trim());
+                j++;
+                break;
+              } else {
+                j++;
+              }
+            }
+            i = j - 1;
+          }
+        }
+
+        return resultLines.join('\n').trim();
+      }
+
       function executeSavePmh2(rawText, isAuto = false) {
         if (isSavingPmh2) return;
         const text = (rawText || '').trim();
@@ -2703,6 +2772,26 @@ CMA_HOA_7721_TC
           return;
         }
 
+        // TỰ ĐỘNG LỌC CHỈ GIỮ LẠI CÁC DÒNG THUỘC USER 43751 & 7721
+        const filteredText = filterPmh2RawDataForTargetUsers(text);
+        if (!filteredText) {
+          if (isAuto) {
+            if (txtPaste) txtPaste.value = '';
+            closePmh2Drawer();
+            showToast('⚠️ Không tìm thấy phiếu nào thuộc User 43751 hoặc 7721! Đã bỏ qua để tránh lưu dữ liệu dư thừa.', true);
+          } else {
+            if (drawerStatusMsg) {
+              drawerStatusMsg.className = 'drawer-status-msg error';
+              drawerStatusMsg.style.background = '#fef2f2';
+              drawerStatusMsg.style.color = '#b91c1c';
+              drawerStatusMsg.style.border = '1px solid #fecaca';
+              drawerStatusMsg.textContent = '⚠️ Không tìm thấy dòng phiếu nào thuộc User 43751 hoặc 7721 trong dữ liệu vừa dán!';
+              drawerStatusMsg.style.display = 'block';
+            }
+          }
+          return;
+        }
+
         const modeRadio = document.querySelector('input[name="pmh2SaveMode"]:checked');
         const saveMode = modeRadio ? modeRadio.value : 'append';
 
@@ -2710,23 +2799,26 @@ CMA_HOA_7721_TC
         if (btnSaveToSheet) btnSaveToSheet.disabled = true;
         if (saveBtnText) saveBtnText.textContent = 'Đang lưu lên Google Sheet...';
 
+        // Đếm số dòng đã lọc
+        const filteredLinesCount = filteredText.split('\n').filter(l => l.trim()).length;
+
         if (isAuto) {
           // Tự động đóng khung ngay sau khi dán dữ liệu vào ô
           closePmh2Drawer();
           if (txtPaste) txtPaste.value = '';
-          showToast('⚡ Đã nhận dữ liệu dán! Đang tự động lưu về Sheet "PMH2"...', false, true);
+          showToast(`⚡ Đã tự động lọc ${filteredLinesCount} dòng (User 43751 & 7721)! Đang lưu về Sheet "PMH2"...`, false, true);
         } else {
           if (drawerStatusMsg) {
             drawerStatusMsg.className = 'drawer-status-msg';
             drawerStatusMsg.style.background = '#e0f2fe';
             drawerStatusMsg.style.color = '#0369a1';
             drawerStatusMsg.style.border = '1px solid #bae6fd';
-            drawerStatusMsg.textContent = '⏳ Đang truyền dữ liệu vào sheet PMH2...';
+            drawerStatusMsg.textContent = `⏳ Đã lọc ${filteredLinesCount} dòng (User 43751 & 7721). Đang truyền vào sheet PMH2...`;
             drawerStatusMsg.style.display = 'block';
           }
         }
 
-        savePmh2DataToGoogleSheet(text, saveMode)
+        savePmh2DataToGoogleSheet(filteredText, saveMode)
           .then(() => {
             isSavingPmh2 = false;
             if (btnSaveToSheet) btnSaveToSheet.disabled = false;
@@ -2738,17 +2830,17 @@ CMA_HOA_7721_TC
             }
 
             if (isAuto) {
-              showToast('✅ Đã tự động lưu vào Sheet "PMH2" & đồng bộ thành công!', false, true);
+              showToast(`✅ Đã lọc & lưu thành công ${filteredLinesCount} dòng (User 43751 & 7721) vào Sheet "PMH2"!`, false, true);
             } else {
               if (drawerStatusMsg) {
                 drawerStatusMsg.className = 'drawer-status-msg success';
                 drawerStatusMsg.style.display = 'block';
-                drawerStatusMsg.textContent = '✅ Đã lưu thành công vào sheet "PMH2"! Tự động đóng khung...';
+                drawerStatusMsg.textContent = `✅ Đã lọc & lưu thành công ${filteredLinesCount} dòng vào sheet "PMH2"! Tự động đóng khung...`;
               }
               if (txtPaste) txtPaste.value = '';
               setTimeout(() => {
                 closePmh2Drawer();
-              }, 1000);
+              }, 1200);
             }
 
             // Tự động tải lại danh sách phiếu từ Google Sheet

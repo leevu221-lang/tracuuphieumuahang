@@ -17,6 +17,7 @@ function onOpen() {
     .addItem("🔍 Mở Form Tra Cứu (Sidebar bên phải)", "showSidebar")
     .addItem("🖥️ Mở Form Tra Cứu (Cửa sổ lớn Dialog)", "showDialog")
     .addSeparator()
+    .addItem("🧹 Dọn Dẹp Sheet PMH2 (Chỉ giữ User 43751 & 7721)", "cleanPmh2SheetData")
     .addItem("⚡ Cài đặt Cột Checkbox & Định dạng Sheet", "setupSheetFormatting")
     .addItem("ℹ️ Hướng Dẫn Sử Dụng", "showHelp")
     .addToUi();
@@ -354,7 +355,91 @@ function markVoucher(rowIndex, isUsed, targetCode, sheetName, user) {
 }
 
 /**
+ * Hàm hỗ trợ lọc dữ liệu thô PMH2: CHỈ GIỮ LẠI các khối/dòng thuộc User 43751 & 7721
+ * - Tự động loại bỏ các khối dữ liệu của user khác (12241, 161987, ...)
+ * - Tự động loại bỏ các dòng phiếu lẻ loi không rõ user
+ */
+function filterPmh2RawDataForTargetUsers(rawData) {
+  if (!rawData || typeof rawData !== "string") return "";
+  const targetUsers = ["43751", "7721"];
+  const lines = rawData.split(/\r?\n/).map(function(l) { return l.trimEnd(); });
+  const resultLines = [];
+
+  function isVoucherOrStatus(l) {
+    return l.includes("PMH") || 
+           l.includes("➜") || 
+           l.includes("❌") || 
+           /hết lượt|không tồn tại|thất bại|không hợp lệ/i.test(l);
+  }
+
+  function isSeparator(l) {
+    return /^[━\-=─_~*#]{3,}$/.test(l);
+  }
+
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i].trim();
+    if (!trimmed) continue;
+
+    const isVoucher = isVoucherOrStatus(trimmed);
+    const isSep = isSeparator(trimmed);
+
+    // Kiểm tra dòng định danh User mục tiêu (43751 hoặc 7721)
+    let matchedUser = null;
+    for (let u = 0; u < targetUsers.length; u++) {
+      if (trimmed.includes(targetUsers[u])) {
+        matchedUser = targetUsers[u];
+        break;
+      }
+    }
+
+    if (matchedUser && !isVoucher && !isSep) {
+      resultLines.push(lines[i].trim());
+
+      let j = i + 1;
+      while (j < lines.length) {
+        const nextTrimmed = lines[j].trim();
+        if (!nextTrimmed) {
+          j++;
+          continue;
+        }
+
+        const nextIsVoucher = isVoucherOrStatus(nextTrimmed);
+        const nextIsSep = isSeparator(nextTrimmed);
+        let nextIsTargetUser = false;
+        for (let u = 0; u < targetUsers.length; u++) {
+          if (nextTrimmed.includes(targetUsers[u])) {
+            nextIsTargetUser = true;
+            break;
+          }
+        }
+        nextIsTargetUser = nextIsTargetUser && !nextIsVoucher && !nextIsSep;
+
+        // Nếu gặp User khác hoặc User mục tiêu tiếp theo -> dừng khối hiện tại
+        if (nextIsTargetUser || (!nextIsVoucher && !nextIsSep)) {
+          break;
+        }
+
+        if (nextIsVoucher) {
+          resultLines.push(lines[j].trim());
+          j++;
+        } else if (nextIsSep) {
+          resultLines.push(lines[j].trim());
+          j++;
+          break;
+        } else {
+          j++;
+        }
+      }
+      i = j - 1;
+    }
+  }
+
+  return resultLines.join("\n").trim();
+}
+
+/**
  * 8. Dán dữ liệu thô và lưu ngược vào Sheet "PMH2"
+ * - TỰ ĐỘNG LỌC chỉ lưu các dòng thuộc User 43751 & 7721 (bỏ qua mọi user khác)
  * - Hỗ trợ mode = 'append' (mặc định: thêm tiếp vào cuối) hoặc 'overwrite' (ghi đè toàn bộ)
  */
 function savePmh2Data(rawData, mode) {
@@ -369,13 +454,22 @@ function savePmh2Data(rawData, mode) {
       return { success: false, message: "Dữ liệu trống hoặc không hợp lệ" };
     }
 
-    const lines = rawData.split(/\r?\n/).map(function(l) { return l.trimEnd(); });
+    // Tự động lọc chỉ lấy các khối/dòng thuộc User 43751 & 7721
+    const filteredData = filterPmh2RawDataForTargetUsers(rawData);
+    if (!filteredData) {
+      return { 
+        success: false, 
+        message: "Không tìm thấy dòng phiếu nào thuộc User 43751 hoặc 7721 trong dữ liệu vừa dán! Đã hủy lưu để tránh dữ liệu dư thừa." 
+      };
+    }
+
+    const lines = filteredData.split(/\r?\n/).map(function(l) { return l.trimEnd(); });
     while (lines.length > 0 && lines[lines.length - 1].trim() === "") {
       lines.pop();
     }
 
     if (lines.length === 0) {
-      return { success: false, message: "Không có dòng dữ liệu nào để lưu" };
+      return { success: false, message: "Không có dòng dữ liệu hợp lệ để lưu" };
     }
 
     const rowData = lines.map(function(line) { return [line]; });
@@ -396,13 +490,58 @@ function savePmh2Data(rawData, mode) {
       mode: mode || "append",
       totalLines: lines.length,
       lastRow: sheet.getLastRow(),
-      message: "Đã lưu thành công " + lines.length + " dòng vào sheet PMH2"
+      message: "Đã tự động lọc và lưu thành công " + lines.length + " dòng (User 43751 & 7721) vào sheet PMH2"
     };
   } catch (err) {
     return {
       success: false,
       message: err.toString()
     };
+  }
+}
+
+/**
+ * Tự động quét và dọn dẹp sheet "PMH2", loại bỏ các user khác, chỉ giữ lại User 43751 & 7721
+ */
+function cleanPmh2SheetData() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName("PMH2");
+    if (!sheet) {
+      SpreadsheetApp.getUi().alert("Thông báo", "Không tìm thấy trang tính PMH2!", SpreadsheetApp.getUi().ButtonSet.OK);
+      return;
+    }
+
+    const lastRow = sheet.getLastRow();
+    if (lastRow < 1) {
+      SpreadsheetApp.getUi().alert("Thông báo", "Trang tính PMH2 đang trống!", SpreadsheetApp.getUi().ButtonSet.OK);
+      return;
+    }
+
+    const values = sheet.getRange(1, 1, lastRow, 1).getValues();
+    const rawLines = values.map(function(row) { return row[0] != null ? String(row[0]) : ""; });
+    const originalText = rawLines.join("\n");
+
+    const filteredText = filterPmh2RawDataForTargetUsers(originalText);
+    if (!filteredText) {
+      SpreadsheetApp.getUi().alert("Kết Quả Lọc", "Không tìm thấy dòng nào thuộc User 43751 hoặc 7721 trong sheet PMH2.", SpreadsheetApp.getUi().ButtonSet.OK);
+      return;
+    }
+
+    const newLines = filteredText.split(/\r?\n/).map(function(l) { return [l]; });
+    sheet.clearContents();
+    sheet.getRange(1, 1, newLines.length, 1).setValues(newLines);
+    SpreadsheetApp.flush();
+
+    const removedCount = lastRow - newLines.length;
+    SpreadsheetApp.getUi().alert(
+      "Đã Dọn Dẹp Sheet PMH2 Thành Công",
+      "Đã giữ lại: " + newLines.length + " dòng (thuộc User 43751 & 7721).\n" +
+      "Đã loại bỏ: " + (removedCount > 0 ? removedCount : 0) + " dòng dữ liệu thừa của các User khác.",
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+  } catch (err) {
+    SpreadsheetApp.getUi().alert("Lỗi", "Không thể dọn dẹp sheet PMH2: " + err.toString(), SpreadsheetApp.getUi().ButtonSet.OK);
   }
 }
 
