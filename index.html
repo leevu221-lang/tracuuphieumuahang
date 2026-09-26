@@ -2484,6 +2484,33 @@
       font-family: monospace;
       letter-spacing: 1px;
     }
+
+    /* Hiệu ứng pháo hoa CSS bung toả giữa màn hình */
+    @keyframes fwPopOut {
+      0% {
+        transform: translate(-50%, -50%) translate(0, 0) scale(1.1);
+        opacity: 1;
+      }
+      65% {
+        opacity: 1;
+      }
+      100% {
+        transform: translate(-50%, -50%) translate(var(--tx), var(--ty)) scale(0.25);
+        opacity: 0;
+      }
+    }
+    .fw-css-spark {
+      position: fixed;
+      pointer-events: none;
+      z-index: 1000001;
+      border-radius: 50%;
+      will-change: transform, opacity;
+      animation: fwPopOut 1.15s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+    }
   </style>
 </head>
 <body>
@@ -3874,36 +3901,71 @@ CMA_HOA_7721_TC
     }
 
     /**
-     * KÍCH HOẠT HIỆU ỨNG PHÁO HOA TUNG LÊN GIỮA MÀN HÌNH
+     * BẮN PHÁO HOA DẠNG CSS SPARK (CHẠY ĐỘC LẬP TRÊN COMPOSITOR, 100% HIỆN RÕ TRÊN MỌI THIẾT BỊ)
+     */
+    function spawnCssFireworks(centerX, centerY) {
+      try {
+        const colors = ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899', '#FFD700', '#FF5722'];
+        const symbols = ['★', '✦', '●', '■', '▲', '🎉', '✨', '⭐'];
+        const count = 36;
+        for (let i = 0; i < count; i++) {
+          const spark = document.createElement('div');
+          spark.className = 'fw-css-spark';
+          const angle = Math.random() * Math.PI * 2;
+          const dist = Math.random() * 170 + 40;
+          const tx = Math.cos(angle) * dist;
+          const ty = Math.sin(angle) * dist + 45; // Trọng lực kéo xuống nhẹ
+          const color = colors[Math.floor(Math.random() * colors.length)];
+          const isSymbol = Math.random() < 0.45;
+
+          spark.style.setProperty('--tx', `${tx}px`);
+          spark.style.setProperty('--ty', `${ty}px`);
+          spark.style.left = `${centerX}px`;
+          spark.style.top = `${centerY}px`;
+
+          if (isSymbol) {
+            spark.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+            spark.style.color = color;
+            spark.style.fontSize = `${Math.random() * 12 + 14}px`;
+            spark.style.background = 'transparent';
+          } else {
+            const sz = Math.random() * 8 + 6;
+            spark.style.width = `${sz}px`;
+            spark.style.height = `${sz}px`;
+            spark.style.backgroundColor = color;
+            spark.style.boxShadow = `0 0 8px ${color}`;
+            if (Math.random() > 0.5) spark.style.borderRadius = '2px';
+          }
+
+          document.body.appendChild(spark);
+          setTimeout(() => {
+            if (spark && spark.parentNode) spark.parentNode.removeChild(spark);
+          }, 1250);
+        }
+      } catch (err) {
+        console.warn('CSS Fireworks error:', err);
+      }
+    }
+
+    /**
+     * KÍCH HOẠT HIỆU ỨNG PHÁO HOA TUNG LÊN GIỮA MÀN HÌNH (0ms PHẢN HỒI TỨC THÌ)
      */
     function triggerFireworks(code) {
       try {
         const now = Date.now();
-        if (now - lastFwTriggerTime < 250) return;
+        if (now - lastFwTriggerTime < 200) return;
         lastFwTriggerTime = now;
 
-        resizeFireworksCanvas();
         const w = window.innerWidth || document.documentElement.clientWidth || 360;
         const h = window.innerHeight || document.documentElement.clientHeight || 640;
 
         const centerX = w / 2;
         const centerY = h * 0.42;
 
-        // Bắn 3 quả pháo hoa vút từ đáy màn hình lên giữa màn hình
-        const burstConfigs = [
-          { delay: 0,   startX: centerX - 35, targetX: centerX - 45, targetY: centerY + 20, palette: FW_PALETTES[0] },
-          { delay: 110, startX: centerX + 40, targetX: centerX + 50, targetY: centerY - 30, palette: FW_PALETTES[1] },
-          { delay: 220, startX: centerX,      targetX: centerX,      targetY: centerY - 5,  palette: FW_PALETTES[3] }
-        ];
+        // 1. NỔ NGAY LẬP TỨC 36 HẠT PHÁO HOA CSS GIỮA MÀN HÌNH (0ms không cần chờ)
+        spawnCssFireworks(centerX, centerY);
 
-        burstConfigs.forEach(cfg => {
-          setTimeout(() => {
-            fwRockets.push(new FwRocket(cfg.startX, h + 20, cfg.targetX, cfg.targetY, cfg.palette));
-            startFwLoop();
-          }, cfg.delay);
-        });
-
-        // HIỂN THỊ KHUNG NỔ BẬT BÙNG NỔ GIỮA MÀN HÌNH (Trung tâm màn hình)
+        // 2. HIỂN THỊ KHUNG NỔ BẬT BÙNG NỔ GIỮA MÀN HÌNH (Trung tâm màn hình)
         const burstEl = document.getElementById('celebrationBurst');
         const codeEl = document.getElementById('burstCode');
         if (burstEl) {
@@ -3914,11 +3976,41 @@ CMA_HOA_7721_TC
             burstEl.classList.remove('show');
           }, 1400);
         }
+
+        // 3. ĐỒNG THỜI KÍCH HOẠT CANVAS PHÁO HOA NỔ NGAY Ở TÂM VÀ PHÓNG 2 QUẢ TỪ ĐÁY LÊN
+        resizeFireworksCanvas();
+        // Nổ tức thì chùm pháo hoa đầu tiên ngay giữa màn hình
+        fwExplode(centerX, centerY, FW_PALETTES[0]);
+        startFwLoop();
+
+        // 2 quả pháo vút từ đáy màn hình lên bổ sung hiệu ứng
+        const burstConfigs = [
+          { delay: 100, startX: centerX - 35, targetX: centerX - 45, targetY: centerY + 20, palette: FW_PALETTES[1] },
+          { delay: 220, startX: centerX + 40, targetX: centerX + 50, targetY: centerY - 25, palette: FW_PALETTES[3] }
+        ];
+
+        burstConfigs.forEach(cfg => {
+          setTimeout(() => {
+            fwRockets.push(new FwRocket(cfg.startX, h + 20, cfg.targetX, cfg.targetY, cfg.palette));
+            startFwLoop();
+          }, cfg.delay);
+        });
       } catch (err) {
         console.warn('Fireworks trigger error:', err);
       }
     }
     window.triggerFireworks = triggerFireworks;
+
+    // BẮT SỰ KIỆN CLICK TOÀN TRANG Ở TẦNG CAPTURING (Đảm bảo 100% bắt được click Sao chép)
+    document.addEventListener('click', (e) => {
+      try {
+        const btn = e.target.closest && e.target.closest('.btn-copy-pmh2, .btn-copy, .btn-copy-again, [data-code]');
+        if (btn) {
+          const code = btn.getAttribute('data-code') || '';
+          triggerFireworks(code);
+        }
+      } catch (err) {}
+    }, true);
 
     /**
      * COPY TO CLIPBOARD

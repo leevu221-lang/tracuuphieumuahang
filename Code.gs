@@ -856,7 +856,7 @@ function showHelp() {
  */
 function getAppHtmlOutput() {
   try {
-    return HtmlService.createHtmlOutputFromFile(Index);
+    return HtmlService.createHtmlOutputFromFile("Index");
   } catch (e) {
     // Nếu chưa tạo file Index, tự động dùng giao diện tích hợp sẵn bên dưới
     return HtmlService.createHtmlOutput(INDEX_HTML_CONTENT);
@@ -867,22 +867,31 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Tra Cứu Mã Phiếu Mua Hàng</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Tra Cứu Mã Phiếu Mua Hàng - Siêu Thị 1841</title>
+  
+  <!-- SEO & Social Meta -->
+  <meta name="description" content="Hệ thống tra cứu mã phiếu mua hàng 10 ký tự kết nối trực tiếp Google Sheet cho Siêu thị 1841">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏷️</text></svg>">
+
   <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
+  <!-- MQTT Realtime Client (Đồng bộ tức thì đa trình duyệt 20ms - 50ms) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/5.5.0/mqtt.min.js"></script>
+
   <style>
     :root {
-      --primary: #4f46e5;
-      --primary-hover: #4338ca;
-      --primary-light: #eef2ff;
-      --secondary: #0ea5e9;
+      --primary: #d97706;
+      --primary-hover: #b45309;
+      --primary-light: #fef3c7;
+      --primary-dark: #78350f;
+      --header-bg: #fef3c7;
       --success: #10b981;
-      --success-dark: #059669;
-      --success-light: #d1fae5;
+      --success-dark: #15803d;
+      --success-light: #dcfce7;
       --warning: #f59e0b;
       --danger: #ef4444;
       --gray-50: #f8fafc;
@@ -897,11 +906,9 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
       --gray-900: #0f172a;
       --radius-sm: 8px;
       --radius-md: 12px;
-      --radius-lg: 16px;
-      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
-      --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      --radius-lg: 24px;
+      --shadow-card: 0 12px 35px -4px rgba(0, 0, 0, 0.07), 0 4px 12px rgba(0, 0, 0, 0.03);
+      --transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     * {
@@ -911,255 +918,1129 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
       -webkit-tap-highlight-color: transparent;
     }
 
-    body {
-      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-      background-color: #f8fafc;
+    html, body {
+      width: 100%;
+      min-height: 100%;
+      overflow-x: hidden;
+      -webkit-text-size-adjust: 100%;
+      background-color: #f3f4f6;
+      background-image: radial-gradient(#e5e7eb 1.2px, transparent 1.2px);
+      background-size: 24px 24px;
       color: var(--gray-800);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 13.5px;
       line-height: 1.5;
-      font-size: 14px;
-      padding-bottom: 24px;
     }
 
-    /* Container */
+    /* Khung thẻ chính: Bo tròn 26px giống hệt ảnh mẫu */
+    
+    /* Khung thẻ chính & Chế độ xem song song 2 bảng */
     .app-container {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 12px 14px;
+      width: 100%;
+      max-width: 520px;
+      margin: 16px auto 40px auto;
+      padding: 0 12px;
+      transition: max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    /* Header */
-    .app-header {
-      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-      color: #ffffff;
-      padding: 16px 18px;
-      border-radius: var(--radius-md);
-      box-shadow: var(--shadow-md);
-      margin-bottom: 12px;
-      position: relative;
-      overflow: hidden;
+    .app-container.mode-parallel {
+      max-width: 1200px;
     }
 
-    .app-header::before {
-      content: '';
-      position: absolute;
-      top: -40px;
-      right: -40px;
-      width: 140px;
-      height: 140px;
-      background: radial-gradient(circle, rgba(79, 70, 229, 0.35) 0%, rgba(255,255,255,0) 70%);
-      border-radius: 50%;
-      pointer-events: none;
-    }
-
-    .header-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 6px;
-    }
-
-    .app-title-wrap {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .app-icon {
-      width: 38px;
-      height: 38px;
-      background: linear-gradient(135deg, #6366f1, #4f46e5);
-      border-radius: 10px;
+    /* Thanh chọn chế độ xem */
+    .view-mode-bar {
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 20px;
-      box-shadow: 0 4px 10px rgba(79, 70, 229, 0.4);
+      background: #ffffff;
+      padding: 5px;
+      border-radius: 18px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+      margin-bottom: 18px;
+      gap: 6px;
+      overflow-x: auto;
     }
 
-    .app-title {
-      font-size: 17px;
-      font-weight: 800;
-      letter-spacing: -0.3px;
-      color: #ffffff;
-    }
-
-    .app-subtitle {
-      font-size: 12px;
-      color: #94a3b8;
-      font-weight: 500;
-    }
-
-    .btn-refresh {
-      background: rgba(255, 255, 255, 0.12);
-      color: #ffffff;
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      padding: 6px 12px;
-      border-radius: var(--radius-sm);
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
+    .view-mode-btn {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      transition: var(--transition);
+      padding: 8px 16px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #64748b;
+      background: transparent;
+      border: 1px solid transparent;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
     }
 
-    .btn-refresh:hover {
-      background: rgba(255, 255, 255, 0.22);
-      transform: translateY(-1px);
+    .view-mode-btn:hover {
+      background: #f1f5f9;
+      color: #0f172a;
     }
 
-    .btn-refresh:active {
-      transform: translateY(0);
+    .view-mode-btn.active {
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      color: #ffffff;
+      box-shadow: 0 3px 10px rgba(2, 132, 199, 0.3);
     }
 
-    /* Controls Section */
-    .controls-card {
-      background: #ffffff;
-      border-radius: var(--radius-md);
-      padding: 14px;
-      box-shadow: var(--shadow-sm);
-      border: 1px solid var(--gray-200);
-      margin-bottom: 12px;
+    .parallel-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+      align-items: start;
     }
 
-    /* Date Filter Row */
-    .date-row {
+    @media (min-width: 880px) {
+      .app-container.mode-parallel .parallel-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .parallel-grid.single-col,
+    .app-container.mode-parallel .parallel-grid.single-col {
+      grid-template-columns: 1fr !important;
+      max-width: 650px;
+      margin: 0 auto;
+    }
+
+    /* Wrapper bao quanh thanh chọn chế độ xem & điều khiển ẩn/hiện 2 tab */
+    .view-mode-bar-wrapper {
       display: flex;
-      gap: 8px;
+      flex-direction: column;
       align-items: center;
-      margin-bottom: 12px;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    @media (min-width: 992px) {
+      .view-mode-bar-wrapper {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+      }
+    }
+
+    .view-mode-bar {
+      margin-bottom: 0 !important;
+    }
+
+    .tab-hide-badge {
+      display: inline-block;
+      background: #ef4444;
+      color: #ffffff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 8px;
+      margin-left: 4px;
+      vertical-align: middle;
+      box-shadow: 0 1px 3px rgba(239, 68, 68, 0.4);
+    }
+
+    /* Thanh điều khiển Ẩn / Hiện 2 Tab (Đồng bộ tức thì mọi máy) */
+    .tab-visibility-control-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #ffffff;
+      padding: 6px 12px;
+      border-radius: 16px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .vis-control-label {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #0369a1;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .vis-control-buttons {
+      display: flex;
+      align-items: center;
+      gap: 6px;
       flex-wrap: wrap;
     }
 
-    .date-label {
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--gray-600);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      display: flex;
+    .btn-tab-vis {
+      display: inline-flex;
       align-items: center;
       gap: 5px;
-      min-width: 85px;
+      padding: 5px 12px;
+      border-radius: 10px;
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      color: #334155;
+      transition: all 0.2s ease;
     }
 
-    .date-selector-group {
-      display: flex;
-      flex: 1;
-      gap: 6px;
+    .btn-tab-vis:hover {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+      transform: translateY(-1px);
+    }
+
+    .btn-tab-vis.is-visible {
+      border-color: #86efac;
+      background: #f0fdf4;
+      color: #166534;
+    }
+
+    .btn-tab-vis.is-visible .vis-status {
+      color: #15803d;
+      font-weight: 700;
+    }
+
+    .btn-tab-vis.is-hidden {
+      border-color: #fca5a5;
+      background: #fef2f2;
+      color: #991b1b;
+      box-shadow: 0 1px 4px rgba(239, 68, 68, 0.15);
+    }
+
+    .btn-tab-vis.is-hidden .vis-status {
+      color: #b91c1c;
+      font-weight: 700;
+    }
+
+    .btn-tab-vis.btn-vis-all {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+      color: #475569;
+    }
+
+    .btn-tab-vis.btn-vis-all:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+
+    /* Nút ẩn bảng đặt trên Card Header */
+    .btn-hide-panel {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      display: inline-flex;
       align-items: center;
-      min-width: 240px;
+      gap: 5px;
+      padding: 4px 10px;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      z-index: 5;
     }
 
-    .date-nav-btn {
-      background: var(--gray-100);
-      border: 1px solid var(--gray-200);
-      color: var(--gray-700);
-      width: 34px;
-      height: 38px;
-      border-radius: var(--radius-sm);
+    .btn-hide-panel:hover {
+      background: #fee2e2;
+      border-color: #fca5a5;
+      color: #b91c1c;
+      transform: scale(1.03);
+    }
+
+    .card-header {
+      position: relative;
+    }
+
+    /* Khung thông báo khi CẢ 2 BẢNG ĐỀU BỊ ẨN */
+    .all-tabs-hidden-card {
+      background: #ffffff;
+      border-radius: 26px;
+      border: 1px solid #fed7aa;
+      box-shadow: 0 10px 30px rgba(249, 115, 22, 0.08);
+      padding: 45px 25px;
+      text-align: center;
+      max-width: 600px;
+      margin: 30px auto;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .hidden-card-icon {
+      font-size: 50px;
+      margin-bottom: 12px;
+    }
+
+    .hidden-card-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: #c2410c;
+      margin-bottom: 8px;
+    }
+
+    .hidden-card-desc {
+      font-size: 13.5px;
+      color: #64748b;
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+
+    .hidden-card-buttons {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn-restore-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 18px;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #334155;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-restore-tab:hover {
+      background: #e0f2fe;
+      border-color: #7dd3fc;
+      color: #0369a1;
+      transform: translateY(-2px);
+    }
+
+    .btn-restore-tab.btn-restore-all {
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      color: #ffffff;
+      border-color: transparent;
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+    }
+
+    .btn-restore-tab.btn-restore-all:hover {
+      box-shadow: 0 6px 16px rgba(2, 132, 199, 0.45);
+    }
+
+    /* Style riêng cho Bảng 2 (Sheet PMH2 - Xanh Dương Pastel) */
+    .card-header.header-pmh2 {
+      background: linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 100%);
+      border-bottom: 1px solid #bae6fd;
+    }
+
+    .header-pmh2 .header-title {
+      color: #0369a1;
+    }
+
+    .header-pmh2 .header-info-sub {
+      color: #0284c7;
+    }
+
+    .user-pill-row, .type-pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .user-pill, .type-pill {
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 11.5px;
+      font-weight: 700;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      color: #475569;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .user-pill:hover, .type-pill:hover {
+      background: #e2e8f0;
+    }
+
+    .user-pill.active, .type-pill.active {
+      background: #0284c7;
+      color: #ffffff;
+      border-color: #0284c7;
+      box-shadow: 0 2px 8px rgba(2, 132, 199, 0.25);
+    }
+
+    .pmh2-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 14px;
+      max-height: 600px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .pmh2-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 13px 15px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+      transition: all 0.2s ease;
+    }
+
+    .pmh2-card:hover {
+      border-color: #7dd3fc;
+      box-shadow: 0 6px 16px rgba(2, 132, 199, 0.1);
+      transform: translateY(-1px);
+    }
+
+    .pmh2-card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .pmh2-user-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 8px;
+      background: #e0f2fe;
+      color: #0369a1;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .pmh2-user-badge.user-7721 {
+      background: #ede9fe;
+      color: #6d28d9;
+    }
+
+    .pmh2-type-tag {
+      font-size: 10.5px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+
+    .pmh2-type-tag.tag-ict {
+      background: #e0f2fe;
+      color: #0284c7;
+      border: 1px solid #bae6fd;
+    }
+
+    .pmh2-type-tag.tag-mm {
+      background: #d1fae5;
+      color: #059669;
+      border: 1px solid #a7f3d0;
+    }
+
+    .pmh2-code-box {
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      border-radius: 12px;
+      padding: 9px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 8px 0;
+      transition: all 0.2s ease;
+    }
+
+    .pmh2-code-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .pmh2-code-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 15px;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: 0.05em;
+      transition: all 0.2s ease;
+    }
+
+    .pmh2-code-val.masked-stars,
+    .voucher-code.masked-stars {
+      letter-spacing: 0.22em;
+      color: #0284c7;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .btn-eye-toggle,
+    .btn-eye-toggle-sheet1 {
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      color: #475569;
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.15s ease;
+      padding: 0;
+      flex-shrink: 0;
+    }
+
+    .btn-eye-toggle:hover,
+    .btn-eye-toggle-sheet1:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+      transform: scale(1.05);
+    }
+
+    .pmh2-actions-cell {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      flex-shrink: 0;
+    }
+
+    .btn-copy-pmh2 {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      color: #ffffff;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+      box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25);
+    }
+
+    .btn-copy-pmh2:hover {
+      filter: brightness(1.08);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(2, 132, 199, 0.35);
+    }
+
+    .btn-copy-pmh2:active {
+      transform: scale(0.97);
+    }
+
+    .btn-copy-pmh2.is-used {
+      background: linear-gradient(135deg, #475569 0%, #334155 100%);
+      box-shadow: 0 2px 5px rgba(51, 65, 85, 0.2);
+    }
+
+    .btn-undo-pmh2 {
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      color: #64748b;
+      padding: 5px 8px;
+      border-radius: 7px;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+
+    .btn-undo-pmh2:hover {
+      background: #fee2e2;
+      color: #dc2626;
+      border-color: #fca5a5;
+    }
+
+    .pmh2-card.card-is-used {
+      background: #f8fafc;
+      border-color: #e2e8f0;
+      opacity: 0.94;
+    }
+
+    .pmh2-card.card-is-used .pmh2-code-val:not(.masked-stars) {
+      color: #64748b;
+    }
+
+    .pmh2-card-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 4px;
+    }
+
+    .pmh2-status {
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .pmh2-status.status-ok {
+      color: #059669;
+    }
+
+    .pmh2-status.status-used {
+      color: #4f46e5;
+      background: #eef2ff;
+      padding: 2px 7px;
+      border-radius: 5px;
+      font-size: 10.5px;
+      border: 1px solid #e0e7ff;
+    }
+
+    .pmh2-status.status-err {
+      color: #dc2626;
+    }
+
+    /* Thanh công cụ PMH2 & Nút Ẩn/Hiện Dán Dữ Liệu */
+    .pmh2-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .btn-toggle-drawer {
+      flex: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+      border: 1.5px dashed #38bdf8;
+      color: #0369a1;
+      padding: 9px 14px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-toggle-drawer:hover {
+      background: #bae6fd;
+      color: #0c4a6e;
+      border-style: solid;
+      transform: translateY(-1px);
+    }
+
+    .btn-toggle-drawer.active {
+      background: #0284c7;
+      color: #ffffff;
+      border-style: solid;
+      border-color: #0284c7;
+      box-shadow: 0 3px 8px rgba(2, 132, 199, 0.25);
+    }
+
+    .drawer-caret {
+      font-size: 13px;
+      transition: transform 0.2s ease;
+      display: inline-block;
+    }
+
+    .btn-toggle-drawer.active .drawer-caret {
+      transform: rotate(180deg);
+    }
+
+    .btn-refresh-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: #0284c7;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.15s ease;
+      flex-shrink: 0;
+    }
+
+    .btn-refresh-icon:hover {
+      background: #f0f9ff;
+      border-color: #7dd3fc;
+      transform: rotate(45deg);
+    }
+
+    /* Khung Dán Dữ Liệu PMH2 (Collapsible Drawer Ẩn/Hiện) */
+    .pmh2-paste-drawer {
+      background: #f0fdf4;
+      border: 1.5px solid #86efac;
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 14px;
+      animation: slideDownFade 0.22s ease forwards;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.08);
+    }
+
+    @keyframes slideDownFade {
+      from {
+        opacity: 0;
+        transform: translateY(-6px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .drawer-inner-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .drawer-title {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #15803d;
+    }
+
+    .btn-close-drawer {
+      background: none;
+      border: none;
+      font-size: 14px;
+      color: #64748b;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .btn-close-drawer:hover {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+
+    .drawer-subtext {
+      font-size: 11px;
+      color: #4b5563;
+      margin: 0 0 10px 0;
+      line-height: 1.45;
+    }
+
+    .drawer-textarea {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11.5px;
+      line-height: 1.5;
+      background: #ffffff;
+      color: #0f172a;
+      resize: vertical;
+      transition: border-color 0.15s ease;
+      outline: none;
+    }
+
+    .drawer-textarea:focus {
+      border-color: #059669;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+    }
+
+    .drawer-mode-select {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin: 10px 0 12px 0;
+      font-size: 11.5px;
+    }
+
+    .mode-radio-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+      color: #374151;
+    }
+
+    .drawer-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-save-to-sheet {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      color: #ffffff;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 9px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      box-shadow: 0 2px 6px rgba(5, 150, 105, 0.25);
+    }
+
+    .btn-save-to-sheet:hover:not(:disabled) {
+      filter: brightness(1.08);
+      transform: translateY(-1px);
+    }
+
+    .btn-save-to-sheet:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+
+    .btn-clear-text {
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      color: #64748b;
+      padding: 8px 12px;
+      border-radius: 9px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-clear-text:hover {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+
+    .drawer-status-msg {
+      margin-top: 10px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 11.5px;
+      font-weight: 600;
+    }
+
+    .drawer-status-msg.success {
+      background: #dcfce7;
+      color: #15803d;
+      border: 1px solid #86efac;
+    }
+
+    .drawer-status-msg.error {
+      background: #fee2e2;
+      color: #b91c1c;
+      border: 1px solid #fca5a5;
+    }
+
+    /* Bộ lọc Trạng thái PMH2: Tất cả | Khả dụng | Đã dùng | Lỗi */
+    .status-pill-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .status-pill {
+      padding: 5px 11px;
+      border-radius: 20px;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: #475569;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .status-pill:hover {
+      border-color: #0284c7;
+      color: #0284c7;
+      background: #f0f9ff;
+    }
+
+    .status-pill.active {
+      background: #0284c7;
+      color: #ffffff;
+      border-color: #0284c7;
+      box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25);
+    }
+
+
+    .main-card {
+      background: #ffffff;
+      border-radius: 26px;
+      border: 1px solid #e5e7eb;
+      box-shadow: var(--shadow-card);
+      overflow: hidden;
+      transition: var(--transition);
+    }
+
+    /* Phần Header đầu thẻ: Màu kem pastel ấm áp */
+    .card-header {
+      background: linear-gradient(180deg, #fffbeb 0%, #fef3c7 100%);
+      padding: 24px 20px 20px 20px;
+      border-bottom: 1px solid #fde68a;
+      text-align: center;
+      position: relative;
+    }
+
+    .header-top-actions {
+      display: none !important;
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      align-items: center;
+      gap: 6px;
+      z-index: 2;
+    }
+
+    .btn-header-action {
+      background: rgba(255, 255, 255, 0.85);
+      border: 1px solid #fde68a;
+      color: #78350f;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 14px;
+      font-size: 13px;
       cursor: pointer;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
       transition: var(--transition);
+    }
+
+    .btn-header-action:hover {
+      background: #ffffff;
+      transform: scale(1.05);
+    }
+
+    .header-title {
+      font-size: 18.5px;
+      font-weight: 800;
+      color: #78350f;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      line-height: 1.3;
+    }
+
+    .header-title span {
+      display: inline-block;
+    }
+
+    /* Badge hình viên thuốc trắng với chấm xanh và đồng hồ trực tiếp */
+    .header-live-badge {
+      background: #ffffff;
+      border-radius: 30px;
+      padding: 5px 15px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #78350f;
+      border: 1px solid rgba(217, 119, 6, 0.25);
+      box-shadow: 0 2px 6px rgba(120, 53, 15, 0.06);
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 6px #10b981;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+
+    .live-dot.updating {
+      background: #f59e0b;
+      box-shadow: 0 0 6px #f59e0b;
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .header-info-sub {
+      font-size: 11.5px;
+      color: #92400e;
+      font-weight: 600;
+      margin-top: 8px;
+    }
+
+    /* Phần thân thẻ chứa form: Nền trắng tinh khôi */
+    .card-body {
+      padding: 22px 20px 24px 20px;
+      background: #ffffff;
+    }
+
+    /* Nhãn trường nhập liệu giống hình mẫu */
+    .form-field-label {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 7px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .req-star {
+      color: #ef4444;
+      font-weight: 800;
+    }
+
+    .form-group-item {
+      margin-bottom: 16px;
+    }
+
+    /* Hàng chọn ngày */
+    .date-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      width: 100%;
+    }
+
+    .date-nav-btn {
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      color: #475569;
+      width: 38px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      cursor: pointer;
+      flex-shrink: 0;
       font-weight: bold;
+      transition: var(--transition);
     }
 
     .date-nav-btn:hover {
-      background: var(--gray-200);
-      color: var(--gray-900);
+      background: #f1f5f9;
+      border-color: #cbd5e1;
     }
 
     .date-select {
       flex: 1;
-      height: 38px;
-      background: var(--gray-50);
-      border: 1.5px solid var(--gray-200);
-      border-radius: var(--radius-sm);
+      height: 48px;
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 12px;
       padding: 0 12px;
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--gray-800);
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #1e293b;
       outline: none;
       cursor: pointer;
+      min-width: 0;
       transition: var(--transition);
     }
 
     .date-select:focus {
-      border-color: var(--primary);
-      background: #ffffff;
-      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+      border-color: #d97706;
+      box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.12);
     }
 
+    /* Nút Hôm nay màu vàng hổ phách chuẩn tone mẫu */
     .btn-today {
-      background: var(--primary-light);
-      color: var(--primary);
-      border: 1px solid #c7d2fe;
-      height: 38px;
-      padding: 0 12px;
-      border-radius: var(--radius-sm);
+      background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+      color: #ffffff;
+      border: none;
+      height: 48px;
+      padding: 0 16px;
+      border-radius: 12px;
       font-size: 13px;
       font-weight: 700;
       cursor: pointer;
       white-space: nowrap;
+      flex-shrink: 0;
+      box-shadow: 0 3px 10px rgba(180, 83, 9, 0.22);
       transition: var(--transition);
     }
 
-    .btn-today:hover {
-      background: #e0e7ff;
+    .btn-today:active {
+      transform: scale(0.96);
     }
 
-    /* Search Box */
+    /* Ô tìm kiếm dạng form cao 48px với icon bên trái */
     .search-wrap {
       position: relative;
-      margin-bottom: 12px;
+      width: 100%;
     }
 
     .search-icon {
       position: absolute;
-      left: 12px;
+      left: 14px;
       top: 50%;
       transform: translateY(-50%);
       font-size: 16px;
-      color: var(--gray-400);
+      color: #94a3b8;
       pointer-events: none;
     }
 
     .search-input {
       width: 100%;
-      height: 44px;
-      padding: 0 38px 0 38px;
-      background: var(--gray-50);
-      border: 1.5px solid var(--gray-200);
-      border-radius: var(--radius-sm);
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--gray-900);
+      height: 48px;
+      padding: 0 36px 0 42px;
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 12px;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: #0f172a;
       outline: none;
       transition: var(--transition);
     }
 
     .search-input:focus {
-      background: #ffffff;
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+      border-color: #d97706;
+      box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.12);
     }
 
     .search-input::placeholder {
-      color: var(--gray-400);
+      color: #94a3b8;
+      font-size: 13px;
       font-weight: 400;
     }
 
     .btn-clear-search {
       position: absolute;
-      right: 10px;
+      right: 12px;
       top: 50%;
       transform: translateY(-50%);
-      background: var(--gray-200);
-      color: var(--gray-600);
+      background: #e2e8f0;
+      color: #64748b;
       border: none;
       width: 22px;
       height: 22px;
@@ -1170,73 +2051,72 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
       font-size: 11px;
       cursor: pointer;
       display: none;
-      transition: var(--transition);
     }
 
-    .btn-clear-search:hover {
-      background: var(--gray-300);
-      color: var(--gray-900);
-    }
-
-    /* Filter Tabs & Stats */
+    /* Tabs lọc & Thống kê */
     .filter-stats-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
+      gap: 6px;
+      width: 100%;
+      margin-top: 14px;
+      margin-bottom: 8px;
     }
 
     .filter-tabs {
       display: inline-flex;
-      background: var(--gray-100);
+      background: #f8fafc;
       padding: 3px;
-      border-radius: var(--radius-sm);
+      border-radius: 10px;
       gap: 3px;
+      border: 1px solid #e2e8f0;
+      flex-shrink: 0;
     }
 
     .filter-tab {
       border: none;
       background: transparent;
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 12px;
+      padding: 5px 10px;
+      border-radius: 7px;
+      font-size: 11.5px;
       font-weight: 600;
-      color: var(--gray-600);
+      color: #64748b;
       cursor: pointer;
-      transition: var(--transition);
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 4px;
+      transition: var(--transition);
     }
 
     .filter-tab.active {
-      background: #ffffff;
-      color: var(--gray-900);
-      box-shadow: var(--shadow-sm);
+      background: #d97706;
+      color: #ffffff;
+      box-shadow: 0 2px 6px rgba(217, 119, 6, 0.25);
+      font-weight: 700;
     }
 
     .badge-count {
-      background: var(--gray-200);
-      color: var(--gray-700);
-      font-size: 11px;
-      padding: 1px 6px;
-      border-radius: 10px;
+      background: #e2e8f0;
+      color: #475569;
+      font-size: 10px;
+      padding: 0 5px;
+      border-radius: 8px;
       font-weight: 700;
     }
 
     .filter-tab.active .badge-count {
-      background: var(--primary-light);
-      color: var(--primary);
+      background: rgba(255, 255, 255, 0.25);
+      color: #ffffff;
     }
 
     .stats-summary {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--gray-500);
-      display: flex;
+      display: none !important;
+      font-size: 11px;
+      font-weight: 700;
       align-items: center;
-      gap: 12px;
+      gap: 8px;
+      white-space: nowrap;
     }
 
     .stat-item {
@@ -1246,316 +2126,362 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
     }
 
     .stat-dot {
-      width: 8px;
-      height: 8px;
+      width: 7px;
+      height: 7px;
       border-radius: 50%;
     }
 
     .dot-avail { background: var(--success); }
     .dot-used { background: var(--gray-400); }
 
-    /* Progress bar */
     .progress-bar-wrap {
       width: 100%;
       height: 5px;
-      background: var(--gray-100);
+      background: #f1f5f9;
       border-radius: 10px;
       overflow: hidden;
-      margin-top: 10px;
+      margin-bottom: 16px;
     }
 
     .progress-bar-fill {
       height: 100%;
-      background: linear-gradient(90deg, var(--success), var(--primary));
+      background: linear-gradient(90deg, #10b981 0%, #d97706 100%);
       width: 0%;
-      transition: width 0.4s ease;
+      transition: width 0.3s ease;
     }
 
-    /* Voucher Cards List */
+    /* Danh sách thẻ phiếu */
     .voucher-list {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 9px;
+      width: 100%;
     }
 
     .voucher-card {
       background: #ffffff;
-      border-radius: var(--radius-md);
-      border: 1.5px solid var(--gray-200);
-      padding: 14px 16px;
-      box-shadow: var(--shadow-sm);
+      border-radius: 14px;
+      border: 1.5px solid #e2e8f0;
+      padding: 12px 14px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
       transition: var(--transition);
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      position: relative;
+      gap: 7px;
+      width: 100%;
     }
 
     .voucher-card:hover {
-      border-color: #cbd5e1;
-      box-shadow: var(--shadow-md);
+      border-color: #fde68a;
+      box-shadow: 0 6px 16px rgba(217, 119, 6, 0.08);
+      transform: translateY(-1px);
     }
 
-    /* Card used state */
     .voucher-card.is-used {
-      background: #fafbfc;
-      border-color: #e5e7eb;
-      opacity: 0.92;
+      background: #fafaf9;
+      border-color: #f1f5f9;
+      opacity: 0.85;
     }
 
     .voucher-card.is-used .voucher-code {
       text-decoration: line-through;
-      color: var(--gray-500);
-      background: #f1f5f9;
-      border-color: #e2e8f0;
+      color: #9ca3af;
+      background: #f5f5f4;
+      border-color: #e7e5e4;
     }
 
     .voucher-card.is-used .product-title {
       color: var(--gray-600);
     }
 
-    /* Card Main Info */
+    .voucher-card.flash-updated,
+    .pmh2-card.flash-updated {
+      animation: pulse-realtime 1.2s ease-in-out;
+    }
+
+    @keyframes pulse-realtime {
+      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.7); }
+      50% { transform: scale(1.02); box-shadow: 0 0 0 8px rgba(217, 119, 6, 0); border-color: #d97706; }
+      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(217, 119, 6, 0); }
+    }
+
     .card-header-row {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
       gap: 8px;
+      width: 100%;
     }
 
     .product-title {
-      font-size: 14px;
+      font-size: 13.5px;
       font-weight: 700;
-      color: var(--gray-900);
+      color: #1e293b;
       line-height: 1.35;
       flex: 1;
+      word-break: break-word;
     }
 
     .product-title mark {
       background-color: #fef08a;
       color: #854d0e;
-      padding: 1px 3px;
-      border-radius: 3px;
+      padding: 0 2px;
+      border-radius: 2px;
     }
 
     .voucher-tag {
-      font-size: 11px;
+      font-size: 10.5px;
       font-weight: 700;
-      padding: 2px 8px;
+      padding: 2px 7px;
       border-radius: 6px;
       white-space: nowrap;
-      background: var(--primary-light);
-      color: var(--primary);
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fde68a;
+      flex-shrink: 0;
     }
 
-    /* Code Box & Actions */
     .code-action-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 10px;
-      flex-wrap: wrap;
+      gap: 6px;
+      width: 100%;
     }
 
     .code-box-group {
       display: flex;
       align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
+      gap: 6px;
+      min-width: 0;
+      flex: 1;
     }
 
     .voucher-code {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 18px;
+      font-size: 15px;
       font-weight: 800;
-      letter-spacing: 1.5px;
-      color: var(--primary);
-      background: #f5f3ff;
-      border: 1.5px dashed #c4b5fd;
-      padding: 6px 14px;
-      border-radius: var(--radius-sm);
+      letter-spacing: 0.8px;
+      color: #78350f;
+      background: #fffbeb;
+      border: 1.5px dashed #fde68a;
+      padding: 5px 10px;
+      border-radius: 8px;
       display: inline-block;
       user-select: all;
-      transition: var(--transition);
+      white-space: nowrap;
     }
 
     .status-badge {
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 700;
-      padding: 3px 8px;
-      border-radius: 20px;
+      padding: 2px 7px;
+      border-radius: 12px;
       display: inline-flex;
       align-items: center;
-      gap: 5px;
+      gap: 3px;
+      white-space: nowrap;
     }
 
     .status-badge.available {
-      background: var(--success-light);
-      color: var(--success-dark);
+      background: #ecfdf5;
+      color: #047857;
+      border: 1px solid #a7f3d0;
     }
 
     .status-badge.used {
-      background: var(--gray-200);
-      color: var(--gray-600);
+      background: #f1f5f9;
+      color: #64748b;
+      border: 1px solid #e2e8f0;
     }
 
-    /* Actions */
     .card-actions {
       display: flex;
       align-items: center;
-      gap: 6px;
-      margin-left: auto;
+      gap: 5px;
+      flex-shrink: 0;
     }
 
+    /* Nút Sao Chép màu hổ phách giống nút Lưu Thông Tin */
     .btn-copy {
-      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
       color: #ffffff;
       border: none;
-      padding: 9px 18px;
-      border-radius: var(--radius-sm);
-      font-size: 13px;
+      height: 34px;
+      padding: 0 14px;
+      border-radius: 10px;
+      font-size: 12px;
       font-weight: 700;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      box-shadow: 0 2px 6px rgba(16, 185, 129, 0.35);
-      transition: var(--transition);
+      gap: 5px;
+      box-shadow: 0 3px 10px rgba(180, 83, 9, 0.28);
       white-space: nowrap;
-    }
-
-    .btn-copy:hover {
-      background: linear-gradient(135deg, #059669 0%, #047857 100%);
-      transform: translateY(-1px);
-      box-shadow: 0 4px 10px rgba(16, 185, 129, 0.45);
+      transition: var(--transition);
     }
 
     .btn-copy:active {
-      transform: translateY(1px);
+      transform: scale(0.96);
     }
 
-    .btn-copy.copied {
-      background: #047857;
-    }
-
-    /* Copy again button for used voucher */
     .btn-copy-again {
-      background: var(--gray-100);
-      color: var(--gray-700);
-      border: 1px solid var(--gray-300);
-      padding: 7px 12px;
-      border-radius: var(--radius-sm);
-      font-size: 12px;
+      background: #f8fafc;
+      color: #475569;
+      border: 1px solid #cbd5e1;
+      height: 31px;
+      padding: 0 9px;
+      border-radius: 8px;
+      font-size: 11px;
       font-weight: 600;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 5px;
+      gap: 3px;
+      white-space: nowrap;
       transition: var(--transition);
     }
 
     .btn-copy-again:hover {
-      background: var(--gray-200);
-      color: var(--gray-900);
+      background: #f1f5f9;
     }
 
-    /* Undo button */
     .btn-undo {
-      background: transparent;
-      color: var(--gray-500);
-      border: 1px dashed var(--gray-300);
-      padding: 7px 10px;
-      border-radius: var(--radius-sm);
-      font-size: 12px;
+      background: #fff1f2;
+      color: #e11d48;
+      border: 1px dashed #fecdd3;
+      height: 31px;
+      padding: 0 9px;
+      border-radius: 8px;
+      font-size: 11px;
       font-weight: 600;
       cursor: pointer;
-      transition: var(--transition);
       display: inline-flex;
       align-items: center;
-      gap: 4px;
+      gap: 3px;
+      white-space: nowrap;
+      transition: var(--transition);
     }
 
     .btn-undo:hover {
-      background: #fee2e2;
-      color: var(--danger);
-      border-color: #fca5a5;
+      background: #ffe4e6;
+      border-color: #fda4af;
     }
 
     /* Empty state */
     .empty-state {
       background: #ffffff;
       border-radius: var(--radius-md);
-      padding: 40px 20px;
+      padding: 30px 16px;
       text-align: center;
       color: var(--gray-500);
       border: 1.5px dashed var(--gray-300);
-      margin-top: 10px;
+      margin-top: 6px;
     }
 
     .empty-icon {
-      font-size: 42px;
-      margin-bottom: 12px;
+      font-size: 36px;
+      margin-bottom: 8px;
     }
 
     .empty-title {
-      font-size: 16px;
+      font-size: 14px;
       font-weight: 700;
       color: var(--gray-800);
-      margin-bottom: 4px;
+      margin-bottom: 3px;
     }
 
     .empty-desc {
-      font-size: 13px;
+      font-size: 12px;
       color: var(--gray-500);
     }
 
-    /* Loading overlay */
+    /* Loading state */
     .loading-wrap {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 50px 20px;
-      background: #ffffff;
-      border-radius: var(--radius-md);
-      border: 1px solid var(--gray-200);
+      padding: 40px 16px;
+      gap: 12px;
+      text-align: center;
     }
 
     .spinner {
-      width: 38px;
-      height: 38px;
-      border: 3.5px solid var(--gray-200);
-      border-top-color: var(--primary);
+      width: 34px;
+      height: 34px;
+      border: 3.5px solid #fde68a;
+      border-top-color: #d97706;
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
-      margin-bottom: 12px;
     }
 
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
 
-    /* Toast Notification */
+    /* Đường kẻ phân cách & nút Mở Sheet màu xanh dạng viên thuốc chuẩn theo mẫu */
+    .card-bottom-divider {
+      display: none !important;
+      border-top: 1.5px dashed #e2e8f0;
+      margin-top: 22px;
+      padding-top: 16px;
+      text-align: center;
+    }
+
+    .bottom-hint-text {
+      font-size: 11.5px;
+      color: #64748b;
+      margin-bottom: 12px;
+      font-weight: 500;
+    }
+
+    .btn-sheet-green-pill {
+      background: #dcfce7;
+      border: 1.5px solid #86efac;
+      color: #15803d;
+      padding: 9px 22px;
+      border-radius: 30px;
+      font-size: 13.5px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+      box-shadow: 0 2px 8px rgba(22, 163, 74, 0.12);
+      transition: var(--transition);
+    }
+
+    .btn-sheet-green-pill:hover, .btn-sheet-green-pill:active {
+      background: #bbf7d0;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(22, 163, 74, 0.2);
+    }
+
+    /* Toast Thông báo */
     .toast {
       position: fixed;
       bottom: 20px;
       left: 50%;
       transform: translateX(-50%) translateY(100px);
-      background: #0f172a;
+      background: linear-gradient(135deg, #0369a1 0%, #0f172a 100%);
       color: #ffffff;
-      padding: 12px 20px;
+      padding: 10px 20px;
       border-radius: 30px;
       font-size: 13px;
-      font-weight: 600;
+      font-weight: 700;
       display: flex;
       align-items: center;
       gap: 8px;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.35);
+      box-shadow: 0 10px 25px rgba(3, 105, 161, 0.4), 0 2px 6px rgba(0, 0, 0, 0.15);
       z-index: 9999;
       opacity: 0;
-      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transition: all 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
       pointer-events: none;
-      white-space: nowrap;
-      border: 1px solid rgba(255, 255, 255, 0.15);
+      white-space: normal;
+      text-align: center;
+      border: 1px solid rgba(186, 230, 253, 0.5);
+      max-width: 90vw;
     }
 
     .toast.show {
@@ -1565,183 +2491,1647 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
 
     .toast-code {
       font-family: 'JetBrains Mono', monospace;
-      color: #34d399;
+      color: #ffffff;
       font-weight: 800;
-      background: rgba(255, 255, 255, 0.1);
-      padding: 2px 6px;
-      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.22);
+      padding: 2px 7px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.35);
     }
 
-    /* Sync Indicator */
-    .sync-indicator {
+    /* Modal Cấu hình */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      padding: 14px;
+    }
+
+    .modal-backdrop.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: #ffffff;
+      border-radius: 20px;
+      max-width: 440px;
+      width: 100%;
+      padding: 22px;
+      box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.2);
+      border: 1px solid #e2e8f0;
+    }
+
+    .modal-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: #78350f;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .form-group {
+      margin-bottom: 12px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--gray-700);
+      margin-bottom: 4px;
+    }
+
+    .form-control {
+      width: 100%;
+      height: 38px;
+      padding: 0 10px;
+      border: 1.5px solid var(--gray-300);
+      border-radius: 8px;
+      font-size: 12.5px;
+      outline: none;
+      transition: var(--transition);
+    }
+
+    .form-control:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.15);
+    }
+
+    .form-help {
+      font-size: 10.5px;
+      color: var(--gray-500);
+      margin-top: 3px;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .btn-secondary {
+      background: var(--gray-100);
+      color: var(--gray-700);
+      border: 1px solid var(--gray-300);
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .btn-secondary:hover {
+      background: var(--gray-200);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+      color: #ffffff;
+      border: none;
+      padding: 7px 16px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(180, 83, 9, 0.25);
+      transition: var(--transition);
+    }
+
+    .btn-primary:active {
+      transform: scale(0.96);
+    }
+
+    /* ==========================================================================
+    /* ==========================================================================
+       HỆ THỐNG NHÂN BẢN ỨNG DỤNG (CLONE SYSTEM) & LINK GỐC ADMIN QUẢN LÝ
+       ========================================================================== */
+    
+    /* Thanh điều khiển nút Ẩn/Hiện Admin Bar (Mặc định = Ẩn / False) */
+    .admin-toggle-bar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      margin-bottom: 12px;
+      gap: 10px;
+    }
+
+    .btn-toggle-admin-bar {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: #ffffff;
+      color: #334155;
+      border: 1.5px solid #cbd5e1;
+      padding: 5px 13px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+
+    .btn-toggle-admin-bar:hover {
+      background: #f8fafc;
+      border-color: #0284c7;
+      color: #0284c7;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(2, 132, 199, 0.15);
+    }
+
+    .btn-toggle-admin-bar.active {
+      background: #0f172a;
+      color: #38bdf8;
+      border-color: #38bdf8;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.25);
+    }
+
+    .btn-toggle-admin-bar .toggle-eye {
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    .btn-toggle-admin-bar .admin-toggle-count {
+      background: #e0f2fe;
+      color: #0284c7;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 1px 7px;
+      border-radius: 10px;
+    }
+
+    .btn-toggle-admin-bar.active .admin-toggle-count {
+      background: rgba(56, 189, 248, 0.2);
+      color: #38bdf8;
+    }
+
+    .btn-toggle-admin-bar .toggle-status {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 1px 7px;
+      border-radius: 10px;
+    }
+
+    .btn-toggle-admin-bar:not(.active) .toggle-status {
+      background: #f1f5f9;
+      color: #64748b;
+    }
+
+    .btn-toggle-admin-bar.active .toggle-status {
+      background: rgba(56, 189, 248, 0.25);
+      color: #38bdf8;
+    }
+
+    /* Nút icon Ẩn thanh đặt ngay trên thanh Admin */
+    .btn-hide-admin-banner {
       display: inline-flex;
       align-items: center;
       gap: 5px;
-      font-size: 11px;
+      background: rgba(255, 255, 255, 0.12);
+      color: #e2e8f0;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .btn-hide-admin-banner:hover {
+      background: rgba(255, 255, 255, 0.22);
+      color: #ffffff;
+      border-color: rgba(255, 255, 255, 0.4);
+      transform: translateY(-1px);
+    }
+
+    /* 1. Thanh Admin Top Banner (Trên link gốc) */
+    .admin-top-banner {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: #ffffff;
+      border-radius: 16px;
+      padding: 12px 18px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      box-shadow: 0 4px 15px rgba(15, 23, 42, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      flex-wrap: wrap;
+    }
+
+    .admin-banner-left {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .admin-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 13.5px;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+      color: #38bdf8;
+    }
+
+    .admin-badge-icon {
+      font-size: 16px;
+    }
+
+    .admin-banner-sub {
+      font-size: 11.5px;
       color: #94a3b8;
     }
 
-    .sync-dot {
-      width: 7px;
-      height: 7px;
+    .btn-open-clone-manager {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      color: #ffffff;
+      border: none;
+      padding: 9px 16px;
+      border-radius: 10px;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(2, 132, 199, 0.35);
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .btn-open-clone-manager:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.45);
+      background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+    }
+
+    .clone-count-badge {
+      background: rgba(255, 255, 255, 0.25);
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    /* 2. Thanh Clone Top Banner (Trên link nhân bản) */
+    .clone-top-banner {
+      background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+      color: #ffffff;
+      border-radius: 16px;
+      padding: 12px 18px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      box-shadow: 0 4px 15px rgba(4, 120, 87, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      flex-wrap: wrap;
+    }
+
+    .clone-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 800;
+      color: #6ee7b7;
+      flex-wrap: wrap;
+    }
+
+    .clone-slug-pill {
+      background: rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+      font-size: 11.5px;
+      font-family: monospace;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-weight: 600;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+    }
+
+    .clone-banner-sub {
+      font-size: 11.5px;
+      color: #a7f3d0;
+      margin-top: 3px;
+    }
+
+    .clone-banner-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn-open-clone-sheet, .btn-back-to-admin {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+      padding: 8px 14px;
+      border-radius: 9px;
+      font-size: 12px;
+      font-weight: 700;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .btn-open-clone-sheet {
+      background: rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .btn-open-clone-sheet:hover {
+      background: rgba(255, 255, 255, 0.25);
+      color: #ffffff;
+    }
+
+    .btn-back-to-admin {
+      background: #ffffff;
+      color: #065f46;
+      border: none;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    }
+
+    .btn-back-to-admin:hover {
+      background: #f0fdf4;
+      transform: translateY(-1px);
+    }
+
+    /* 3. Clone Manager Modal Styling */
+    .clone-modal-wrapper {
+      max-width: 820px !important;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .clone-steps-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin: 16px 0;
+    }
+
+    .clone-step-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .clone-step-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      background: #0284c7;
+      color: #ffffff;
       border-radius: 50%;
-      background: #10b981;
-      box-shadow: 0 0 6px #10b981;
+      font-size: 11px;
+      font-weight: 800;
     }
 
-    .sync-dot.updating {
-      background: var(--warning);
-      box-shadow: 0 0 6px var(--warning);
-      animation: pulse 1s infinite;
+    .clone-step-title {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #0f172a;
     }
 
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
+    .clone-step-desc {
+      font-size: 11.5px;
+      color: #64748b;
+      line-height: 1.4;
     }
 
-    /* Responsive adjustments */
-    @media (max-width: 480px) {
+    .clone-step-desc a {
+      color: #0284c7;
+      font-weight: 600;
+      text-decoration: underline;
+    }
+
+    .clone-form-section {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 14px;
+      padding: 16px;
+      margin-top: 14px;
+    }
+
+    .clone-form-title {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: #1e293b;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .clone-slug-preview-box {
+      background: #e0f2fe;
+      border: 1px dashed #0284c7;
+      border-radius: 8px;
+      padding: 9px 12px;
+      font-size: 12px;
+      color: #0369a1;
+      margin-top: 12px;
+      word-break: break-all;
+    }
+
+    .clone-list-section {
+      margin-top: 20px;
+    }
+
+    .clone-list-title {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: #1e293b;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .clone-table-container {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      overflow-x: auto;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+    }
+
+    .clone-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      min-width: 580px;
+    }
+
+    .clone-table th {
+      background: #f8fafc;
+      padding: 10px 12px;
+      font-weight: 700;
+      color: #475569;
+      border-bottom: 1px solid #e2e8f0;
+      text-align: left;
+    }
+
+    .clone-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #f1f5f9;
+      color: #1e293b;
+      vertical-align: middle;
+    }
+
+    .clone-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .clone-table tr:hover td {
+      background: #f8fafc;
+    }
+
+    .clone-slug-tag {
+      display: inline-block;
+      background: #e0f2fe;
+      color: #0284c7;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 5px;
+      font-family: monospace;
+    }
+
+    .clone-actions-cell {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 6px;
+    }
+
+    .btn-clone-act {
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      text-decoration: none;
+      transition: all 0.15s ease;
+    }
+
+    .btn-clone-copy {
+      background: #f0fdf4;
+      color: #166534;
+      border-color: #bbf7d0;
+    }
+
+    .btn-clone-copy:hover {
+      background: #dcfce7;
+    }
+
+    .btn-clone-open {
+      background: #eff6ff;
+      color: #1d4ed8;
+      border-color: #bfdbfe;
+    }
+
+    .btn-clone-open:hover {
+      background: #dbeafe;
+    }
+
+    .btn-clone-del {
+      background: #fef2f2;
+      color: #b91c1c;
+      border-color: #fecaca;
+    }
+
+    .btn-clone-del:hover {
+      background: #fee2e2;
+    }
+
+    /* ==========================================================================
+       TỰ ĐỘNG THU GỌN VỪA MÀN HÌNH TRÊN MOBILE (KHÔNG TRÀN MÀN HÌNH)
+       ========================================================================== */
+    
+    /* Mặc định trên Máy Tính (PC / Laptop / Tablet rộng) */
+    .label-full { display: inline; }
+    .label-short { display: none; }
+    .badge-full { display: inline; }
+    .badge-short { display: none; }
+    .vis-btn-full { display: inline; }
+    .vis-btn-short { display: none; }
+    .vis-label-full { display: inline; }
+    .vis-label-short { display: none; }
+
+    /* Chế độ Mobile & Màn hình nhỏ (<= 768px): Tự động thu gọn vừa khít 100% */
+    @media (max-width: 768px) {
+      html, body {
+        overflow-x: hidden !important;
+        max-width: 100vw !important;
+      }
+
       .app-container {
-        padding: 8px;
+        width: 100% !important;
+        max-width: 100vw !important;
+        padding: 0 8px !important;
+        margin: 8px auto 25px auto !important;
+        box-sizing: border-box !important;
+        overflow-x: hidden !important;
       }
-      .code-action-row {
-        flex-direction: column;
-        align-items: flex-start;
+
+      /* Kích hoạt chuyển đổi nhãn thu gọn */
+      .label-full { display: none !important; }
+      .label-short { display: inline !important; }
+      .badge-full { display: none !important; }
+      .badge-short { display: inline !important; }
+      .vis-btn-full { display: none !important; }
+      .vis-btn-short { display: inline !important; }
+      .vis-label-full { display: none !important; }
+      .vis-label-short { display: inline !important; }
+
+      .view-mode-bar-wrapper {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        margin-bottom: 12px !important;
+        gap: 8px !important;
       }
-      .card-actions {
-        width: 100%;
-        margin-left: 0;
-        margin-top: 4px;
+
+      /* Thanh chọn chế độ xem tự động co giãn 100% vừa vặn không tràn */
+      .view-mode-bar {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        display: flex !important;
+        justify-content: space-between !important;
+        padding: 4px !important;
+        gap: 3px !important;
+        border-radius: 14px !important;
+        overflow: hidden !important;
       }
-      .btn-copy {
-        width: 100%;
-        justify-content: center;
+
+      /* 3 nút chế độ chia đều diện tích (mỗi nút ~33%), căn giữa hoàn hảo */
+      .view-mode-btn {
+        flex: 1 1 0 !important;
+        min-width: 0 !important;
+        padding: 8px 3px !important;
+        font-size: 11.5px !important;
+        font-weight: 700 !important;
+        justify-content: center !important;
+        text-align: center !important;
+        gap: 4px !important;
+        border-radius: 10px !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
       }
-      .btn-copy-again {
-        flex: 1;
-        justify-content: center;
+
+      .view-mode-btn .view-btn-icon {
+        font-size: 12.5px;
+        flex-shrink: 0;
       }
+
+      /* Huy hiệu Đã ẩn thu gọn xinh xắn */
+      .tab-hide-badge {
+        padding: 1px 4px !important;
+        font-size: 9.5px !important;
+        border-radius: 6px !important;
+        margin-left: 2px !important;
+        flex-shrink: 0;
+      }
+
+      /* Khung điều khiển ẩn/hiện 2 tab tự co giãn vừa khít màn hình */
+      .tab-visibility-control-bar {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        padding: 5px 8px !important;
+        border-radius: 14px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        gap: 5px !important;
+      }
+
+      .vis-control-label {
+        font-size: 10.5px !important;
+        white-space: nowrap !important;
+        flex-shrink: 0;
+      }
+
+      .vis-control-buttons {
+        flex: 1 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-end !important;
+        gap: 4px !important;
+        min-width: 0 !important;
+      }
+
+      .btn-tab-vis {
+        flex: 1 1 0 !important;
+        min-width: 0 !important;
+        padding: 5px 3px !important;
+        font-size: 10.5px !important;
+        justify-content: center !important;
+        text-align: center !important;
+        gap: 3px !important;
+        border-radius: 8px !important;
+        white-space: nowrap !important;
+      }
+
+      .btn-tab-vis .vis-icon {
+        font-size: 11px;
+        flex-shrink: 0;
+      }
+
+      /* Banner Admin & Bản sao tự co giãn trên Mobile */
+      .admin-top-banner {
+        padding: 12px 14px !important;
+        border-radius: 14px !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+      }
+
+      .admin-banner-right {
+        display: flex !important;
+        gap: 8px !important;
+        width: 100% !important;
+      }
+
+      .btn-open-clone-manager {
+        flex: 1 !important;
+        justify-content: center !important;
+        font-size: 12px !important;
+        padding: 8px 10px !important;
+      }
+
+      .btn-hide-admin-banner {
+        font-size: 11.5px !important;
+        padding: 8px 10px !important;
+      }
+
+      .clone-top-banner {
+        padding: 12px 14px !important;
+        border-radius: 14px !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+      }
+
+      .clone-banner-right {
+        display: flex !important;
+        gap: 6px !important;
+        width: 100% !important;
+      }
+
+      .btn-open-clone-sheet, .btn-back-to-admin {
+        flex: 1 !important;
+        justify-content: center !important;
+        text-align: center !important;
+        font-size: 11px !important;
+        padding: 7px 6px !important;
+      }
+
+      .admin-toggle-bar {
+        margin-bottom: 8px !important;
+      }
+
+      .btn-toggle-admin-bar {
+        font-size: 11px !important;
+        padding: 4px 10px !important;
+      }
+    }
+
+    /* Màn hình siêu nhỏ (<= 360px: iPhone SE, Galaxy Fold...) */
+    @media (max-width: 360px) {
+      .view-mode-btn {
+        font-size: 10.5px !important;
+        padding: 7px 2px !important;
+        gap: 2px !important;
+      }
+
+      .btn-tab-vis {
+        font-size: 9.5px !important;
+        padding: 5px 2px !important;
+      }
+
+      .vis-control-label {
+        display: none !important;
+      }
+    /* Canvas hiệu ứng pháo hoa tung lên khi bấm Sao Chép */
+    #fireworksCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 999999;
+    }
+
+    /* Khung hiệu ứng pháo hoa bùng nổ giữa màn hình */
+    .celebration-center-burst {
+      position: fixed;
+      top: 42%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.65);
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.98));
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 999px;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4), 0 0 25px rgba(245, 158, 11, 0.5);
+      border: 2px solid #f59e0b;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      pointer-events: none;
+      z-index: 1000000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .celebration-center-burst.show {
+      opacity: 1;
+      visibility: visible;
+      transform: translate(-50%, -50%) scale(1.05);
+    }
+    .burst-icon {
+      font-size: 28px;
+      animation: burstIconBounce 0.6s infinite alternate;
+    }
+    @keyframes burstIconBounce {
+      from { transform: scale(0.9) rotate(-6deg); }
+      to { transform: scale(1.2) rotate(6deg); }
+    }
+    .burst-content {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      line-height: 1.25;
+    }
+    .burst-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: #fde047;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .burst-code {
+      font-size: 16px;
+      font-weight: 900;
+      color: #ffffff;
+      font-family: monospace;
+      letter-spacing: 1px;
+    }
+
+    /* Hiệu ứng pháo hoa CSS bung toả giữa màn hình */
+    @keyframes fwPopOut {
+      0% {
+        transform: translate(-50%, -50%) translate(0, 0) scale(1.1);
+        opacity: 1;
+      }
+      65% {
+        opacity: 1;
+      }
+      100% {
+        transform: translate(-50%, -50%) translate(var(--tx), var(--ty)) scale(0.25);
+        opacity: 0;
+      }
+    }
+    .fw-css-spark {
+      position: fixed;
+      pointer-events: none;
+      z-index: 1000001;
+      border-radius: 50%;
+      will-change: transform, opacity;
+      animation: fwPopOut 1.15s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
     }
   </style>
 </head>
 <body>
 
-  <div class="app-container">
+  <!-- Canvas Pháo Hoa Tung Lên Giữa Màn Hình Khi Bấm Sao Chép -->
+  <canvas id="fireworksCanvas"></canvas>
 
-    <!-- Header -->
-    <header class="app-header">
-      <div class="header-top">
-        <div class="app-title-wrap">
-          <div class="app-icon">🏷️</div>
-          <div>
-            <h1 class="app-title">Tra Cứu Mã Phiếu Mua Hàng</h1>
-            <p class="app-subtitle" id="sheetInfo">Đang kết nối trang tính PMH...</p>
-          </div>
-        </div>
-        <button class="btn-refresh" id="btnRefresh" title="Làm mới dữ liệu từ Sheet">
-          <span>🔄</span> <span>Tải lại</span>
-        </button>
-      </div>
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
-        <div class="sync-indicator">
-          <span class="sync-dot" id="syncDot"></span>
-          <span id="syncText">Đã kết nối Sheet</span>
-        </div>
-        <div style="font-size: 11px; color: #94a3b8;" id="totalCouponsBadge">
-          330 phiếu • Siêu thị 1841
-        </div>
-      </div>
-    </header>
-
-    <!-- Controls Card: Date selector, Search, and Tabs -->
-    <div class="controls-card">
-
-      <!-- Date selector row -->
-      <div class="date-row">
-        <label class="date-label" for="dateSelect">
-          <span>📅</span> <span>Ngày:</span>
-        </label>
-        <div class="date-selector-group">
-          <button class="date-nav-btn" id="btnPrevDate" title="Ngày trước">◀</button>
-          <select class="date-select" id="dateSelect">
-            <option value="">Đang tải danh sách ngày...</option>
-          </select>
-          <button class="date-nav-btn" id="btnNextDate" title="Ngày sau">▶</button>
-          <button class="btn-today" id="btnToday">Hôm nay</button>
-        </div>
-      </div>
-
-      <!-- Search Input -->
-      <div class="search-wrap">
-        <span class="search-icon">🔍</span>
-        <input 
-          type="text" 
-          class="search-input" 
-          id="searchInput" 
-          placeholder="Gõ vài ký tự sản phẩm (vd: Sunhouse, Toshiba, bep ga, noi com, rapido...)"
-          autocomplete="off"
-        >
-        <button class="btn-clear-search" id="btnClearSearch" title="Xóa tìm kiếm">✕</button>
-      </div>
-
-      <!-- Filter tabs & Stats -->
-      <div class="filter-stats-row">
-        <div class="filter-tabs">
-          <button class="filter-tab active" data-status="all">
-            Tất cả <span class="badge-count" id="countAll">0</span>
-          </button>
-          <button class="filter-tab" data-status="available">
-            <span class="stat-dot dot-avail"></span> Chưa dùng <span class="badge-count" id="countAvail">0</span>
-          </button>
-          <button class="filter-tab" data-status="used">
-            <span class="stat-dot dot-used"></span> Đã dùng <span class="badge-count" id="countUsed">0</span>
-          </button>
-        </div>
-
-        <div class="stats-summary">
-          <span class="stat-item">
-            <span class="stat-dot dot-avail"></span> Còn: <strong id="statAvail" style="color: var(--success-dark);">0</strong>
-          </span>
-          <span class="stat-item">
-            <span class="stat-dot dot-used"></span> Đã dùng: <strong id="statUsed">0</strong>
-          </span>
-        </div>
-      </div>
-
-      <!-- Mini Progress bar -->
-      <div class="progress-bar-wrap">
-        <div class="progress-bar-fill" id="progressBar"></div>
-      </div>
-
+  <!-- Khung Bùng Nổ Giữa Màn Hình Khi Bấm Sao Chép -->
+  <div class="celebration-center-burst" id="celebrationBurst">
+    <div class="burst-icon" id="burstIcon">🎉</div>
+    <div class="burst-content">
+      <div class="burst-title">ĐÃ SAO CHÉP MÃ!</div>
+      <div class="burst-code" id="burstCode"></div>
     </div>
-
-    <!-- Main Results Section -->
-    <main id="mainContent">
-      <div class="loading-wrap" id="loadingBox">
-        <div class="spinner"></div>
-        <p style="font-weight: 600; color: var(--gray-700);">Đang đọc dữ liệu phiếu mua hàng...</p>
-        <p style="font-size: 12px; color: var(--gray-400); margin-top: 4px;">Vui lòng chờ trong giây lát</p>
-      </div>
-
-      <div class="voucher-list" id="voucherList" style="display: none;"></div>
-
-      <div class="empty-state" id="emptyState" style="display: none;">
-        <div class="empty-icon">🔎</div>
-        <h3 class="empty-title">Không tìm thấy phiếu phù hợp</h3>
-        <p class="empty-desc" id="emptyDesc">Thử đổi từ khóa tìm kiếm hoặc chọn ngày khác xem nhé.</p>
-      </div>
-    </main>
-
   </div>
 
-  <!-- Toast Notification -->
+
+  <div class="app-container mode-parallel" id="appContainer">
+
+    <!-- Nút Icon Ẩn/Hiện Thanh Quản Trị Admin (Mặc định = Ẩn / False) -->
+    <div class="admin-toggle-bar" id="adminToggleBar" style="display: none;">
+      <button type="button" class="btn-toggle-admin-bar" id="btnToggleAdminBanner" title="Bấm để Ẩn / Hiện Thanh Quản Trị Admin (Mặc định = Ẩn)">
+        <span class="toggle-eye" id="adminToggleEye">👁️‍🗨️</span>
+        <span class="toggle-crown">👑</span>
+        <span>Quản Trị Admin</span>
+        <span class="admin-toggle-count" id="adminToggleCountBadge">0</span>
+        <span class="toggle-status" id="adminToggleStatus">Đang Ẩn</span>
+      </button>
+    </div>
+
+    <!-- 1. Thanh Quản Trị Admin (Chỉ hiển thị trên Link Gốc Admin khi được bấm Hiện) -->
+    <div class="admin-top-banner" id="adminTopBanner" style="display: none;">
+      <div class="admin-banner-left">
+        <div class="admin-badge">
+          <span class="admin-badge-icon">👑</span>
+          <span>TRANG CHỦ QUẢN TRỊ ADMIN (LINK GỐC)</span>
+        </div>
+        <div class="admin-banner-sub">
+          Tạo bản sao Google Trang Tính &amp; cấp link rút gọn riêng biệt cho từng chi nhánh
+        </div>
+      </div>
+      <div class="admin-banner-right">
+        <button type="button" class="btn-open-clone-manager" id="btnOpenCloneManager" title="Mở bảng quản lý & tạo bản sao mới">
+          <span>⚡</span>
+          <span>Quản Lý Nhân Bản &amp; Bản Sao Mới</span>
+          <span class="clone-count-badge" id="adminCloneCountBadge">0</span>
+        </button>
+        <button type="button" class="btn-hide-admin-banner" id="btnHideAdminBanner" title="Bấm để ẩn thanh quản trị này">
+          <span>👁️</span>
+          <span>Ẩn Thanh</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 2. Thanh Bản Sao Ứng Dụng (Chỉ hiển thị khi truy cập Link Rút Gọn của Bản Sao) -->
+    <div class="clone-top-banner" id="cloneTopBanner" style="display: none;">
+      <div class="clone-banner-left">
+        <div class="clone-badge">
+          <span>🏪</span>
+          <span id="cloneBannerTitle">BẢN SAO ỨNG DỤNG</span>
+          <span class="clone-slug-pill" id="cloneBannerSlug">slug</span>
+        </div>
+        <div class="clone-banner-sub">
+          Đang kết nối dữ liệu Google Sheet bản sao riêng biệt &amp; đồng bộ nội bộ độc lập.
+        </div>
+      </div>
+      <div class="clone-banner-right">
+        <a href="#" target="_blank" class="btn-open-clone-sheet" id="btnOpenCloneSheet" title="Mở trực tiếp Google Sheet của bản sao này">
+          <span>📊 Mở Sheet Bản Sao ↗</span>
+        </a>
+        <a href="https://leevu221-lang.github.io/tracuuphieumuahang/" class="btn-back-to-admin" id="btnBackToAdmin" title="Quay lại Trang Chủ Quản Trị Admin">
+          <span>👑 Về Link Gốc Admin</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Thanh chuyển đổi chế độ xem & Điều khiển Ẩn/Hiện 2 Tab -->
+    <div class="view-mode-bar-wrapper">
+      <div class="view-mode-bar">
+        <button class="view-mode-btn active" id="btnModeParallel" data-mode="parallel">
+          <span class="view-btn-icon">⚡</span>
+          <span class="label-full">Song Song 2 Bảng</span>
+          <span class="label-short">Song Song</span>
+        </button>
+        <button class="view-mode-btn" id="btnModeSheet1" data-mode="sheet1">
+          <span class="view-btn-icon">🏷️</span>
+          <span class="label-full">PMH Siêu Thị (Sheet 1)</span>
+          <span class="label-short">Sheet 1</span>
+          <span class="tab-hide-badge" id="badgeHiddenSheet1" style="display: none;">
+            <span class="badge-full">Đã ẩn</span>
+            <span class="badge-short">Ẩn</span>
+          </span>
+        </button>
+        <button class="view-mode-btn" id="btnModePmh2" data-mode="pmh2">
+          <span class="view-btn-icon">👤</span>
+          <span class="label-full">Phiếu Mua Hàng Admin (PMH2)</span>
+          <span class="label-short">PMH Admin</span>
+          <span class="tab-hide-badge" id="badgeHiddenPmh2" style="display: none;">
+            <span class="badge-full">Đã ẩn</span>
+            <span class="badge-short">Ẩn</span>
+          </span>
+        </button>
+      </div>
+
+      <!-- Khung điều khiển Ẩn / Hiện 2 Tab (Đồng bộ tức thì mọi trình duyệt) -->
+      <div class="tab-visibility-control-bar">
+        <div class="vis-control-label">
+          <span class="vis-label-full">🔄 Đồng bộ mọi máy:</span>
+          <span class="vis-label-short">🔄 Đồng bộ:</span>
+        </div>
+        <div class="vis-control-buttons">
+          <button type="button" class="btn-tab-vis is-visible" id="btnToggleVisSheet1" title="Bấm để Ẩn/Hiện Bảng Sheet 1 trên tất cả trình duyệt">
+            <span class="vis-icon">👁️</span>
+            <span class="vis-btn-full">Sheet 1: <strong class="vis-status">Hiện</strong></span>
+            <span class="vis-btn-short">S1: <strong class="vis-status">Hiện</strong></span>
+          </button>
+          <button type="button" class="btn-tab-vis is-visible" id="btnToggleVisPmh2" title="Bấm để Ẩn/Hiện Bảng PMH2 trên tất cả trình duyệt">
+            <span class="vis-icon">👁️</span>
+            <span class="vis-btn-full">PMH2: <strong class="vis-status">Hiện</strong></span>
+            <span class="vis-btn-short">P2: <strong class="vis-status">Hiện</strong></span>
+          </button>
+          <button type="button" class="btn-tab-vis btn-vis-all" id="btnToggleVisBoth" title="Ẩn hoặc hiện lại cả 2 bảng trên tất cả trình duyệt">
+            <span class="vis-icon">🔒</span>
+            <span id="textToggleVisBoth">
+              <span class="vis-btn-full">Ẩn Cả 2 Tab</span>
+              <span class="vis-btn-short">Ẩn Cả 2</span>
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Khung lưới song song 2 bảng -->
+    <div class="parallel-grid" id="parallelGrid">
+
+      <!-- ================= BẢNG 1: PMH SIÊU THỊ 1841 (SHEET 1) ================= -->
+      <div class="main-card col-sheet1" id="cardSheet1">
+
+      <!-- Header: Màu kem pastel ấm áp chuẩn ảnh mẫu -->
+      <div class="card-header">
+        <div class="header-top-actions" style="display: none;">
+          <button class="btn-header-action" id="btnRefresh" title="Tải lại dữ liệu">
+            <span>🔄</span>
+          </button>
+          <button class="btn-header-action" id="btnSettings" title="Cài đặt kết nối">
+            <span>⚙️</span>
+          </button>
+        </div>
+
+        <h1 class="header-title">
+          <span>🏷️</span>
+          <span>TRA CỨU PHIẾU MUA HÀNG</span>
+        </h1>
+
+        <!-- Badge hình viên thuốc trắng có chấm xanh và thời gian thực y hệt hình mẫu -->
+        <div class="header-live-badge">
+          <span class="live-dot" id="syncDot"></span>
+          <span id="clockDisplay">--:--:-- --/--/----</span>
+        </div>
+
+        <div class="header-info-sub">
+          <span id="sheetInfo">1841 - PHIẾU MUA HÀNG EVENT</span> • <span id="totalCouponsBadge">330 phiếu</span>
+          <span id="syncText" style="display: none;">Đã kết nối trực tiếp</span>
+        </div>
+      </div>
+
+      <!-- Thân thẻ chứa form nhập liệu: Nền trắng tinh khôi -->
+      <div class="card-body">
+
+        <!-- Form Group 1: Chọn ngày -->
+        <div class="form-group-item">
+          <label class="form-field-label">
+            <span>Ngày Tra Cứu</span>
+            <span class="req-star">*</span>
+          </label>
+          <div class="date-row">
+            <button class="date-nav-btn" id="btnPrevDate" title="Ngày trước">◀</button>
+            <select class="date-select" id="dateSelect">
+              <option value="">Đang tải ngày...</option>
+            </select>
+            <button class="date-nav-btn" id="btnNextDate" title="Ngày sau">▶</button>
+            <button class="btn-today" id="btnToday">Hôm nay</button>
+          </div>
+        </div>
+
+        <!-- Form Group 2: Ô tìm kiếm -->
+        <div class="form-group-item">
+          <label class="form-field-label">
+            <span>Sản Phẩm & Mã Phiếu Mua Hàng</span>
+            <span class="req-star">*</span>
+          </label>
+          <div class="search-wrap">
+            <span class="search-icon">🏷️</span>
+            <input 
+              type="text" 
+              class="search-input" 
+              id="searchInput" 
+              placeholder="VD: Tivi Sony, Bếp gas, mã phiếu..."
+              autocomplete="off"
+            >
+            <button class="btn-clear-search" id="btnClearSearch" title="Xóa tìm kiếm">✕</button>
+          </div>
+        </div>
+
+        <!-- Filter tabs & Thống kê -->
+        <div class="filter-stats-row">
+          <div class="filter-tabs">
+            <button class="filter-tab active" data-status="all">
+              Tất cả <span class="badge-count" id="countAll">0</span>
+            </button>
+            <button class="filter-tab" data-status="available">
+              <span class="stat-dot dot-avail"></span> Chưa dùng <span class="badge-count" id="countAvail">0</span>
+            </button>
+            <button class="filter-tab" data-status="used">
+              <span class="stat-dot dot-used"></span> Đã dùng <span class="badge-count" id="countUsed">0</span>
+            </button>
+          </div>
+
+          <div class="stats-summary" style="display: none;">
+            <span class="stat-item">
+              <span class="stat-dot dot-avail"></span> Còn: <strong id="statAvail" style="color: var(--success-dark);">0</strong>
+            </span>
+            <span class="stat-item">
+              <span class="stat-dot dot-used"></span> Dùng: <strong id="statUsed">0</strong>
+            </span>
+          </div>
+        </div>
+
+        <!-- Thanh tiến độ -->
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" id="progressBar"></div>
+        </div>
+
+        <!-- Danh sách kết quả phiếu -->
+        <main id="mainContent">
+          <div class="loading-wrap" id="loadingBox">
+            <div class="spinner"></div>
+            <p style="font-weight: 700; color: #78350f; font-size: 13px;">Đang kết nối trực tiếp Google Sheet...</p>
+          </div>
+
+          <div class="voucher-list" id="voucherList" style="display: none;"></div>
+
+          <div class="empty-state" id="emptyState" style="display: none;">
+            <div class="empty-icon">🔎</div>
+            <h3 class="empty-title">Không tìm thấy phiếu phù hợp</h3>
+            <p class="empty-desc" id="emptyDesc">Thử đổi từ khóa tìm kiếm hoặc chọn ngày khác nhé.</p>
+          </div>
+        </main>
+
+        <!-- Phân cách nét đứt & Nút Xem Kết Quả (Trang Tính) (Đã ẩn) -->
+        <div class="card-bottom-divider" style="display: none;">
+          <div class="bottom-hint-text">Mẹo: Bấm <strong>Sao chép</strong> để tự động đánh dấu đã dùng</div>
+          <a 
+            href="https://docs.google.com/spreadsheets/d/17rloLx_U9GhO_QNdpfhsMNEzKnMzCVli9sieVRlmKDU/edit?usp=sharing" 
+            target="_blank" 
+            class="btn-sheet-green-pill"
+            id="linkOpenSheet"
+            title="Mở Google Sheet trên tab mới"
+          >
+            <span>📊</span>
+            <span>Xem Kết Quả (Trang Tính) ↗</span>
+          </a>
+        </div>
+
+      </div> <!-- .card-body -->
+      </div> <!-- #cardSheet1 -->
+
+      <!-- ================= BẢNG 2: PMH CẤP THEO USER 43751 & 7721 (SHEET PMH2) ================= -->
+      <div class="main-card col-pmh2" id="cardPmh2">
+        <!-- Header: Xanh pastel thanh lịch -->
+        <div class="card-header header-pmh2">
+          <h1 class="header-title">
+            <span>⚡</span>
+            <span>PHIẾU MUA HÀNG ADMIN</span>
+          </h1>
+
+          <div class="header-live-badge" style="border-color: #bae6fd;">
+            <span class="live-dot" style="background: #0284c7;"></span>
+            <span id="pmh2ClockDisplay" style="color: #0369a1;">Trang tính PMH2</span>
+          </div>
+
+          <div class="header-info-sub">
+            <span>Sheet: PMH2</span> • <span id="pmh2CountBadge">Đang tải phiếu...</span>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <!-- Nút Ẩn/Hiện Ô Dán Dữ Liệu PMH2 & Nút Tải lại -->
+          <div class="pmh2-toolbar">
+            <button type="button" class="btn-toggle-drawer" id="btnToggleDrawerPmh2" aria-expanded="false">
+              <span style="display:flex;align-items:center;gap:6px;">
+                <span>📝</span>
+                <span>Dán Dữ Liệu PMH2 (Auto Lưu & Đóng)</span>
+              </span>
+              <span class="drawer-caret" id="drawerCaretPmh2">▾</span>
+            </button>
+            <button type="button" class="btn-refresh-icon" id="btnRefreshPmh2" title="Tải lại dữ liệu sheet PMH2">
+              <span>🔄</span>
+            </button>
+          </div>
+
+          <!-- Khung Dán Dữ Liệu PMH2 (Collapsible Drawer Ẩn/Hiện) -->
+          <div class="pmh2-paste-drawer" id="drawerPastePmh2" style="display: none;">
+            <div class="drawer-inner-header">
+              <div class="drawer-title">
+                <span>📥</span>
+                <span>Dán Dữ Liệu & Tự Động Lưu Về Sheet "PMH2"</span>
+              </div>
+              <button type="button" class="btn-close-drawer" id="btnCloseDrawerPmh2" title="Đóng khung">✕</button>
+            </div>
+            <div style="margin: 0 0 10px 0; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+              <span style="display:inline-flex;align-items:center;gap:5px;background:#e0f2fe;color:#0369a1;padding:4px 10px;border-radius:12px;font-size:11.5px;font-weight:700;border:1px solid #bae6fd;">
+                ⚡ Tự động lọc chỉ lưu User 43751 & 7721 • Tự lưu & đóng ngay
+              </span>
+            </div>
+            <p class="drawer-subtext">
+              Chỉ cần <strong>dán (Paste / Ctrl+V)</strong> nội dung tin nhắn bot/danh sách vào ô bên dưới. Hệ thống sẽ <strong>tự động lọc lấy các phiếu thuộc User 43751 & 7721</strong> để lưu vào Sheet "PMH2" (bỏ qua mọi user khác) và <strong>tự đóng khung ngay</strong>.
+            </p>
+            <textarea 
+              id="txtPastePmh2" 
+              class="drawer-textarea" 
+              rows="6" 
+              placeholder="⚡ Dán nội dung bot vào đây (Tự động lọc chỉ lưu User 43751 & 7721, tự lưu & đóng lại)...
+Ví dụ:
+CMA_LINH_43751_TC
+➜ PMH MM200 : OXIL5VY5SA
+━━━━━━
+CMA_HOA_7721_TC
+➜ PMH ICT1000 : ZKL789421A
+━━━━━━"
+            ></textarea>
+
+            <div class="drawer-mode-select">
+              <span style="font-weight:700;color:#0369a1;">Chế độ lưu:</span>
+              <label class="mode-radio-label">
+                <input type="radio" name="pmh2SaveMode" value="append" checked>
+                <span>Thêm tiếp vào cuối (Append)</span>
+              </label>
+              <label class="mode-radio-label">
+                <input type="radio" name="pmh2SaveMode" value="overwrite">
+                <span>Ghi đè toàn bộ Sheet PMH2</span>
+              </label>
+            </div>
+
+            <div class="drawer-actions">
+              <button type="button" class="btn-save-to-sheet" id="btnSaveToSheetPmh2">
+                <span>💾</span>
+                <span id="saveBtnTextPmh2">Lưu Ngược Về Sheet "PMH2"</span>
+              </button>
+              <button type="button" class="btn-clear-text" id="btnClearTextPmh2">
+                <span>🗑️ Xoá</span>
+              </button>
+            </div>
+
+            <div class="drawer-status-msg" id="drawerStatusMsg" style="display: none;"></div>
+          </div>
+
+          <!-- Bộ lọc User: Tất cả | 43751 (Linh) | 7721 (Hoa) -->
+          <div class="form-group-item">
+            <label class="form-field-label">
+              <span>Lọc Theo Nhân Viên</span>
+            </label>
+            <div class="user-pill-row" id="pmh2UserFilterRow">
+              <button class="user-pill active" data-user="all">Tất cả (43751 & 7721)</button>
+              <button class="user-pill" data-user="43751">👤 43751 (Linh)</button>
+              <button class="user-pill" data-user="7721">👤 7721 (Hoa)</button>
+            </div>
+          </div>
+
+          <!-- Bộ lọc Loại: Tất cả | PMH ICT | PMH MM -->
+          <div class="form-group-item">
+            <label class="form-field-label">
+              <span>Loại Phiếu Mua Hàng</span>
+            </label>
+            <div class="type-pill-row" id="pmh2TypeFilterRow">
+              <button class="type-pill active" data-type="all">Tất cả loại</button>
+              <button class="type-pill" data-type="ICT">📱 PMH ICT</button>
+              <button class="type-pill" data-type="MM">🧺 PMH MM</button>
+            </div>
+          </div>
+
+          <!-- Bộ lọc Trạng thái: Tất cả | Khả dụng | Đã sử dụng | Lỗi/Hết -->
+          <div class="form-group-item">
+            <label class="form-field-label">
+              <span>Trạng Thái Phiếu</span>
+            </label>
+            <div class="status-pill-row" id="pmh2StatusFilterRow">
+              <button class="status-pill" data-status="all">Tất cả</button>
+              <button class="status-pill active" data-status="avail">✅ Khả dụng (<span id="pmh2StatAvailBadge">0</span>)</button>
+              <button class="status-pill" data-status="used">🔒 Đã dùng (<span id="pmh2StatUsedBadge">0</span>)</button>
+              <button class="status-pill" data-status="error">❌ Lỗi / Hết (<span id="pmh2StatErrBadge">0</span>)</button>
+            </div>
+          </div>
+
+          <!-- Ô tìm kiếm mã phiếu -->
+          <div class="form-group-item">
+            <label class="form-field-label">
+              <span>Tìm Kiếm Mã PMH / Cú Pháp</span>
+            </label>
+            <div class="search-wrap">
+              <span class="search-icon">🔍</span>
+              <input 
+                type="text" 
+                class="search-input" 
+                id="searchPmh2Input" 
+                placeholder="VD: OXIL5VY5SA, MM200, Linh..."
+                autocomplete="off"
+              >
+              <button class="btn-clear-search" id="btnClearSearchPmh2" title="Xóa tìm kiếm">✕</button>
+            </div>
+          </div>
+
+          <!-- Thống kê nhanh PMH2 -->
+          <div class="filter-stats-row">
+            <div class="filter-tabs">
+              <span style="font-size:12px;font-weight:700;color:#0284c7;" id="pmh2StatsText">0 phiếu</span>
+            </div>
+            <div class="stats-summary" style="display:flex;flex-wrap:wrap;gap:8px;">
+              <span class="stat-item"><span class="stat-dot dot-avail"></span> Khả dụng: <strong id="pmh2CountAvail" style="color:var(--success-dark)">0</strong></span>
+              <span class="stat-item"><span class="stat-dot" style="background:#4f46e5;width:8px;height:8px;border-radius:50%;display:inline-block;"></span> Đã dùng: <strong id="pmh2CountUsed" style="color:#4f46e5">0</strong></span>
+              <span class="stat-item"><span class="stat-dot dot-used"></span> Lỗi / Hết: <strong id="pmh2CountErr" style="color:var(--danger)">0</strong></span>
+            </div>
+          </div>
+
+          <!-- Loading Box PMH2 -->
+          <div class="loading-wrap" id="loadingBoxPmh2" style="display: flex;">
+            <div class="spinner"></div>
+            <p style="font-weight: 700; color: #0369a1; font-size: 13px;">Đang đồng bộ sheet PMH2...</p>
+          </div>
+
+          <!-- Danh sách thẻ PMH2 -->
+          <div class="pmh2-list" id="pmh2List" style="display: none;"></div>
+
+          <!-- Empty state PMH2 -->
+          <div class="empty-state" id="emptyStatePmh2" style="display: none;">
+            <div class="empty-icon">🔎</div>
+            <h3 class="empty-title">Không tìm thấy phiếu nào</h3>
+            <p class="empty-desc" id="emptyDescPmh2">Không có phiếu PMH khớp với bộ lọc.</p>
+          </div>
+
+        </div>
+      </div> <!-- #cardPmh2 -->
+
+    </div> <!-- .parallel-grid -->
+
+    <!-- Khung thông báo khi CẢ 2 BẢNG ĐỀU BỊ ẨN TRÊN TOÀN HỆ THỐNG -->
+    <div class="all-tabs-hidden-card" id="allTabsHiddenCard" style="display: none;">
+      <div class="hidden-card-icon">🙈</div>
+      <h2 class="hidden-card-title">Cả 2 Bảng Phiếu Mua Hàng Đang Tạm Ẩn</h2>
+      <p class="hidden-card-desc">Cả 2 bảng (Sheet 1 & PMH2) đã được ẩn trên tất cả các trình duyệt. Bấm nút bên dưới để mở lại bảng bạn muốn xem.</p>
+      <div class="hidden-card-buttons">
+        <button type="button" class="btn-restore-tab" id="btnRestoreSheet1">
+          <span>🏷️</span> <span>Hiện Lại Bảng Sheet 1</span>
+        </button>
+        <button type="button" class="btn-restore-tab" id="btnRestorePmh2">
+          <span>👤</span> <span>Hiện Lại Bảng PMH2</span>
+        </button>
+        <button type="button" class="btn-restore-tab btn-restore-all" id="btnRestoreBoth">
+          <span>⚡</span> <span>Hiện Lại Cả 2 Bảng</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Element ẩn lưu giữ link footer cho JS -->
+    <a id="footerSheetLink" href="https://docs.google.com/spreadsheets/d/17rloLx_U9GhO_QNdpfhsMNEzKnMzCVli9sieVRlmKDU/edit?usp=sharing" style="display: none;"></a>
+
+  </div> <!-- .app-container -->
+
+  <!-- Modal Cấu hình -->
+  <div class="modal-backdrop" id="settingsModal">
+    <div class="modal-content">
+      <h3 class="modal-title"><span>⚙️</span> <span>Cấu Hình Kết Nối Google Sheet</span></h3>
+      <div class="form-group">
+        <label class="form-label">Google Sheet Gốc:</label>
+        <a 
+          href="https://docs.google.com/spreadsheets/d/17rloLx_U9GhO_QNdpfhsMNEzKnMzCVli9sieVRlmKDU/edit?usp=sharing" 
+          target="_blank" 
+          style="display:block;font-size:12px;color:var(--primary);margin-bottom:6px;word-break:break-all;font-weight:600;"
+        >
+          https://docs.google.com/spreadsheets/d/17rloLx_U9GhO_QNdpfhsMNEzKnMzCVli9sieVRlmKDU/edit?usp=sharing ↗
+        </a>
+        <input type="text" class="form-control" id="cfgSheetId" value="17rloLx_U9GhO_QNdpfhsMNEzKnMzCVli9sieVRlmKDU" readonly style="background:#f1f5f9;cursor:not-allowed;">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Apps Script Web App URL (Đồng bộ Sheet):</label>
+        <input type="text" class="form-control" id="cfgWebAppUrl" placeholder="https://script.google.com/macros/s/.../exec">
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" id="btnCloseSettings">Đóng</button>
+        <button class="btn-primary" id="btnSaveSettings">Lưu Cấu Hình</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Quản Lý & Tạo Bản Sao Mới (Multi-Sheet / Multi-Store) -->
+  <div class="modal-backdrop" id="cloneManagerModal">
+    <div class="modal-content clone-modal-wrapper">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; border-bottom:1px solid #e2e8f0; padding-bottom:10px;">
+        <h3 class="modal-title" style="margin-bottom:0; color:#0369a1;">
+          <span>🚀</span>
+          <span>Quản Lý Nhân Bản Ứng Dụng (Link Gốc Admin)</span>
+        </h3>
+        <button type="button" id="btnCloseCloneManager" style="background:none; border:none; font-size:22px; cursor:pointer; color:#64748b; line-height:1;">&times;</button>
+      </div>
+
+      <!-- Hướng dẫn 3 bước nhân bản Google Sheet -->
+      <div class="clone-steps-container">
+        <div class="clone-step-card">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span class="clone-step-num">1</span>
+            <span class="clone-step-title">Mở Trang Tính Gốc</span>
+          </div>
+          <div class="clone-step-desc">
+            Nhấn mở Google Sheet gốc: 
+            <a href="https://docs.google.com/spreadsheets/d/17rloLx_U9GhO_QNdpfhsMNEzKnMzCVli9sieVRlmKDU/edit?usp=sharing" target="_blank">
+              Mở Sheet Gốc ↗
+            </a>
+          </div>
+        </div>
+
+        <div class="clone-step-card">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span class="clone-step-num">2</span>
+            <span class="clone-step-title">Tạo Bản Sao (Make a copy)</span>
+          </div>
+          <div class="clone-step-desc">
+            Vào menu <b>Tệp (File)</b> &gt; chọn <b>Tạo bản sao (Make a copy)</b>. Nhớ chia sẻ quyền <i>"Bất kỳ ai có liên kết đều có thể xem/chỉnh sửa"</i>.
+          </div>
+        </div>
+
+        <div class="clone-step-card">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span class="clone-step-num">3</span>
+            <span class="clone-step-title">Đặt Tên Rút Gọn &amp; Cấp Link</span>
+          </div>
+          <div class="clone-step-desc">
+            Dán link Sheet mới vào form dưới, đặt tên rút gọn (ví dụ <code>hanoi</code>, <code>kho-q1</code>). Hệ thống sẽ cấp link nhân bản tức thì!
+          </div>
+        </div>
+      </div>
+
+      <!-- Form Đăng Ký Bản Sao Mới -->
+      <div class="clone-form-section">
+        <div class="clone-form-title">
+          <span>➕</span>
+          <span>Thêm / Cập Nhật Bản Sao Cho Chi Nhánh</span>
+        </div>
+
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Tên Rút Gọn (Slug cho Link) *:</label>
+            <input type="text" class="form-control" id="inputCloneSlug" placeholder="ví dụ: hanoi, saigon, linh-vu..." autocomplete="off">
+            <div class="form-help">Chữ cái viết thường (a-z), số (0-9) và dấu gạch ngang (-).</div>
+          </div>
+
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Tên Chi Nhánh / Đơn Vị:</label>
+            <input type="text" class="form-control" id="inputCloneName" placeholder="ví dụ: Chi Nhánh Hà Nội, Kho Q1...">
+            <div class="form-help">Hiển thị trên thanh nhận diện và tiêu đề trang.</div>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 12px; margin-bottom: 0;">
+          <label class="form-label">Link hoặc ID Google Sheet Bản Sao *:</label>
+          <input type="text" class="form-control" id="inputCloneSheetId" placeholder="Dán link Google Sheet mới tạo hoặc ID vào đây...">
+          <div class="form-help">Hệ thống tự động lọc mã ID từ link Google Sheet.</div>
+        </div>
+
+        <!-- Preview URL trực tiếp -->
+        <div class="clone-slug-preview-box" id="cloneSlugPreviewBox">
+          🔗 <b>Link nhân bản sẽ là:</b> <span id="clonePreviewUrl">https://leevu221-lang.github.io/tracuuphieumuahang/?s=...</span>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:14px;">
+          <button type="button" class="btn-primary" id="btnSaveCloneRecord" style="padding:8px 18px; font-size:12.5px;">
+            <span>💾 Lưu &amp; Cấp Link Nhân Bản Ngay</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Danh Sách Các Bản Sao Đang Hoạt Động -->
+      <div class="clone-list-section">
+        <div class="clone-list-title">
+          <span>📋 Danh Sách Bản Sao Đang Hoạt Động</span>
+          <button type="button" class="btn-secondary" id="btnRefreshClonesList" style="padding:4px 10px; font-size:11.5px;">
+            🔄 Tải lại
+          </button>
+        </div>
+
+        <div class="clone-table-container">
+          <table class="clone-table">
+            <thead>
+              <tr>
+                <th style="width: 140px;">Tên Rút Gọn (Slug)</th>
+                <th>Tên Chi Nhánh</th>
+                <th>Google Sheet ID</th>
+                <th style="width: 190px; text-align: right;">Hành Động</th>
+              </tr>
+            </thead>
+            <tbody id="cloneTableBody">
+              <tr>
+                <td colspan="4" style="text-align: center; color: #94a3b8; padding: 20px;">
+                  Đang tải danh sách bản sao...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="modal-actions" style="margin-top: 20px;">
+        <button type="button" class="btn-secondary" id="btnCloseCloneManagerBottom">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Thông báo -->
   <div class="toast" id="toastBox">
     <span>✅</span>
-    <span>Đã sao chép mã: <span class="toast-code" id="toastCode"></span> & đánh dấu đã sử dụng!</span>
+    <span>Đã sao chép: <span class="toast-code" id="toastCode"></span> & đánh dấu đã dùng!</span>
   </div>
 
   <script>
+    /**
+     * =========================================================================
+     * CẤU HÌNH & HỆ THỐNG NHÂN BẢN ỨNG DỤNG (CLONE / MULTI-STORE SYSTEM)
+     * =========================================================================
+     */
+    const MASTER_SHEET_URL = 'https://docs.google.com/spreadsheets/d/17rloLx_U9GhO_QNdpfhsMNEzKnMzCVli9sieVRlmKDU/edit?usp=sharing';
+    const MASTER_SHEET_ID = '17rloLx_U9GhO_QNdpfhsMNEzKnMzCVli9sieVRlmKDU';
+    const DEFAULT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxi7SWvqxz5WmoANrf2CX4oFg6PM14ybl8KQYVOAav8hZD9vL4rb925ak9P2JbC9Fz6Vw/exec';
+
+    // Trích xuất ID Google Sheet từ URL hoặc chuỗi
+    function extractSheetId(input) {
+      if (!input) return '';
+      const trimmed = String(input).trim();
+      const match = trimmed.match(/\/d\/([a-zA-Z0-9-_]+)/);
+      if (match) return match[1];
+      return trimmed.split('/')[0].split('?')[0].split('#')[0];
+    }
+
+    // Lấy danh sách bản sao đã lưu trong LocalStorage
+    function getStoredClones() {
+      try {
+        const raw = localStorage.getItem('pmh_clones_registry');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) return parsed;
+        }
+      } catch (e) {}
+      return [];
+    }
+
+    // Lưu danh sách bản sao vào LocalStorage
+    function saveStoredClones(clones) {
+      try {
+        localStorage.setItem('pmh_clones_registry', JSON.stringify(clones || []));
+      } catch (e) {}
+    }
+
+    // Nhận diện tham số bản sao từ URL (hỗ trợ ?s=slug, ?branch=slug, #slug, hoặc trực tiếp ?sheet=ID)
+    function detectUrlCloneInfo() {
+      const urlParams = new URLSearchParams(window.location.search);
+      let slug = urlParams.get('s') || urlParams.get('slug') || urlParams.get('branch');
+      const directSheet = urlParams.get('sheet');
+      const directName = urlParams.get('name') || '';
+
+      // Kiểm tra dạng hash #hanoi
+      if (!slug && window.location.hash) {
+        const hashVal = window.location.hash.replace(/^#\/?/, '').trim().toLowerCase();
+        if (hashVal && /^[a-z0-9_-]+$/.test(hashVal)) {
+          slug = hashVal;
+        }
+      }
+
+      // Kiểm tra đường dẫn URL dạng /tracuuphieumuahang/hanoi
+      if (!slug) {
+        const pathname = window.location.pathname.replace(/^\/tracuuphieumuahang\/?/, '').replace(/^\/+|\/+$/g, '');
+        const parts = pathname.split('/').filter(Boolean);
+        if (parts.length > 0 && parts[0] !== 'index.html' && /^[a-z0-9_-]+$/.test(parts[0])) {
+          slug = parts[0];
+        }
+      }
+
+      return {
+        slug: slug ? slug.trim().toLowerCase() : '',
+        directSheet: directSheet ? directSheet.trim() : '',
+        directName: directName ? directName.trim() : ''
+      };
+    }
+
+    let storedWebAppUrl = localStorage.getItem('pmh_webapp_url');
+    if (!storedWebAppUrl || !storedWebAppUrl.startsWith('https://script.google.com/')) {
+      storedWebAppUrl = DEFAULT_WEB_APP_URL;
+      try { localStorage.setItem('pmh_webapp_url', DEFAULT_WEB_APP_URL); } catch (e) {}
+    }
+
+    // Khởi tạo trạng thái bản sao hiện tại
+    const urlCloneInfo = detectUrlCloneInfo();
+    let currentSheetId = MASTER_SHEET_ID;
+    let currentBranchName = '';
+    let currentCloneSlug = '';
+    let isClonedInstance = false;
+    let currentWebAppUrl = storedWebAppUrl;
+
+    if (urlCloneInfo.directSheet) {
+      currentSheetId = extractSheetId(urlCloneInfo.directSheet);
+      currentBranchName = urlCloneInfo.directName || 'Bản Sao';
+      currentCloneSlug = 'direct';
+      isClonedInstance = true;
+    } else if (urlCloneInfo.slug) {
+      currentCloneSlug = urlCloneInfo.slug;
+      isClonedInstance = true;
+      const localClones = getStoredClones();
+      const matched = localClones.find(c => c.slug === currentCloneSlug);
+      if (matched && matched.sheetId) {
+        currentSheetId = matched.sheetId;
+        currentBranchName = matched.name || matched.slug;
+        if (matched.webAppUrl) currentWebAppUrl = matched.webAppUrl;
+      } else {
+        currentBranchName = currentCloneSlug.toUpperCase();
+      }
+    }
+
+    const CONFIG = {
+      sheetUrl: \`https://docs.google.com/spreadsheets/d/\${currentSheetId}/edit?usp=sharing\`,
+      defaultSheetId: MASTER_SHEET_ID,
+      sheetId: currentSheetId,
+      webAppUrl: currentWebAppUrl,
+      isClone: isClonedInstance,
+      cloneSlug: currentCloneSlug,
+      branchName: currentBranchName
+    };
+
+    /**
+     * THÔNG TIN KÊNH ĐỒNG BỘ THỜI GIAN THỰC (REALTIME PUB/SUB)
+     * Mỗi bản sao (mỗi Google Sheet) sở hữu một kênh MQTT độc lập, không lẫn lộn giữa các chi nhánh!
+     */
+    const REALTIME_TOPIC = 'pmh_sync_' + (CONFIG.sheetId ? CONFIG.sheetId.slice(-8) : 'VRlmKDU');
+    const VISIBILITY_TOPIC = REALTIME_TOPIC + '_vis';
+
+    // Đọc trạng thái ẩn/hiện 2 tab từ bộ nhớ cục bộ
+    function getStoredTabVisibility() {
+      try {
+        const stored = localStorage.getItem('pmh_tab_visibility');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          return {
+            sheet1: parsed.sheet1 !== false,
+            pmh2: parsed.pmh2 !== false
+          };
+        }
+      } catch (e) {}
+      return { sheet1: true, pmh2: true };
+    }
+
     /**
      * STATE MANAGEMENT
      */
@@ -1751,9 +4141,86 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
       products: [],
       selectedDate: '',
       searchQuery: '',
-      statusFilter: 'all', // 'all' | 'available' | 'used'
-      isLoading: false
+      statusFilter: 'all',
+      isLoading: false,
+      clientId: 'c_' + Math.random().toString(36).substr(2, 9),
+      viewMode: 'parallel',
+      pmh2Items: [],
+      pmh2FilterUser: 'all',
+      pmh2FilterType: 'all',
+      pmh2StatusFilter: 'avail',
+      pmh2Search: '',
+      pmh2RevealedCodes: {},
+      sheet1RevealedCodes: {},
+      pmh2DrawerOpen: false,
+      tabVisibility: getStoredTabVisibility()
     };
+
+    /**
+     * BỘ NHỚ TRẠNG THÁI PHIẾU SHEET PMH2
+     */
+    function getPmh2LocalStatusMap() {
+      try {
+        return JSON.parse(localStorage.getItem('pmh2_voucher_status_v1') || '{}');
+      } catch (e) {
+        return {};
+      }
+    }
+
+    function savePmh2LocalStatus(code, isUsed, timeStr) {
+      if (!code) return;
+      const cleanCode = String(code).trim().toUpperCase();
+      const map = getPmh2LocalStatusMap();
+      map[cleanCode] = {
+        used: !!isUsed,
+        time: isUsed ? (timeStr || new Date().toLocaleString('vi-VN')) : '',
+        updatedAt: Date.now()
+      };
+      try {
+        localStorage.setItem('pmh2_voucher_status_v1', JSON.stringify(map));
+      } catch (e) {}
+    }
+
+    /**
+     * BỘ NHỚ TRẠNG THÁI PHIẾU (LOCAL STATUS STORE CÓ TIMESTAMP)
+     * Giữ trạng thái Thao tác (Đã dùng / Hoàn lại) để chống bị GViz cũ ghi đè ngược
+     */
+    function getLocalStatusMap() {
+      try {
+        return JSON.parse(localStorage.getItem('pmh_voucher_status_v2') || '{}');
+      } catch (e) {
+        return {};
+      }
+    }
+
+    function saveLocalStatus(code, isUsed, timeStr, timestamp) {
+      if (!code) return;
+      const cleanCode = String(code).trim().toUpperCase();
+      const map = getLocalStatusMap();
+      map[cleanCode] = {
+        used: !!isUsed,
+        time: isUsed ? (timeStr || new Date().toLocaleString('vi-VN')) : '',
+        updatedAt: timestamp || Date.now()
+      };
+      map[code] = map[cleanCode];
+      try {
+        localStorage.setItem('pmh_voucher_status_v2', JSON.stringify(map));
+      } catch (e) {}
+    }
+
+    // Di chuyển dữ liệu cũ nếu có
+    try {
+      const oldUsed = JSON.parse(localStorage.getItem('pmh_used_vouchers') || '{}');
+      if (Object.keys(oldUsed).length > 0 && !localStorage.getItem('pmh_voucher_status_v2')) {
+        const newMap = {};
+        for (const k in oldUsed) {
+          if (oldUsed[k] && oldUsed[k].used) {
+            newMap[k] = { used: true, time: oldUsed[k].time || '', updatedAt: Date.now() };
+          }
+        }
+        localStorage.setItem('pmh_voucher_status_v2', JSON.stringify(newMap));
+      }
+    } catch (e) {}
 
     /**
      * DOM ELEMENTS
@@ -1764,6 +4231,9 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
       syncText: document.getElementById('syncText'),
       totalCouponsBadge: document.getElementById('totalCouponsBadge'),
       btnRefresh: document.getElementById('btnRefresh'),
+      btnSettings: document.getElementById('btnSettings'),
+      linkOpenSheet: document.getElementById('linkOpenSheet'),
+      footerSheetLink: document.getElementById('footerSheetLink'),
       dateSelect: document.getElementById('dateSelect'),
       btnPrevDate: document.getElementById('btnPrevDate'),
       btnNextDate: document.getElementById('btnNextDate'),
@@ -1782,29 +4252,63 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
       emptyState: document.getElementById('emptyState'),
       emptyDesc: document.getElementById('emptyDesc'),
       toastBox: document.getElementById('toastBox'),
-      toastCode: document.getElementById('toastCode')
+      toastCode: document.getElementById('toastCode'),
+      settingsModal: document.getElementById('settingsModal'),
+      cfgSheetId: document.getElementById('cfgSheetId'),
+      cfgWebAppUrl: document.getElementById('cfgWebAppUrl'),
+      btnCloseSettings: document.getElementById('btnCloseSettings'),
+      btnSaveSettings: document.getElementById('btnSaveSettings'),
+      adminTopBanner: document.getElementById('adminTopBanner'),
+      cloneTopBanner: document.getElementById('cloneTopBanner'),
+      btnOpenCloneManager: document.getElementById('btnOpenCloneManager'),
+      adminCloneCountBadge: document.getElementById('adminCloneCountBadge'),
+      cloneBannerTitle: document.getElementById('cloneBannerTitle'),
+      cloneBannerSlug: document.getElementById('cloneBannerSlug'),
+      btnOpenCloneSheet: document.getElementById('btnOpenCloneSheet'),
+      cloneManagerModal: document.getElementById('cloneManagerModal'),
+      btnCloseCloneManager: document.getElementById('btnCloseCloneManager'),
+      btnCloseCloneManagerBottom: document.getElementById('btnCloseCloneManagerBottom'),
+      inputCloneSlug: document.getElementById('inputCloneSlug'),
+      inputCloneName: document.getElementById('inputCloneName'),
+      inputCloneSheetId: document.getElementById('inputCloneSheetId'),
+      btnSaveCloneRecord: document.getElementById('btnSaveCloneRecord'),
+      cloneTableBody: document.getElementById('cloneTableBody'),
+      btnRefreshClonesList: document.getElementById('btnRefreshClonesList'),
+      clonePreviewUrl: document.getElementById('clonePreviewUrl'),
+      adminToggleBar: document.getElementById('adminToggleBar'),
+      btnToggleAdminBanner: document.getElementById('btnToggleAdminBanner'),
+      adminToggleEye: document.getElementById('adminToggleEye'),
+      adminToggleStatus: document.getElementById('adminToggleStatus'),
+      adminToggleCountBadge: document.getElementById('adminToggleCountBadge'),
+      btnHideAdminBanner: document.getElementById('btnHideAdminBanner')
     };
 
     /**
-     * VIETNAMESE DIACRITIC STRIPPER (TÌM KIẾM KHÔNG DẤU)
+     * TÌM KIẾM KHÔNG DẤU TIẾNG VIỆT
      */
     function boDauTiengViet(str) {
       if (!str) return '';
       return str
         .toLowerCase()
         .normalize('NFD')
-        .replace(/[\\u0300-\\u036f]/g, '')
+        .replace(/[\u0300-\u036f]/g, '')
         .replace(/[đĐ]/g, 'd')
         .trim();
     }
 
     /**
-     * TOAST MESSAGE
+     * TOAST NOTIFICATION
      */
     let toastTimeout = null;
-    function showToast(code, message) {
+    function showToast(code, isUndo = false, isCustom = false) {
       if (toastTimeout) clearTimeout(toastTimeout);
-      els.toastCode.textContent = code;
+      if (isCustom) {
+        els.toastBox.innerHTML = \`<span>\${code}</span>\`;
+      } else if (isUndo) {
+        els.toastBox.innerHTML = \`<span>🔄</span> <span>Đã hoàn lại mã: <span class="toast-code">\${code}</span> (Chưa dùng)</span>\`;
+      } else {
+        els.toastBox.innerHTML = \`<span>✅</span> <span>Đã sao chép: <span class="toast-code">\${code}</span> & đánh dấu đã dùng!</span>\`;
+      }
       els.toastBox.classList.add('show');
       toastTimeout = setTimeout(() => {
         els.toastBox.classList.remove('show');
@@ -1812,11 +4316,576 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
     }
 
     /**
-     * COPY TO CLIPBOARD WITH FALLBACK
+     * =========================================================================
+     * HIỆU ỨNG PHÁO HOA TUNG LÊN GIỮA MÀN HÌNH KHI BẤM "SAO CHÉP"
+     * =========================================================================
+     */
+    const fireworksCanvas = document.getElementById('fireworksCanvas');
+    const fwCtx = fireworksCanvas ? fireworksCanvas.getContext('2d') : null;
+    let fwRockets = [];
+    let fwParticles = [];
+    let fwStars = [];
+    let fwConfetti = [];
+    let fwTrailSparks = [];
+    let fwFlashes = [];
+    let fwAnimating = false;
+    let fwAnimId = null;
+    let lastFwTriggerTime = 0;
+    let burstPopupTimeout = null;
+
+    function resizeFireworksCanvas() {
+      if (!fireworksCanvas || !fwCtx) return;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      fireworksCanvas.width = Math.floor(w * dpr);
+      fireworksCanvas.height = Math.floor(h * dpr);
+      fireworksCanvas.style.width = w + 'px';
+      fireworksCanvas.style.height = h + 'px';
+      fwCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    window.addEventListener('resize', resizeFireworksCanvas);
+    window.addEventListener('orientationchange', () => setTimeout(resizeFireworksCanvas, 150));
+
+    // Bộ màu lễ hội độ tương phản cao, nổi bật rực rỡ trên cả nền sáng và tối
+    const FW_PALETTES = [
+      ['#F59E0B', '#EF4444', '#FFD700', '#EA580C', '#FEF08A'], // Lửa vàng hoàng kim
+      ['#EF4444', '#DC2626', '#F43F5E', '#FDA4AF', '#B91C1C'], // Đỏ Ruby đại cát
+      ['#10B981', '#059669', '#84CC16', '#34D399', '#047857'], // Lục bảo may mắn
+      ['#06B6D4', '#0284C7', '#3B82F6', '#60A5FA', '#1D4ED8'], // Lam ngọc đại dương
+      ['#8B5CF6', '#7C3AED', '#D946EF', '#EC4899', '#6D28D9']  // Tím ánh kim rực rỡ
+    ];
+
+    // Vẽ hình ngôi sao 5 cánh
+    function drawFwStarShape(ctx, cx, cy, spikes, outerRadius, innerRadius) {
+      let rot = Math.PI / 2 * 3;
+      let x = cx;
+      let y = cy;
+      const step = Math.PI / spikes;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - outerRadius);
+      for (let i = 0; i < spikes; i++) {
+        x = cx + Math.cos(rot) * outerRadius;
+        y = cy + Math.sin(rot) * outerRadius;
+        ctx.lineTo(x, y);
+        rot += step;
+        x = cx + Math.cos(rot) * innerRadius;
+        y = cy + Math.sin(rot) * innerRadius;
+        ctx.lineTo(x, y);
+        rot += step;
+      }
+      ctx.lineTo(cx, cy - outerRadius);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    class FwRocket {
+      constructor(startX, startY, targetX, targetY, palette) {
+        this.x = startX;
+        this.y = startY;
+        this.targetX = targetX;
+        this.targetY = targetY;
+        this.palette = palette;
+        this.angle = Math.atan2(targetY - startY, targetX - startX);
+        const dist = Math.hypot(targetX - startX, targetY - startY);
+        this.speed = Math.max(16, dist / 22);
+        this.history = [];
+        this.exploded = false;
+        this.headColor = palette[0] || '#F59E0B';
+      }
+
+      update() {
+        this.history.push({ x: this.x, y: this.y });
+        if (this.history.length > 6) this.history.shift();
+
+        // Tàn lửa đuôi pháo cam đỏ sáng rực
+        fwTrailSparks.push(new FwTrailSpark(this.x, this.y, this.headColor));
+        if (Math.random() < 0.5) {
+          fwTrailSparks.push(new FwTrailSpark(this.x, this.y, '#FFD700'));
+        }
+
+        const vx = Math.cos(this.angle) * this.speed;
+        const vy = Math.sin(this.angle) * this.speed;
+        this.x += vx;
+        this.y += vy;
+        this.speed *= 0.985;
+
+        const currentDist = Math.hypot(this.targetX - this.x, this.targetY - this.y);
+        if (this.y <= this.targetY || currentDist <= Math.max(this.speed, 12)) {
+          this.exploded = true;
+        }
+      }
+
+      draw(ctx) {
+        ctx.save();
+        ctx.strokeStyle = this.headColor;
+        ctx.lineWidth = 3.5;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        if (this.history.length > 0) {
+          ctx.moveTo(this.history[0].x, this.history[0].y);
+          for (let i = 1; i < this.history.length; i++) {
+            ctx.lineTo(this.history[i].x, this.history[i].y);
+          }
+        } else {
+          ctx.moveTo(this.x, this.y);
+        }
+        ctx.lineTo(this.x, this.y);
+        ctx.stroke();
+
+        // Đầu tên lửa phát sáng rực rỡ
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#F59E0B';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    class FwTrailSpark {
+      constructor(x, y, color) {
+        this.x = x + (Math.random() - 0.5) * 5;
+        this.y = y;
+        this.vx = (Math.random() - 0.5) * 2;
+        this.vy = Math.random() * 3 + 1.5;
+        this.alpha = 0.9;
+        this.decay = Math.random() * 0.045 + 0.04;
+        this.size = Math.random() * 2.5 + 1.5;
+        this.color = color || '#F59E0B';
+      }
+
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.alpha -= this.decay;
+      }
+
+      draw(ctx) {
+        if (this.alpha <= 0) return;
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, this.alpha);
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    class FwFlashRing {
+      constructor(x, y, color) {
+        this.x = x;
+        this.y = y;
+        this.color = color;
+        this.radius = 6;
+        this.maxRadius = 70 + Math.random() * 30;
+        this.alpha = 0.85;
+      }
+
+      update() {
+        this.radius += (this.maxRadius - this.radius) * 0.28;
+        this.alpha -= 0.065;
+      }
+
+      draw(ctx) {
+        if (this.alpha <= 0) return;
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, this.alpha);
+        ctx.strokeStyle = this.color;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    class FwParticle {
+      constructor(x, y, color) {
+        this.x = x;
+        this.y = y;
+        this.color = color;
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 8 + 3;
+        this.vx = Math.cos(angle) * speed;
+        this.vy = Math.sin(angle) * speed;
+        this.friction = 0.955;
+        this.gravity = 0.13;
+        this.alpha = 1.0;
+        this.decay = Math.random() * 0.014 + 0.012;
+        this.history = [];
+        this.size = Math.random() * 2.5 + 2;
+      }
+
+      update() {
+        this.history.push({ x: this.x, y: this.y });
+        if (this.history.length > 5) this.history.shift();
+
+        this.vx *= this.friction;
+        this.vy = this.vy * this.friction + this.gravity;
+        this.x += this.vx;
+        this.y += this.vy;
+        this.alpha -= this.decay;
+      }
+
+      draw(ctx) {
+        if (this.alpha <= 0) return;
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, this.alpha);
+
+        // Đuôi tia lửa phát sáng
+        ctx.strokeStyle = this.color;
+        ctx.lineWidth = this.size;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        const first = this.history[0] || { x: this.x, y: this.y };
+        ctx.moveTo(first.x, first.y);
+        for (let i = 1; i < this.history.length; i++) {
+          ctx.lineTo(this.history[i].x, this.history[i].y);
+        }
+        ctx.lineTo(this.x, this.y);
+        ctx.stroke();
+
+        // Hạt đốm ở đầu
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size * 0.8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    class FwStar {
+      constructor(x, y, color) {
+        this.x = x;
+        this.y = y;
+        this.color = color;
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 9 + 3.5;
+        this.vx = Math.cos(angle) * speed;
+        this.vy = Math.sin(angle) * speed;
+        this.friction = 0.95;
+        this.gravity = 0.14;
+        this.rot = Math.random() * Math.PI;
+        this.rotSpeed = (Math.random() - 0.5) * 0.22;
+        this.size = Math.random() * 4 + 4;
+        this.alpha = 1.0;
+        this.decay = Math.random() * 0.015 + 0.012;
+      }
+
+      update() {
+        this.vx *= this.friction;
+        this.vy = this.vy * this.friction + this.gravity;
+        this.x += this.vx;
+        this.y += this.vy;
+        this.rot += this.rotSpeed;
+        this.alpha -= this.decay;
+      }
+
+      draw(ctx) {
+        if (this.alpha <= 0) return;
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, this.alpha);
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.rot);
+        ctx.fillStyle = this.color;
+        drawFwStarShape(ctx, 0, 0, 5, this.size, this.size * 0.45);
+        ctx.restore();
+      }
+    }
+
+    class FwConfettiStrip {
+      constructor(x, y, color) {
+        this.x = x;
+        this.y = y;
+        this.color = color;
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 7 + 2.5;
+        this.vx = Math.cos(angle) * speed;
+        this.vy = Math.sin(angle) * speed;
+        this.friction = 0.955;
+        this.gravity = 0.12;
+        this.w = Math.random() * 5 + 4;
+        this.h = Math.random() * 7 + 6;
+        this.rot = Math.random() * Math.PI;
+        this.rotSpeed = (Math.random() - 0.5) * 0.18;
+        this.wobble = Math.random() * Math.PI * 2;
+        this.wobbleSpeed = Math.random() * 0.15 + 0.08;
+        this.alpha = 1.0;
+        this.decay = Math.random() * 0.014 + 0.011;
+      }
+
+      update() {
+        this.vx *= this.friction;
+        this.vy = this.vy * this.friction + this.gravity;
+        this.x += this.vx;
+        this.y += this.vy;
+        this.rot += this.rotSpeed;
+        this.wobble += this.wobbleSpeed;
+        this.alpha -= this.decay;
+      }
+
+      draw(ctx) {
+        if (this.alpha <= 0) return;
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, this.alpha);
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.rot);
+        const scaleX = Math.cos(this.wobble);
+        ctx.scale(scaleX, 1);
+        ctx.fillStyle = this.color;
+        ctx.fillRect(-this.w / 2, -this.h / 2, this.w, this.h);
+        ctx.restore();
+      }
+    }
+
+    function fwExplode(x, y, palette) {
+      // 1. Vòng chớp sáng mở rộng (Shockwave ring)
+      fwFlashes.push(new FwFlashRing(x, y, palette[0] || '#F59E0B'));
+      fwFlashes.push(new FwFlashRing(x, y, '#FFFFFF'));
+
+      // 2. Bung toả 50 tia pháo hoa 360 độ
+      const particleCount = 50;
+      for (let i = 0; i < particleCount; i++) {
+        const color = palette[Math.floor(Math.random() * palette.length)];
+        fwParticles.push(new FwParticle(x, y, color));
+      }
+
+      // 3. Bung toả 20 ngôi sao 5 cánh lấp lánh
+      for (let i = 0; i < 20; i++) {
+        const color = palette[Math.floor(Math.random() * palette.length)];
+        fwStars.push(new FwStar(x, y, color));
+      }
+
+      // 4. Bung toả 18 mảnh ruy băng confetti lật xoay 3D
+      for (let i = 0; i < 18; i++) {
+        const color = palette[Math.floor(Math.random() * palette.length)];
+        fwConfetti.push(new FwConfettiStrip(x, y, color));
+      }
+    }
+
+    function animateFireworks() {
+      if (!fireworksCanvas || !fwCtx) return;
+
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+
+      // Xoá sạch canvas mỗi khung hình (CHUẨN 100% cho mọi màn hình / safari / webkit)
+      fwCtx.clearRect(0, 0, w, h);
+      fwCtx.globalCompositeOperation = 'source-over';
+
+      // 1. Cập nhật & Vẽ Tàn lửa phóng tên lửa
+      for (let i = fwTrailSparks.length - 1; i >= 0; i--) {
+        const s = fwTrailSparks[i];
+        s.update();
+        if (s.alpha <= 0) {
+          fwTrailSparks.splice(i, 1);
+        } else {
+          s.draw(fwCtx);
+        }
+      }
+
+      // 2. Cập nhật & Vẽ Tên lửa bay lên giữa màn hình
+      for (let i = fwRockets.length - 1; i >= 0; i--) {
+        const r = fwRockets[i];
+        r.update();
+        if (r.exploded) {
+          fwExplode(r.x, r.y, r.palette);
+          fwRockets.splice(i, 1);
+        } else {
+          r.draw(fwCtx);
+        }
+      }
+
+      // 3. Cập nhật & Vẽ Vòng chớp sáng bùng nổ
+      for (let i = fwFlashes.length - 1; i >= 0; i--) {
+        const f = fwFlashes[i];
+        f.update();
+        if (f.alpha <= 0) {
+          fwFlashes.splice(i, 1);
+        } else {
+          f.draw(fwCtx);
+        }
+      }
+
+      // 4. Cập nhật & Vẽ Hạt pháo hoa tung tóe
+      for (let i = fwParticles.length - 1; i >= 0; i--) {
+        const p = fwParticles[i];
+        p.update();
+        if (p.alpha <= 0) {
+          fwParticles.splice(i, 1);
+        } else {
+          p.draw(fwCtx);
+        }
+      }
+
+      // 5. Cập nhật & Vẽ Ngôi sao lấp lánh
+      for (let i = fwStars.length - 1; i >= 0; i--) {
+        const star = fwStars[i];
+        star.update();
+        if (star.alpha <= 0) {
+          fwStars.splice(i, 1);
+        } else {
+          star.draw(fwCtx);
+        }
+      }
+
+      // 6. Cập nhật & Vẽ Ruy băng confetti xoay lật 3D
+      for (let i = fwConfetti.length - 1; i >= 0; i--) {
+        const c = fwConfetti[i];
+        c.update();
+        if (c.alpha <= 0) {
+          fwConfetti.splice(i, 1);
+        } else {
+          c.draw(fwCtx);
+        }
+      }
+
+      // Nếu tất cả đã kết thúc: giải phóng tài nguyên CPU 0%
+      if (fwRockets.length === 0 && fwParticles.length === 0 && fwStars.length === 0 && fwConfetti.length === 0 && fwTrailSparks.length === 0 && fwFlashes.length === 0) {
+        fwCtx.clearRect(0, 0, w, h);
+        fwAnimating = false;
+        if (fwAnimId) cancelAnimationFrame(fwAnimId);
+        fwAnimId = null;
+        return;
+      }
+
+      fwAnimId = requestAnimationFrame(animateFireworks);
+    }
+
+    function startFwLoop() {
+      if (!fwAnimating) {
+        resizeFireworksCanvas();
+        fwAnimating = true;
+        fwAnimId = requestAnimationFrame(animateFireworks);
+      }
+    }
+
+    /**
+     * BẮN PHÁO HOA DẠNG CSS SPARK (CHẠY ĐỘC LẬP TRÊN COMPOSITOR, 100% HIỆN RÕ TRÊN MỌI THIẾT BỊ)
+     */
+    function spawnCssFireworks(centerX, centerY) {
+      try {
+        const colors = ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899', '#FFD700', '#FF5722'];
+        const symbols = ['★', '✦', '●', '■', '▲', '🎉', '✨', '⭐'];
+        const count = 36;
+        for (let i = 0; i < count; i++) {
+          const spark = document.createElement('div');
+          spark.className = 'fw-css-spark';
+          const angle = Math.random() * Math.PI * 2;
+          const dist = Math.random() * 170 + 40;
+          const tx = Math.cos(angle) * dist;
+          const ty = Math.sin(angle) * dist + 45; // Trọng lực kéo xuống nhẹ
+          const color = colors[Math.floor(Math.random() * colors.length)];
+          const isSymbol = Math.random() < 0.45;
+
+          spark.style.setProperty('--tx', \`\${tx}px\`);
+          spark.style.setProperty('--ty', \`\${ty}px\`);
+          spark.style.left = \`\${centerX}px\`;
+          spark.style.top = \`\${centerY}px\`;
+
+          if (isSymbol) {
+            spark.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+            spark.style.color = color;
+            spark.style.fontSize = \`\${Math.random() * 12 + 14}px\`;
+            spark.style.background = 'transparent';
+          } else {
+            const sz = Math.random() * 8 + 6;
+            spark.style.width = \`\${sz}px\`;
+            spark.style.height = \`\${sz}px\`;
+            spark.style.backgroundColor = color;
+            spark.style.boxShadow = \`0 0 8px \${color}\`;
+            if (Math.random() > 0.5) spark.style.borderRadius = '2px';
+          }
+
+          document.body.appendChild(spark);
+          setTimeout(() => {
+            if (spark && spark.parentNode) spark.parentNode.removeChild(spark);
+          }, 1250);
+        }
+      } catch (err) {
+        console.warn('CSS Fireworks error:', err);
+      }
+    }
+
+    /**
+     * KÍCH HOẠT HIỆU ỨNG PHÁO HOA TUNG LÊN GIỮA MÀN HÌNH (0ms PHẢN HỒI TỨC THÌ)
+     */
+    function triggerFireworks(code) {
+      try {
+        const now = Date.now();
+        if (now - lastFwTriggerTime < 200) return;
+        lastFwTriggerTime = now;
+
+        const w = window.innerWidth || document.documentElement.clientWidth || 360;
+        const h = window.innerHeight || document.documentElement.clientHeight || 640;
+
+        const centerX = w / 2;
+        const centerY = h * 0.42;
+
+        // 1. NỔ NGAY LẬP TỨC 36 HẠT PHÁO HOA CSS GIỮA MÀN HÌNH (0ms không cần chờ)
+        spawnCssFireworks(centerX, centerY);
+
+        // 2. HIỂN THỊ KHUNG NỔ BẬT BÙNG NỔ GIỮA MÀN HÌNH (Trung tâm màn hình)
+        const burstEl = document.getElementById('celebrationBurst');
+        const codeEl = document.getElementById('burstCode');
+        if (burstEl) {
+          if (codeEl) codeEl.textContent = code ? String(code) : '';
+          burstEl.classList.add('show');
+          if (burstPopupTimeout) clearTimeout(burstPopupTimeout);
+          burstPopupTimeout = setTimeout(() => {
+            burstEl.classList.remove('show');
+          }, 1400);
+        }
+
+        // 3. ĐỒNG THỜI KÍCH HOẠT CANVAS PHÁO HOA NỔ NGAY Ở TÂM VÀ PHÓNG 2 QUẢ TỪ ĐÁY LÊN
+        resizeFireworksCanvas();
+        // Nổ tức thì chùm pháo hoa đầu tiên ngay giữa màn hình
+        fwExplode(centerX, centerY, FW_PALETTES[0]);
+        startFwLoop();
+
+        // 2 quả pháo vút từ đáy màn hình lên bổ sung hiệu ứng
+        const burstConfigs = [
+          { delay: 100, startX: centerX - 35, targetX: centerX - 45, targetY: centerY + 20, palette: FW_PALETTES[1] },
+          { delay: 220, startX: centerX + 40, targetX: centerX + 50, targetY: centerY - 25, palette: FW_PALETTES[3] }
+        ];
+
+        burstConfigs.forEach(cfg => {
+          setTimeout(() => {
+            fwRockets.push(new FwRocket(cfg.startX, h + 20, cfg.targetX, cfg.targetY, cfg.palette));
+            startFwLoop();
+          }, cfg.delay);
+        });
+      } catch (err) {
+        console.warn('Fireworks trigger error:', err);
+      }
+    }
+    window.triggerFireworks = triggerFireworks;
+
+    // BẮT SỰ KIỆN CLICK TOÀN TRANG Ở TẦNG CAPTURING (Đảm bảo 100% bắt được click Sao chép)
+    document.addEventListener('click', (e) => {
+      try {
+        const btn = e.target.closest && e.target.closest('.btn-copy-pmh2, .btn-copy, .btn-copy-again, [data-code]');
+        if (btn) {
+          const code = btn.getAttribute('data-code') || '';
+          triggerFireworks(code);
+        }
+      } catch (err) {}
+    }, true);
+
+    /**
+     * COPY TO CLIPBOARD
      */
     function copyToClipboard(text) {
+      // Tung pháo hoa rực rỡ giữa màn hình mỗi khi sao chép
+      triggerFireworks(text);
       if (navigator.clipboard && window.isSecureContext) {
         return navigator.clipboard.writeText(text);
+
       } else {
         const textarea = document.createElement('textarea');
         textarea.value = text;
@@ -1838,48 +4907,1354 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
     }
 
     /**
-     * LOAD DATA FROM APPS SCRIPT OR LOCAL MOCK
+     * LOAD DATA: ƯU TIÊN WEB APP API -> FALLBACK GVIZ JSONP
      */
-    function loadData() {
-      state.isLoading = true;
-      els.loadingBox.style.display = 'flex';
-      els.voucherList.style.display = 'none';
-      els.emptyState.style.display = 'none';
-      els.syncDot.className = 'sync-dot updating';
-      els.syncText.textContent = 'Đang tải...';
+    /**
+     * LOAD DATA: TỐI ƯU HÓA TỐC ĐỘ SIÊU NHANH
+     * 1. Cache LocalStorage: Hiện ngay lập tức (0.01s), không trắng trang
+     * 2. GViz CDN: Đồng bộ Google Sheet trong 0.2 - 0.4s (nhanh gấp 10 lần Apps Script)
+     * 3. Tuyệt đối không che khuất màn hình nếu đã có dữ liệu
+     */
+    
+    /**
+     * TẢI VÀ XỬ LÝ DỮ LIỆU SHEET PMH2 (THEO USER 43751 & 7721)
+     */
+    function loadSheetPmh2GViz() {
+      const sheetId = CONFIG.sheetId || CONFIG.defaultSheetId;
+      const callbackName = 'onGvizResponsePmh2_' + Math.floor(Math.random() * 1000000);
 
+      const loadingBox = document.getElementById('loadingBoxPmh2');
+      if (loadingBox && (!state.pmh2Items || state.pmh2Items.length === 0)) {
+        loadingBox.style.display = 'flex';
+      }
+
+      window[callbackName] = function(res) {
+        delete window[callbackName];
+        const scriptEl = document.getElementById('gviz-script-pmh2');
+        if (scriptEl) scriptEl.remove();
+        parsePmh2GvizData(res);
+      };
+
+      const gvizUrl = 'https://docs.google.com/spreadsheets/d/' + sheetId + '/gviz/tq?sheet=PMH2&tqx=responseHandler:' + callbackName + '&_=' + Date.now();
+      const oldScript = document.getElementById('gviz-script-pmh2');
+      if (oldScript) oldScript.remove();
+
+      const script = document.createElement('script');
+      script.id = 'gviz-script-pmh2';
+      script.src = gvizUrl;
+      script.onerror = function() {
+        delete window[callbackName];
+        if (script.parentNode) script.remove();
+        console.warn('Lỗi tải GViz PMH2');
+        const loadingBox = document.getElementById('loadingBoxPmh2');
+        if (loadingBox) loadingBox.style.display = 'none';
+      };
+      document.head.appendChild(script);
+    }
+
+    function parsePmh2GvizData(res) {
+      const loadingBox = document.getElementById('loadingBoxPmh2');
+      if (loadingBox) loadingBox.style.display = 'none';
+
+      if (!res || !res.table || !res.table.rows) return;
+      const rawRows = res.table.rows;
+      const rawLines = rawRows.map(r => (r && r.c && r.c[0] && r.c[0].v != null) ? String(r.c[0].v).trim() : '');
+      const localStatusMap = getPmh2LocalStatusMap();
+
+      const targetUsers = ['43751', '7721'];
+      const items = [];
+
+      for (let i = 0; i < rawLines.length; i++) {
+        const currentLine = rawLines[i];
+        const matchedUser = targetUsers.find(u => currentLine.includes(u));
+        if (matchedUser) {
+          let pmhLine = '';
+          let pmhRowIdx = -1;
+          for (let j = 1; j <= 2 && (i + j) < rawLines.length; j++) {
+            const next = rawLines[i + j];
+            if (next.includes('PMH') || next.includes('➜') || next.includes('❌')) {
+              pmhLine = next;
+              pmhRowIdx = i + j;
+              break;
+            }
+          }
+
+          const isError = pmhLine.includes('❌') || 
+                          pmhLine.toLowerCase().includes('đã hết') || 
+                          pmhLine.toLowerCase().includes('không tồn tại') || 
+                          pmhLine.toLowerCase().includes('sai');
+
+          let pmhType = '';
+          let pmhCode = '';
+          let statusText = isError ? 'Thất bại' : 'Thành công';
+
+          const match = pmhLine.match(/(?:➜\s*)?(PMH\s*[^:]+)\s*:\s*([A-Za-z0-9]+)/i);
+          if (match) {
+            pmhType = match[1].trim();
+            pmhCode = match[2].trim();
+          } else if (isError) {
+            statusText = pmhLine.replace(/^➜\s*/, '').trim();
+          } else if (pmhLine.includes('ICT')) {
+            pmhType = 'PMH ICT';
+          } else if (pmhLine.includes('MM')) {
+            pmhType = 'PMH MM';
+          }
+
+          const isICT = pmhType.toUpperCase().includes('ICT') || pmhLine.toUpperCase().includes('ICT');
+
+          // Kiểm tra trạng thái đã sử dụng từ Cột B / Cột C của Google Sheet
+          let isUsedFromSheet = false;
+          let usedTimeFromSheet = '';
+
+          const checkRowStatus = (rIdx) => {
+            if (rIdx >= 0 && rIdx < rawRows.length && rawRows[rIdx] && rawRows[rIdx].c) {
+              const c1 = rawRows[rIdx].c[1];
+              const c2 = rawRows[rIdx].c[2];
+              const colB = c1 ? (c1.v != null ? c1.v : c1.f) : null;
+              const colC = c2 ? (c2.v != null ? c2.v : c2.f) : null;
+              if (colB === true || String(colB).toUpperCase() === 'TRUE' || String(colB).toLowerCase().includes('dùng') || colB === 1 || colB === '1') {
+                isUsedFromSheet = true;
+                if (colC) usedTimeFromSheet = String(colC);
+              }
+            }
+          };
+
+          if (pmhRowIdx !== -1) checkRowStatus(pmhRowIdx);
+          checkRowStatus(i);
+
+          // Kết hợp trạng thái từ Local Storage
+          let isUsed = isUsedFromSheet;
+          let usedTime = usedTimeFromSheet;
+          if (pmhCode) {
+            const cleanCode = pmhCode.trim().toUpperCase();
+            if (localStatusMap[cleanCode]) {
+              isUsed = localStatusMap[cleanCode].used;
+              if (localStatusMap[cleanCode].time) usedTime = localStatusMap[cleanCode].time;
+            }
+          }
+
+          const targetSheetRow = (pmhRowIdx !== -1 ? pmhRowIdx : i) + 1;
+
+          items.push({
+            id: 'pmh2_' + matchedUser + '_' + i,
+            userId: matchedUser,
+            userRaw: currentLine,
+            pmhType: pmhType || (isICT ? 'PMH ICT' : 'PMH MM'),
+            pmhCode: pmhCode || 'N/A',
+            isICT: isICT,
+            isError: isError,
+            statusText: statusText,
+            rawText: pmhLine,
+            isUsed: isUsed,
+            usedTime: usedTime,
+            sheetRowIndex: targetSheetRow
+          });
+        }
+      }
+
+      // Tự động lọc mã trùng: CHỈ LỌC KHI TRÙNG MÃ PMH (VD: X0P4P5NEMX, X0P4P5NEMX)
+      // KHÔNG LỌC THEO TÊN PHIẾU (VD: cùng tên PMH MM200 nhưng khác mã PMH vẫn hiển thị đầy đủ)
+      const codeMap = new Map();
+      const uniqueItems = [];
+
+      for (const item of items) {
+        if (!item.isError && item.pmhCode && item.pmhCode !== 'N/A') {
+          // Chuẩn hoá mã phiếu mua hàng: chỉ lấy chữ và số viết hoa để so khớp chính xác
+          const normCode = String(item.pmhCode).replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+          if (codeMap.has(normCode)) {
+            const existing = codeMap.get(normCode);
+            // Hợp nhất trạng thái đã sử dụng nếu có bản ghi đã dùng
+            if (item.isUsed && !existing.isUsed) {
+              existing.isUsed = true;
+              existing.usedTime = item.usedTime;
+            }
+            continue; // Bỏ qua vì TRÙNG MÃ PMH, chỉ giữ lại 1 mã duy nhất
+          }
+          codeMap.set(normCode, item);
+        }
+        uniqueItems.push(item);
+      }
+
+      // Luôn đặt lại để AUTO ẨN toàn bộ mã phiếu thành dấu sao (*****) khi tải/làm mới dữ liệu
+      state.pmh2RevealedCodes = {};
+      state.pmh2Items = uniqueItems;
+      renderPmh2List();
+    }
+
+    // Bộ timer tự động ẩn lại mã phiếu sau khi bấm xem
+    const pmh2AutoRevealTimers = {};
+
+    function renderPmh2List() {
+      const listEl = document.getElementById('pmh2List');
+      const emptyEl = document.getElementById('emptyStatePmh2');
+      const badgeEl = document.getElementById('pmh2CountBadge');
+      const statsTextEl = document.getElementById('pmh2StatsText');
+      const countAvailEl = document.getElementById('pmh2CountAvail');
+      const countUsedEl = document.getElementById('pmh2CountUsed');
+      const countErrEl = document.getElementById('pmh2CountErr');
+      const statAvailBadge = document.getElementById('pmh2StatAvailBadge');
+      const statUsedBadge = document.getElementById('pmh2StatUsedBadge');
+      const statErrBadge = document.getElementById('pmh2StatErrBadge');
+
+      if (!listEl) return;
+
+      const total = state.pmh2Items.length;
+      const count43751 = state.pmh2Items.filter(i => i.userId === '43751').length;
+      const count7721 = state.pmh2Items.filter(i => i.userId === '7721').length;
+
+      const totalAvail = state.pmh2Items.filter(i => !i.isError && !i.isUsed).length;
+      const totalUsed = state.pmh2Items.filter(i => !i.isError && i.isUsed).length;
+      const totalErr = state.pmh2Items.filter(i => i.isError).length;
+
+      if (statAvailBadge) statAvailBadge.textContent = totalAvail;
+      if (statUsedBadge) statUsedBadge.textContent = totalUsed;
+      if (statErrBadge) statErrBadge.textContent = totalErr;
+
+      if (badgeEl) {
+        badgeEl.textContent = total + ' phiếu (Linh: ' + count43751 + ' • Hoa: ' + count7721 + ')';
+      }
+
+      const q = boDauTiengViet(state.pmh2Search || '');
+      const filtered = state.pmh2Items.filter(item => {
+        if (state.pmh2FilterUser !== 'all' && item.userId !== state.pmh2FilterUser) return false;
+        if (state.pmh2FilterType === 'ICT' && !item.isICT) return false;
+        if (state.pmh2FilterType === 'MM' && item.isICT) return false;
+
+        // Lọc theo trạng thái: Tất cả / Khả dụng / Đã dùng / Lỗi
+        if (state.pmh2StatusFilter === 'avail' && (item.isError || item.isUsed)) return false;
+        if (state.pmh2StatusFilter === 'used' && (item.isError || !item.isUsed)) return false;
+        if (state.pmh2StatusFilter === 'error' && !item.isError) return false;
+
+        if (q) {
+          const userClean = boDauTiengViet(item.userRaw);
+          const codeClean = boDauTiengViet(item.pmhCode);
+          const typeClean = boDauTiengViet(item.pmhType);
+          if (userClean.indexOf(q) === -1 && codeClean.indexOf(q) === -1 && typeClean.indexOf(q) === -1) {
+            return false;
+          }
+        }
+        return true;
+      });
+
+      const okAvailCount = filtered.filter(i => !i.isError && !i.isUsed).length;
+      const okUsedCount = filtered.filter(i => !i.isError && i.isUsed).length;
+      const errCount = filtered.filter(i => i.isError).length;
+
+      if (statsTextEl) statsTextEl.textContent = filtered.length + ' phiếu hiển thị';
+      if (countAvailEl) countAvailEl.textContent = okAvailCount;
+      if (countUsedEl) countUsedEl.textContent = okUsedCount;
+      if (countErrEl) countErrEl.textContent = errCount;
+
+      if (filtered.length === 0) {
+        listEl.style.display = 'none';
+        if (emptyEl) emptyEl.style.display = 'block';
+        return;
+      }
+
+      if (emptyEl) emptyEl.style.display = 'none';
+      listEl.style.display = 'flex';
+      listEl.innerHTML = '';
+
+      filtered.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'pmh2-card' + (item.isUsed ? ' card-is-used' : '');
+
+        const userTagClass = item.userId === '7721' ? 'pmh2-user-badge user-7721' : 'pmh2-user-badge';
+        const typeClass = item.isICT ? 'pmh2-type-tag tag-ict' : 'pmh2-type-tag tag-mm';
+
+        const hasValidCode = !item.isError && item.pmhCode && item.pmhCode !== 'N/A';
+        const codeKey = hasValidCode 
+          ? String(item.pmhCode).replace(/[^A-Za-z0-9]/g, '').toUpperCase() 
+          : item.id;
+
+        const isRevealed = !!(state.pmh2RevealedCodes && state.pmh2RevealedCodes[codeKey]);
+        const maskedStars = hasValidCode ? '*'.repeat(Math.max(item.pmhCode.length, 10)) : (item.pmhCode || 'N/A');
+        const displayCode = isRevealed ? item.pmhCode : maskedStars;
+
+        card.innerHTML = \`
+          <div class="pmh2-card-top">
+            <span class="\${userTagClass}">
+              <span>👤</span> <span>\${escapeHtml(item.userRaw)}</span>
+            </span>
+            <span class="\${typeClass}">\${escapeHtml(item.pmhType)}</span>
+          </div>
+
+          <div class="pmh2-code-box">
+            <div style="flex:1; min-width:0;">
+              <div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:2px;">MÃ PHIẾU MUA HÀNG:</div>
+              <div class="pmh2-code-row">
+                <span class="pmh2-code-val \${!isRevealed && hasValidCode ? 'masked-stars' : ''}">\${escapeHtml(displayCode)}</span>
+                \${hasValidCode ? \`
+                  <button type="button" class="btn-eye-toggle" data-code="\${escapeHtml(codeKey)}" title="\${isRevealed ? 'Ẩn mã (*)' : 'Xem mã thực (tự ẩn sau 4s)'}">
+                    \${isRevealed ? '🙈' : '👁️'}
+                  </button>
+                \` : ''}
+              </div>
+            </div>
+            \${hasValidCode ? \`
+              <div class="pmh2-actions-cell">
+                <button type="button" class="btn-copy-pmh2 \${item.isUsed ? 'is-used' : ''}" data-id="\${item.id}" data-code="\${escapeHtml(item.pmhCode)}" title="Sao chép mã thực và ghi nhận ĐÃ DÙNG">
+                  <span>\${item.isUsed ? '✓' : '📋'}</span>
+                  <span>\${item.isUsed ? 'Đã sao chép' : 'Sao chép'}</span>
+                </button>
+                \${item.isUsed ? \`
+                  <button type="button" class="btn-undo-pmh2" data-id="\${item.id}" data-code="\${escapeHtml(item.pmhCode)}" title="Hoàn tác thành Chưa sử dụng">
+                    <span>↩️</span>
+                  </button>
+                \` : ''}
+              </div>
+            \` : ''}
+          </div>
+
+          <div class="pmh2-card-bottom">
+            <span class="pmh2-status \${item.isError ? 'status-err' : (item.isUsed ? 'status-used' : 'status-ok')}">
+              \${item.isError 
+                ? '❌ ' + escapeHtml(item.statusText) 
+                : (item.isUsed 
+                    ? '🔒 Đã sử dụng' + (item.usedTime ? ' (' + item.usedTime + ')' : '') 
+                    : '✅ Khả dụng')}
+            </span>
+            <span style="font-size:10.5px;color:#94a3b8;">User: \${item.userId}</span>
+          </div>
+        \`;
+
+        // Event: Bấm icon Mắt Ẩn/Hiện mã (AUTO ẨN LẠI SAU 4 GIÂY)
+        const btnEye = card.querySelector('.btn-eye-toggle');
+        if (btnEye) {
+          btnEye.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (!state.pmh2RevealedCodes) state.pmh2RevealedCodes = {};
+            const willReveal = !state.pmh2RevealedCodes[codeKey];
+            state.pmh2RevealedCodes[codeKey] = willReveal;
+
+            // Huỷ bỏ timer cũ nếu có
+            if (pmh2AutoRevealTimers[codeKey]) {
+              clearTimeout(pmh2AutoRevealTimers[codeKey]);
+              delete pmh2AutoRevealTimers[codeKey];
+            }
+
+            // AUTO ẨN MÃ PHIẾU: Tự động ẩn lại thành ***** sau 4 giây
+            if (willReveal) {
+              pmh2AutoRevealTimers[codeKey] = setTimeout(() => {
+                if (state.pmh2RevealedCodes) {
+                  state.pmh2RevealedCodes[codeKey] = false;
+                }
+                renderPmh2List();
+              }, 4000);
+            }
+
+            renderPmh2List();
+          });
+        }
+
+        // Event: Bấm nút Sao chép (Sao chép mã thực nhưng GIỮ AUTO ẨN *****)
+        const btnCopy = card.querySelector('.btn-copy-pmh2');
+        if (btnCopy) {
+          btnCopy.addEventListener('click', (e) => {
+            e.stopPropagation();
+            triggerFireworks(item.pmhCode);
+            copyToClipboard(item.pmhCode).then(() => {
+              // BẢO MẬT: Giữ mã phiếu AUTO ẨN (*****), KHÔNG tự ý mở mã khi sao chép
+              if (!state.pmh2RevealedCodes) state.pmh2RevealedCodes = {};
+              state.pmh2RevealedCodes[codeKey] = false;
+              if (pmh2AutoRevealTimers[codeKey]) {
+                clearTimeout(pmh2AutoRevealTimers[codeKey]);
+                delete pmh2AutoRevealTimers[codeKey];
+              }
+
+              const now = new Date();
+              const timeStr = ('0' + now.getDate()).slice(-2) + '/' + 
+                              ('0' + (now.getMonth() + 1)).slice(-2) + '/' + 
+                              now.getFullYear() + ' ' + 
+                              ('0' + now.getHours()).slice(-2) + ':' + 
+                              ('0' + now.getMinutes()).slice(-2) + ':' + 
+                              ('0' + now.getSeconds()).slice(-2);
+              const nowTs = Date.now();
+              
+              item.isUsed = true;
+              item.usedTime = timeStr;
+              savePmh2LocalStatus(item.pmhCode, true, timeStr);
+
+              // 1. PHÁT TÍN HIỆU ĐỒNG BỘ THỜI GIAN THỰC TỨC THÌ ĐẾN CÁC TRÌNH DUYỆT KHÁC (0ms - 50ms)
+              broadcastRealtimeState(item.sheetRowIndex, true, item.pmhCode, timeStr, nowTs, 'PMH2', item.userId);
+
+              // 2. GHI LƯU VÀO GOOGLE SHEET
+              syncPmh2ToGoogleSheet(item.sheetRowIndex, true, item.pmhCode, item.userId);
+
+              showToast(item.pmhCode);
+              renderPmh2List();
+            });
+          });
+        }
+
+        // Event: Bấm nút Hoàn tác
+        const btnUndo = card.querySelector('.btn-undo-pmh2');
+        if (btnUndo) {
+          btnUndo.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (!state.pmh2RevealedCodes) state.pmh2RevealedCodes = {};
+            state.pmh2RevealedCodes[codeKey] = false;
+            if (pmh2AutoRevealTimers[codeKey]) {
+              clearTimeout(pmh2AutoRevealTimers[codeKey]);
+              delete pmh2AutoRevealTimers[codeKey];
+            }
+
+            const nowTs = Date.now();
+            item.isUsed = false;
+            item.usedTime = '';
+            savePmh2LocalStatus(item.pmhCode, false, '');
+
+            // 1. PHÁT TÍN HIỆU HOÀN TÁC THỜI GIAN THỰC TỨC THÌ ĐẾN CÁC TRÌNH DUYỆT KHÁC (0ms - 50ms)
+            broadcastRealtimeState(item.sheetRowIndex, false, item.pmhCode, '', nowTs, 'PMH2', item.userId);
+
+            // 2. GỠ ĐÁNH DẤU TRÊN GOOGLE SHEET
+            syncPmh2ToGoogleSheet(item.sheetRowIndex, false, item.pmhCode, item.userId);
+
+            showToast(item.pmhCode, true);
+            renderPmh2List();
+          });
+        }
+
+        listEl.appendChild(card);
+      });
+    }
+
+    /**
+     * ĐỒNG BỘ TRẠNG THÁI PHIẾU SHEET PMH2 LÊN GOOGLE SHEETS
+     */
+    function syncPmh2ToGoogleSheet(rowIndex, isUsed, code, user) {
       if (typeof google !== 'undefined' && google.script && google.script.run) {
-        // Môi trường Google Apps Script thật
+        google.script.run
+          .withSuccessHandler(() => {
+            console.log('Đã đồng bộ PMH2 vào Sheet');
+          })
+          .withFailureHandler((err) => {
+            console.warn('Lỗi đồng bộ PMH2 vào Sheet:', err);
+          })
+          .markVoucher(rowIndex, isUsed, code, 'PMH2', user);
+        return;
+      }
+
+      if (CONFIG.webAppUrl) {
+        const url = \`\${CONFIG.webAppUrl}?action=markUsed&sheet=PMH2&row=\${rowIndex}&used=\${isUsed}&code=\${encodeURIComponent(code)}&user=\${encodeURIComponent(user || '')}&sheetId=\${encodeURIComponent(CONFIG.sheetId || '')}&_=\${Date.now()}\`;
+
+        if (navigator.sendBeacon) {
+          try { navigator.sendBeacon(url); } catch (e) {}
+        }
+
+        if (!window._activeBeacons) window._activeBeacons = [];
+        const ping = new Image();
+        window._activeBeacons.push(ping);
+        ping.onload = ping.onerror = function() {
+          const idx = window._activeBeacons.indexOf(ping);
+          if (idx > -1) window._activeBeacons.splice(idx, 1);
+        };
+        ping.src = url;
+
+        try {
+          fetch(url, { mode: 'no-cors' }).catch(() => {});
+        } catch (e) {}
+      }
+    }
+
+    /**
+     * DÁN DỮ LIỆU THÔ VÀ LƯU NGƯỢC VỀ GOOGLE SHEET (SHEET PMH2)
+     */
+    function savePmh2DataToGoogleSheet(rawData, mode) {
+      return new Promise((resolve, reject) => {
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          google.script.run
+            .withSuccessHandler((res) => {
+              resolve(res || { success: true });
+            })
+            .withFailureHandler((err) => {
+              reject(err || new Error('Lỗi Google Apps Script'));
+            })
+            .savePmh2Data(rawData, mode);
+          return;
+        }
+
+        if (!CONFIG.webAppUrl) {
+          reject(new Error('Chưa cấu hình URL Web App Google Apps Script'));
+          return;
+        }
+
+        const formData = new URLSearchParams();
+        formData.append('action', 'savePmh2');
+        formData.append('mode', mode || 'append');
+        formData.append('data', rawData);
+        if (CONFIG.sheetId) {
+          formData.append('sheetId', CONFIG.sheetId);
+        }
+
+        fetch(CONFIG.webAppUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: formData.toString()
+        })
+        .then(() => {
+          resolve({ success: true });
+        })
+        .catch((err) => {
+          try {
+            const url = \`\${CONFIG.webAppUrl}?action=savePmh2&mode=\${mode || 'append'}&sheetId=\${encodeURIComponent(CONFIG.sheetId || '')}&data=\${encodeURIComponent(rawData)}&_=\${Date.now()}\`;
+            const ping = new Image();
+            ping.src = url;
+            resolve({ success: true });
+          } catch (e2) {
+            reject(err);
+          }
+        });
+      });
+    }
+
+    function initPmh2Controls() {
+      // 1. Chế độ xem: Song song / Sheet 1 / PMH2
+      const appContainer = document.getElementById('appContainer');
+      const cardSheet1 = document.getElementById('cardSheet1');
+      const cardPmh2 = document.getElementById('cardPmh2');
+      const modeBtns = document.querySelectorAll('.view-mode-btn');
+
+      function updateViewModeButtons() {
+        modeBtns.forEach(btn => {
+          if (btn.dataset.mode === state.viewMode) {
+            btn.classList.add('active');
+          } else {
+            btn.classList.remove('active');
+          }
+        });
+      }
+
+      /**
+       * CẬP NHẬT GIAO DIỆN ẨN / HIỆN 2 TAB VÀ ĐIỀU PHỐI KHUNG LƯỚI
+       */
+      function updateTabVisibilityUI() {
+        const isSheet1Visible = state.tabVisibility.sheet1 !== false;
+        const isPmh2Visible = state.tabVisibility.pmh2 !== false;
+
+        const parallelGrid = document.getElementById('parallelGrid');
+        const allHiddenCard = document.getElementById('allTabsHiddenCard');
+        const badgeHiddenSheet1 = document.getElementById('badgeHiddenSheet1');
+        const badgeHiddenPmh2 = document.getElementById('badgeHiddenPmh2');
+        const btnToggleVisSheet1 = document.getElementById('btnToggleVisSheet1');
+        const btnToggleVisPmh2 = document.getElementById('btnToggleVisPmh2');
+        const btnToggleVisBoth = document.getElementById('btnToggleVisBoth');
+        const textToggleVisBoth = document.getElementById('textToggleVisBoth');
+
+        // Cập nhật nhãn Đã ẩn trên nút mode
+        if (badgeHiddenSheet1) badgeHiddenSheet1.style.display = isSheet1Visible ? 'none' : 'inline-block';
+        if (badgeHiddenPmh2) badgeHiddenPmh2.style.display = isPmh2Visible ? 'none' : 'inline-block';
+
+        // Cập nhật trạng thái nút toggle Tab 1 (Sheet 1)
+        if (btnToggleVisSheet1) {
+          btnToggleVisSheet1.className = 'btn-tab-vis ' + (isSheet1Visible ? 'is-visible' : 'is-hidden');
+          btnToggleVisSheet1.innerHTML = isSheet1Visible 
+            ? '<span class="vis-icon">👁️</span> <span class="vis-btn-full">Sheet 1: <strong class="vis-status">Hiện</strong></span><span class="vis-btn-short">S1: <strong class="vis-status">Hiện</strong></span>'
+            : '<span class="vis-icon">🙈</span> <span class="vis-btn-full">Sheet 1: <strong class="vis-status">Đã ẩn</strong></span><span class="vis-btn-short">S1: <strong class="vis-status">Ẩn</strong></span>';
+        }
+
+        // Cập nhật trạng thái nút toggle Tab 2 (PMH2)
+        if (btnToggleVisPmh2) {
+          btnToggleVisPmh2.className = 'btn-tab-vis ' + (isPmh2Visible ? 'is-visible' : 'is-hidden');
+          btnToggleVisPmh2.innerHTML = isPmh2Visible 
+            ? '<span class="vis-icon">👁️</span> <span class="vis-btn-full">PMH2: <strong class="vis-status">Hiện</strong></span><span class="vis-btn-short">P2: <strong class="vis-status">Hiện</strong></span>'
+            : '<span class="vis-icon">🙈</span> <span class="vis-btn-full">PMH2: <strong class="vis-status">Đã ẩn</strong></span><span class="vis-btn-short">P2: <strong class="vis-status">Ẩn</strong></span>';
+        }
+
+        // Cập nhật nút Ẩn/Hiện Cả 2
+        const bothHidden = !isSheet1Visible && !isPmh2Visible;
+        if (btnToggleVisBoth) {
+          btnToggleVisBoth.className = 'btn-tab-vis btn-vis-all ' + (bothHidden ? 'is-hidden' : '');
+          btnToggleVisBoth.innerHTML = bothHidden
+            ? '<span class="vis-icon">⚡</span> <span class="vis-btn-full">Hiện Cả 2 Tab</span><span class="vis-btn-short">Hiện Cả 2</span>'
+            : '<span class="vis-icon">🔒</span> <span class="vis-btn-full">Ẩn Cả 2 Tab</span><span class="vis-btn-short">Ẩn Cả 2</span>';
+        }
+
+        // Trường hợp cả 2 bảng đều bị ẩn trên toàn hệ thống
+        if (bothHidden) {
+          if (cardSheet1) cardSheet1.style.display = 'none';
+          if (cardPmh2) cardPmh2.style.display = 'none';
+          if (parallelGrid) parallelGrid.style.display = 'none';
+          if (allHiddenCard) allHiddenCard.style.display = 'block';
+          return;
+        }
+
+        if (allHiddenCard) allHiddenCard.style.display = 'none';
+        if (parallelGrid) parallelGrid.style.display = 'grid';
+
+        // Điều phối hiển thị theo viewMode và trạng thái ẩn/hiện
+        if (state.viewMode === 'parallel') {
+          if (appContainer) appContainer.className = 'app-container mode-parallel';
+          if (cardSheet1) cardSheet1.style.display = isSheet1Visible ? 'block' : 'none';
+          if (cardPmh2) cardPmh2.style.display = isPmh2Visible ? 'block' : 'none';
+
+          if (isSheet1Visible && isPmh2Visible) {
+            if (parallelGrid) parallelGrid.classList.remove('single-col');
+          } else {
+            if (parallelGrid) parallelGrid.classList.add('single-col');
+          }
+        } else if (state.viewMode === 'sheet1') {
+          if (appContainer) appContainer.className = 'app-container';
+          if (isSheet1Visible) {
+            if (cardSheet1) cardSheet1.style.display = 'block';
+            if (cardPmh2) cardPmh2.style.display = 'none';
+            if (parallelGrid) parallelGrid.classList.add('single-col');
+          } else {
+            if (isPmh2Visible) {
+              state.viewMode = 'pmh2';
+              updateViewModeButtons();
+              if (cardSheet1) cardSheet1.style.display = 'none';
+              if (cardPmh2) cardPmh2.style.display = 'block';
+              if (parallelGrid) parallelGrid.classList.add('single-col');
+            }
+          }
+        } else if (state.viewMode === 'pmh2') {
+          if (appContainer) appContainer.className = 'app-container';
+          if (isPmh2Visible) {
+            if (cardSheet1) cardSheet1.style.display = 'none';
+            if (cardPmh2) cardPmh2.style.display = 'block';
+            if (parallelGrid) parallelGrid.classList.add('single-col');
+          } else {
+            if (isSheet1Visible) {
+              state.viewMode = 'sheet1';
+              updateViewModeButtons();
+              if (cardSheet1) cardSheet1.style.display = 'block';
+              if (cardPmh2) cardPmh2.style.display = 'none';
+              if (parallelGrid) parallelGrid.classList.add('single-col');
+            }
+          }
+        }
+      }
+
+      /**
+       * PHÁT TÍN HIỆU ĐỒNG BỘ ẨN/HIỆN ĐẾN MỌI TRÌNH DUYỆT (REALTIME & PERSISTENT)
+       */
+      function broadcastTabVisibility(sheet1, pmh2) {
+        const payload = {
+          action: 'setTabVisibility',
+          sheet1: !!sheet1,
+          pmh2: !!pmh2,
+          senderId: state.clientId,
+          timestamp: Date.now()
+        };
+        const payloadStr = JSON.stringify(payload);
+
+        // 1. Kênh MQTT (Realtime giữa các máy khác nhau) với retain: true
+        try {
+          if (window.mqttClient && window.mqttClient.connected) {
+            window.mqttClient.publish(VISIBILITY_TOPIC, payloadStr, { retain: true, qos: 0 });
+            window.mqttClient.publish(REALTIME_TOPIC, payloadStr);
+          }
+        } catch (e) {}
+
+        // 2. Kênh BroadcastChannel (Cùng trình duyệt giữa các tab)
+        try {
+          if (window.broadcastChannel) {
+            window.broadcastChannel.postMessage(payload);
+          }
+        } catch (e) {}
+
+        // 3. Kênh LocalStorage storage event
+        try {
+          localStorage.setItem('pmh_sync_cross_tab', JSON.stringify({ ...payload, _t: Date.now() }));
+        } catch (e) {}
+      }
+
+      function saveTabVisibilityToGoogleSheet(sheet1, pmh2) {
+        if (!CONFIG.webAppUrl) return;
+        try {
+          const url = \`\${CONFIG.webAppUrl}?action=setTabVisibility&sheet1=\${!!sheet1}&pmh2=\${!!pmh2}&_=\${Date.now()}\`;
+          fetch(url, { mode: 'no-cors' }).catch(() => {});
+        } catch (e) {}
+      }
+
+      /**
+       * ĐẶT TRẠNG THÁI ẨN/HIỆN VÀ GỬI LỆNH ĐỒNG BỘ
+       */
+      function setTabVisibility(sheet1, pmh2, isRemote = false) {
+        const s1 = (sheet1 !== undefined) ? !!sheet1 : state.tabVisibility.sheet1;
+        const p2 = (pmh2 !== undefined) ? !!pmh2 : state.tabVisibility.pmh2;
+
+        state.tabVisibility.sheet1 = s1;
+        state.tabVisibility.pmh2 = p2;
+
+        try {
+          localStorage.setItem('pmh_tab_visibility', JSON.stringify({
+            sheet1: s1,
+            pmh2: p2,
+            _t: Date.now()
+          }));
+        } catch (e) {}
+
+        updateTabVisibilityUI();
+
+        if (!isRemote) {
+          broadcastTabVisibility(s1, p2);
+          saveTabVisibilityToGoogleSheet(s1, p2);
+
+          let toastMsg = '';
+          if (!s1 && !p2) {
+            toastMsg = '🔒 Đã ẨN CẢ 2 BẢNG trên tất cả trình duyệt!';
+          } else if (!s1) {
+            toastMsg = '🙈 Đã ẨN Bảng Sheet 1 trên tất cả trình duyệt!';
+          } else if (!p2) {
+            toastMsg = '🙈 Đã ẨN Bảng PMH2 trên tất cả trình duyệt!';
+          } else {
+            toastMsg = '👁️ Đã HIỆN LẠI bảng trên tất cả trình duyệt!';
+          }
+          showToast(toastMsg, false, true);
+        }
+      }
+
+      window.setTabVisibility = setTabVisibility;
+      window.updateTabVisibilityUI = updateTabVisibilityUI;
+
+      // Xử lý chuyển đổi chế độ xem
+      modeBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const mode = btn.dataset.mode;
+          if (mode === 'sheet1' && state.tabVisibility.sheet1 === false) {
+            showToast('⚠️ Bảng Sheet 1 hiện đang bị ẩn trên tất cả trình duyệt!', true);
+            return;
+          }
+          if (mode === 'pmh2' && state.tabVisibility.pmh2 === false) {
+            showToast('⚠️ Bảng PMH2 hiện đang bị ẩn trên tất cả trình duyệt!', true);
+            return;
+          }
+          state.viewMode = mode;
+          updateViewModeButtons();
+          updateTabVisibilityUI();
+        });
+      });
+
+      // Lắng nghe sự kiện click các nút điều khiển Ẩn/Hiện Tab
+      const btnToggleVisSheet1 = document.getElementById('btnToggleVisSheet1');
+      const btnToggleVisPmh2 = document.getElementById('btnToggleVisPmh2');
+      const btnToggleVisBoth = document.getElementById('btnToggleVisBoth');
+      const btnHidePanelSheet1 = document.getElementById('btnHidePanelSheet1');
+      const btnHidePanelPmh2 = document.getElementById('btnHidePanelPmh2');
+      const btnRestoreSheet1 = document.getElementById('btnRestoreSheet1');
+      const btnRestorePmh2 = document.getElementById('btnRestorePmh2');
+      const btnRestoreBoth = document.getElementById('btnRestoreBoth');
+
+      if (btnToggleVisSheet1) {
+        btnToggleVisSheet1.addEventListener('click', () => {
+          setTabVisibility(!state.tabVisibility.sheet1, state.tabVisibility.pmh2);
+        });
+      }
+
+      if (btnToggleVisPmh2) {
+        btnToggleVisPmh2.addEventListener('click', () => {
+          setTabVisibility(state.tabVisibility.sheet1, !state.tabVisibility.pmh2);
+        });
+      }
+
+      if (btnToggleVisBoth) {
+        btnToggleVisBoth.addEventListener('click', () => {
+          const bothHidden = !state.tabVisibility.sheet1 && !state.tabVisibility.pmh2;
+          if (bothHidden) {
+            setTabVisibility(true, true);
+          } else {
+            setTabVisibility(false, false);
+          }
+        });
+      }
+
+      if (btnRestoreSheet1) {
+        btnRestoreSheet1.addEventListener('click', () => {
+          setTabVisibility(true, state.tabVisibility.pmh2);
+        });
+      }
+
+      if (btnRestorePmh2) {
+        btnRestorePmh2.addEventListener('click', () => {
+          setTabVisibility(state.tabVisibility.sheet1, true);
+        });
+      }
+
+      if (btnRestoreBoth) {
+        btnRestoreBoth.addEventListener('click', () => {
+          setTabVisibility(true, true);
+        });
+      }
+
+      // Khởi chạy cập nhật giao diện ẩn/hiện ban đầu
+      updateTabVisibilityUI();
+
+      // Truy vấn trạng thái ẩn/hiện từ Google Sheet Web App (Server Backup)
+      if (CONFIG.webAppUrl) {
+        fetch(\`\${CONFIG.webAppUrl}?action=getTabVisibility&_=\${Date.now()}\`)
+          .then(r => r.json())
+          .then(res => {
+            if (res && res.success && res.visibility) {
+              const s1 = res.visibility.sheet1 !== false;
+              const p2 = res.visibility.pmh2 !== false;
+              if (state.tabVisibility.sheet1 !== s1 || state.tabVisibility.pmh2 !== p2) {
+                setTabVisibility(s1, p2, true);
+              }
+            }
+          })
+          .catch(() => {});
+      }
+
+      // 2. Nút Ẩn/Hiện Ô Dán Dữ Liệu PMH2 (Collapsible Drawer)
+      const btnToggleDrawer = document.getElementById('btnToggleDrawerPmh2');
+      const drawerPaste = document.getElementById('drawerPastePmh2');
+      const btnCloseDrawer = document.getElementById('btnCloseDrawerPmh2');
+      const btnClearText = document.getElementById('btnClearTextPmh2');
+      const txtPaste = document.getElementById('txtPastePmh2');
+      const btnSaveToSheet = document.getElementById('btnSaveToSheetPmh2');
+      const saveBtnText = document.getElementById('saveBtnTextPmh2');
+      const drawerStatusMsg = document.getElementById('drawerStatusMsg');
+      const btnRefreshPmh2 = document.getElementById('btnRefreshPmh2');
+
+      function closePmh2Drawer() {
+        state.pmh2DrawerOpen = false;
+        if (drawerPaste) drawerPaste.style.display = 'none';
+        if (btnToggleDrawer) {
+          btnToggleDrawer.classList.remove('active');
+          btnToggleDrawer.setAttribute('aria-expanded', 'false');
+        }
+      }
+
+      function openPmh2Drawer() {
+        state.pmh2DrawerOpen = true;
+        if (drawerPaste) drawerPaste.style.display = 'block';
+        if (btnToggleDrawer) {
+          btnToggleDrawer.classList.add('active');
+          btnToggleDrawer.setAttribute('aria-expanded', 'true');
+        }
+        if (txtPaste) {
+          setTimeout(() => txtPaste.focus(), 60);
+        }
+      }
+
+      if (btnToggleDrawer && drawerPaste) {
+        btnToggleDrawer.addEventListener('click', () => {
+          if (state.pmh2DrawerOpen) {
+            closePmh2Drawer();
+          } else {
+            openPmh2Drawer();
+          }
+        });
+      }
+
+      if (btnCloseDrawer) {
+        btnCloseDrawer.addEventListener('click', () => {
+          closePmh2Drawer();
+        });
+      }
+
+      if (btnClearText && txtPaste) {
+        btnClearText.addEventListener('click', () => {
+          txtPaste.value = '';
+          if (drawerStatusMsg) drawerStatusMsg.style.display = 'none';
+          txtPaste.focus();
+        });
+      }
+
+      if (btnRefreshPmh2) {
+        btnRefreshPmh2.addEventListener('click', () => {
+          loadSheetPmh2GViz();
+        });
+      }
+
+      let isSavingPmh2 = false;
+
+      /**
+       * Tự động lọc dữ liệu thô: CHỈ GIỮ LẠI các khối dòng thuộc User 43751 & 7721
+       * Loại bỏ các dòng của user khác (12241, 161987,...) và các dòng lẻ loi
+       */
+      function filterPmh2RawDataForTargetUsers(rawData) {
+        if (!rawData || typeof rawData !== 'string') return '';
+        const targetUsers = ['43751', '7721'];
+        const lines = rawData.split(/\r?\n/).map(l => l.trimEnd());
+        const resultLines = [];
+
+        function isVoucherOrStatus(l) {
+          return l.includes('PMH') || 
+                 l.includes('➜') || 
+                 l.includes('❌') || 
+                 /hết lượt|không tồn tại|thất bại|không hợp lệ/i.test(l);
+        }
+
+        function isSeparator(l) {
+          return /^[━\-=─_~*#]{3,}$/.test(l);
+        }
+
+        for (let i = 0; i < lines.length; i++) {
+          const trimmed = lines[i].trim();
+          if (!trimmed) continue;
+
+          const isVoucher = isVoucherOrStatus(trimmed);
+          const isSep = isSeparator(trimmed);
+
+          // Kiểm tra dòng định danh User mục tiêu (43751 hoặc 7721)
+          const matchedUser = targetUsers.find(u => trimmed.includes(u));
+
+          if (matchedUser && !isVoucher && !isSep) {
+            resultLines.push(lines[i].trim());
+
+            let j = i + 1;
+            while (j < lines.length) {
+              const nextTrimmed = lines[j].trim();
+              if (!nextTrimmed) {
+                j++;
+                continue;
+              }
+
+              const nextIsVoucher = isVoucherOrStatus(nextTrimmed);
+              const nextIsSep = isSeparator(nextTrimmed);
+              const nextIsTargetUser = targetUsers.some(u => nextTrimmed.includes(u)) && !nextIsVoucher && !nextIsSep;
+
+              // Nếu gặp User khác hoặc User mục tiêu tiếp theo -> dừng khối hiện tại
+              if (nextIsTargetUser || (!nextIsVoucher && !nextIsSep)) {
+                break;
+              }
+
+              if (nextIsVoucher) {
+                resultLines.push(lines[j].trim());
+                j++;
+              } else if (nextIsSep) {
+                resultLines.push(lines[j].trim());
+                j++;
+                break;
+              } else {
+                j++;
+              }
+            }
+            i = j - 1;
+          }
+        }
+
+        return resultLines.join('\n').trim();
+      }
+
+      function executeSavePmh2(rawText, isAuto = false) {
+        if (isSavingPmh2) return;
+        const text = (rawText || '').trim();
+        if (!text) {
+          if (!isAuto && drawerStatusMsg) {
+            drawerStatusMsg.className = 'drawer-status-msg error';
+            drawerStatusMsg.textContent = '⚠️ Vui lòng dán nội dung phiếu trước khi lưu!';
+            drawerStatusMsg.style.display = 'block';
+            if (txtPaste) txtPaste.focus();
+          }
+          return;
+        }
+
+        // TỰ ĐỘNG LỌC CHỈ GIỮ LẠI CÁC DÒNG THUỘC USER 43751 & 7721
+        const filteredText = filterPmh2RawDataForTargetUsers(text);
+        if (!filteredText) {
+          if (isAuto) {
+            if (txtPaste) txtPaste.value = '';
+            closePmh2Drawer();
+            showToast('⚠️ Không tìm thấy phiếu nào thuộc User 43751 hoặc 7721! Đã bỏ qua để tránh lưu dữ liệu dư thừa.', true);
+          } else {
+            if (drawerStatusMsg) {
+              drawerStatusMsg.className = 'drawer-status-msg error';
+              drawerStatusMsg.style.background = '#fef2f2';
+              drawerStatusMsg.style.color = '#b91c1c';
+              drawerStatusMsg.style.border = '1px solid #fecaca';
+              drawerStatusMsg.textContent = '⚠️ Không tìm thấy dòng phiếu nào thuộc User 43751 hoặc 7721 trong dữ liệu vừa dán!';
+              drawerStatusMsg.style.display = 'block';
+            }
+          }
+          return;
+        }
+
+        const modeRadio = document.querySelector('input[name="pmh2SaveMode"]:checked');
+        const saveMode = modeRadio ? modeRadio.value : 'append';
+
+        isSavingPmh2 = true;
+        if (btnSaveToSheet) btnSaveToSheet.disabled = true;
+        if (saveBtnText) saveBtnText.textContent = 'Đang lưu lên Google Sheet...';
+
+        // Đếm số dòng đã lọc
+        const filteredLinesCount = filteredText.split('\n').filter(l => l.trim()).length;
+
+        if (isAuto) {
+          // Tự động đóng khung ngay sau khi dán dữ liệu vào ô
+          closePmh2Drawer();
+          if (txtPaste) txtPaste.value = '';
+          showToast(\`⚡ Đã tự động lọc \${filteredLinesCount} dòng (User 43751 & 7721)! Đang lưu về Sheet "PMH2"...\`, false, true);
+        } else {
+          if (drawerStatusMsg) {
+            drawerStatusMsg.className = 'drawer-status-msg';
+            drawerStatusMsg.style.background = '#e0f2fe';
+            drawerStatusMsg.style.color = '#0369a1';
+            drawerStatusMsg.style.border = '1px solid #bae6fd';
+            drawerStatusMsg.textContent = \`⏳ Đã lọc \${filteredLinesCount} dòng (User 43751 & 7721). Đang truyền vào sheet PMH2...\`;
+            drawerStatusMsg.style.display = 'block';
+          }
+        }
+
+        savePmh2DataToGoogleSheet(filteredText, saveMode)
+          .then(() => {
+            isSavingPmh2 = false;
+            if (btnSaveToSheet) btnSaveToSheet.disabled = false;
+            if (saveBtnText) saveBtnText.textContent = 'Lưu Ngược Về Sheet "PMH2"';
+
+            // Phát tín hiệu đồng bộ reload PMH2 đến mọi trình duyệt khác
+            if (typeof broadcastPmh2Reload === 'function') {
+              broadcastPmh2Reload();
+            }
+
+            if (isAuto) {
+              showToast(\`✅ Đã lọc & lưu thành công \${filteredLinesCount} dòng (User 43751 & 7721) vào Sheet "PMH2"!\`, false, true);
+            } else {
+              if (drawerStatusMsg) {
+                drawerStatusMsg.className = 'drawer-status-msg success';
+                drawerStatusMsg.style.display = 'block';
+                drawerStatusMsg.textContent = \`✅ Đã lọc & lưu thành công \${filteredLinesCount} dòng vào sheet "PMH2"! Tự động đóng khung...\`;
+              }
+              if (txtPaste) txtPaste.value = '';
+              setTimeout(() => {
+                closePmh2Drawer();
+              }, 1200);
+            }
+
+            // Tự động tải lại danh sách phiếu từ Google Sheet
+            setTimeout(() => {
+              loadSheetPmh2GViz();
+            }, 800);
+          })
+          .catch((err) => {
+            isSavingPmh2 = false;
+            if (btnSaveToSheet) btnSaveToSheet.disabled = false;
+            if (saveBtnText) saveBtnText.textContent = 'Lưu Ngược Về Sheet "PMH2"';
+            showToast('❌ Lỗi khi lưu: ' + (err.message || err), false, true);
+            if (!isAuto && drawerStatusMsg) {
+              drawerStatusMsg.className = 'drawer-status-msg error';
+              drawerStatusMsg.style.display = 'block';
+              drawerStatusMsg.textContent = '❌ Lỗi khi lưu: ' + (err.message || err);
+            }
+          });
+      }
+
+      // LẮNG NGHE SỰ KIỆN DÁN (PASTE) VÀO Ô DỮ LIỆU
+      if (txtPaste) {
+        txtPaste.addEventListener('paste', (e) => {
+          let pastedData = '';
+          if (e.clipboardData && e.clipboardData.getData) {
+            pastedData = e.clipboardData.getData('text/plain') || e.clipboardData.getData('text');
+          }
+          setTimeout(() => {
+            const textToSave = (pastedData && pastedData.trim()) ? pastedData.trim() : (txtPaste.value ? txtPaste.value.trim() : '');
+            if (textToSave) {
+              executeSavePmh2(textToSave, true);
+            }
+          }, 60);
+        });
+
+        // Bổ sung hỗ trợ dán trên thiết bị di động
+        txtPaste.addEventListener('input', (e) => {
+          if (isSavingPmh2) return;
+          if (e.inputType === 'insertFromPaste' || (txtPaste.value && txtPaste.value.length > 20 && (txtPaste.value.includes('\n') || txtPaste.value.includes('CMA_') || txtPaste.value.includes('PMH')))) {
+            const textToSave = txtPaste.value.trim();
+            if (textToSave) {
+              setTimeout(() => {
+                executeSavePmh2(textToSave, true);
+              }, 60);
+            }
+          }
+        });
+      }
+
+      // Xử lý nút bấm thủ công Lưu Ngược Về Sheet "PMH2"
+      if (btnSaveToSheet && txtPaste) {
+        btnSaveToSheet.addEventListener('click', () => {
+          const rawText = txtPaste.value.trim();
+          executeSavePmh2(rawText, false);
+        });
+      }
+
+      // 3. Lọc User PMH2
+      const userPills = document.querySelectorAll('#pmh2UserFilterRow .user-pill');
+      userPills.forEach(pill => {
+        pill.addEventListener('click', () => {
+          userPills.forEach(p => p.classList.remove('active'));
+          pill.classList.add('active');
+          state.pmh2FilterUser = pill.dataset.user;
+          renderPmh2List();
+        });
+      });
+
+      // 4. Lọc Loại PMH2 (ICT vs MM)
+      const typePills = document.querySelectorAll('#pmh2TypeFilterRow .type-pill');
+      typePills.forEach(pill => {
+        pill.addEventListener('click', () => {
+          typePills.forEach(p => p.classList.remove('active'));
+          pill.classList.add('active');
+          state.pmh2FilterType = pill.dataset.type;
+          renderPmh2List();
+        });
+      });
+
+      // 5. Lọc Trạng Thái PMH2 (Tất cả / Khả dụng / Đã dùng / Lỗi)
+      const statusPills = document.querySelectorAll('#pmh2StatusFilterRow .status-pill');
+      statusPills.forEach(pill => {
+        pill.addEventListener('click', () => {
+          statusPills.forEach(p => p.classList.remove('active'));
+          pill.classList.add('active');
+          state.pmh2StatusFilter = pill.dataset.status;
+          renderPmh2List();
+        });
+      });
+
+      // 6. Ô tìm kiếm PMH2
+      const searchInput = document.getElementById('searchPmh2Input');
+      const btnClear = document.getElementById('btnClearSearchPmh2');
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          state.pmh2Search = e.target.value;
+          renderPmh2List();
+        });
+      }
+      if (btnClear && searchInput) {
+        btnClear.addEventListener('click', () => {
+          searchInput.value = '';
+          state.pmh2Search = '';
+          renderPmh2List();
+        });
+      }
+    }
+
+    function loadData(forceSpinner = false) {
+      state.isLoading = true;
+      els.syncDot.className = 'sync-dot updating';
+      els.syncText.textContent = 'Đang đồng bộ...';
+
+      // Chỉ hiển thị khung chờ to ở giữa nếu HOÀN TOÀN CHƯA CÓ DỮ LIỆU
+      const hasData = state.items && state.items.length > 0;
+      if (!hasData || forceSpinner) {
+        els.loadingBox.style.display = 'flex';
+        els.voucherList.style.display = 'none';
+        els.emptyState.style.display = 'none';
+      }
+
+      // 1. Chạy trong Google Apps Script (khi nhúng trong Google Sheet)
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
         google.script.run
           .withSuccessHandler(onDataLoaded)
           .withFailureHandler(onDataError)
           .getSheetData();
-      } else {
-        // Chế độ mô phỏng kiểm thử trình duyệt
-        console.warn('Google Script Run not detected. Loading local test data...');
-        setTimeout(() => {
-          onDataLoaded(getMockData());
-        }, 300);
-      }
-    }
-
-    function onDataLoaded(res) {
-      state.isLoading = false;
-      els.loadingBox.style.display = 'none';
-      els.syncDot.className = 'sync-dot';
-      els.syncText.textContent = 'Đã kết nối Sheet';
-
-      if (!res || !res.success) {
-        showError('Không thể đọc dữ liệu: ' + (res ? res.message : 'Lỗi không xác định'));
         return;
       }
 
-      state.items = res.items || [];
+      // 2. Tải trực tiếp qua Google Sheets GViz CDN (phản hồi siêu nhanh 0.2s - 0.4s)
+      loadDirectFromGoogleSheet();
+    }
+
+    function loadDirectFromGoogleSheet() {
+      loadSheetPmh2GViz();
+      const sheetId = CONFIG.sheetId || CONFIG.defaultSheetId;
+      const callbackName = 'onGvizResponse_' + Math.floor(Math.random() * 1000000);
+
+      let timedOut = false;
+      const timeoutTimer = setTimeout(() => {
+        timedOut = true;
+        delete window[callbackName];
+        const scriptEl = document.getElementById('gviz-script');
+        if (scriptEl) scriptEl.remove();
+        tryFallbackWebApp();
+      }, 5000);
+
+      window[callbackName] = function(res) {
+        if (timedOut) return;
+        clearTimeout(timeoutTimer);
+        delete window[callbackName];
+        const scriptEl = document.getElementById('gviz-script');
+        if (scriptEl) scriptEl.remove();
+        parseGvizData(res);
+      };
+
+      const gvizUrl = \`https://docs.google.com/spreadsheets/d/\${sheetId}/gviz/tq?tqx=responseHandler:\${callbackName}&_=\${Date.now()}\`;
+      
+      const oldScript = document.getElementById('gviz-script');
+      if (oldScript) oldScript.remove();
+
+      const script = document.createElement('script');
+      script.id = 'gviz-script';
+      script.src = gvizUrl;
+      script.onerror = function() {
+        if (timedOut) return;
+        clearTimeout(timeoutTimer);
+        delete window[callbackName];
+        if (script.parentNode) script.remove();
+        tryFallbackWebApp();
+      };
+      document.head.appendChild(script);
+    }
+
+    function tryFallbackWebApp() {
+      if (CONFIG.webAppUrl) {
+        const controller = new AbortController();
+        const tid = setTimeout(() => controller.abort(), 4000);
+        fetch(\`\${CONFIG.webAppUrl}?action=getData&_=\${Date.now()}\`, { signal: controller.signal })
+          .then(res => res.json())
+          .then(data => {
+            clearTimeout(tid);
+            if (data && data.success && data.items && data.items.length > 0) {
+              onDataLoaded(data);
+            } else {
+              onDataError();
+            }
+          })
+          .catch(() => {
+            clearTimeout(tid);
+            onDataError();
+          });
+      } else {
+        onDataError();
+      }
+    }
+
+    function parseGvizData(res) {
+      if (!res || !res.table || !res.table.rows) {
+        if (!state.items || state.items.length === 0) {
+          onDataLoaded(getFallbackData());
+        }
+        return;
+      }
+
+      const rows = res.table.rows;
+      const items = [];
+      const datesSet = {};
+      const productsSet = {};
+      const localStatusMap = getLocalStatusMap();
+
+      const lineRegex = /^Ngày\s+(\d{1,2}\/\d{1,2}\/\d{4})\s*:\s*(?:Mã\s*Phiếu\s*mua\s*hàng\s*(\d+)\s*-\s*dùng\s*cho\s*)?([^:]+?)\s*:\s*([A-Za-z0-9]+)\s*$/i;
+
+      for (let r = 0; r < rows.length; r++) {
+        const row = rows[r];
+        if (!row || !row.c || !row.c[0]) continue;
+        const rawText = String(row.c[0].v || "").trim();
+        if (!rawText.startsWith("Ngày")) continue;
+
+        const match = rawText.match(lineRegex);
+        if (match) {
+          const dateStr = match[1].trim();
+          const voucherNum = match[2] ? match[2].trim() : "";
+          const product = match[3].trim();
+          const code = match[4].trim();
+
+          const colBVal = row.c[1] ? row.c[1].v : false;
+          let isUsed = (colBVal === true || String(colBVal).toUpperCase() === "TRUE");
+
+          let usedTime = "";
+          if (row.c[2]) {
+            if (row.c[2].f) {
+              usedTime = String(row.c[2].f);
+            } else if (typeof row.c[2].v === 'string' && row.c[2].v.startsWith('Date(')) {
+              const m = row.c[2].v.match(/Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+),(\d+))?\)/);
+              if (m) {
+                const pad = n => (n < 10 ? '0' + n : n);
+                usedTime = \`\${pad(m[3])}/\${pad(Number(m[2]) + 1)}/\${m[1]} \${pad(m[4] || 0)}:\${pad(m[5] || 0)}\`;
+              }
+            } else if (row.c[2].v) {
+              usedTime = String(row.c[2].v);
+            }
+          }
+
+          // QUY TẮC ĐỒNG BỘ CHỐNG GHI ĐÈ NGƯỢC (RECONCILIATION):
+          // Nếu có thao tác người dùng (đã dùng HOẶC hoàn lại) gần đây (< 15 phút),
+          // luôn ưu tiên trạng thái mới nhất của người dùng thay vì cache cũ của Google Sheets GViz
+          const cleanCode = String(code || '').trim().toUpperCase();
+          const savedStatus = localStatusMap[cleanCode] || localStatusMap[code];
+          if (savedStatus && savedStatus.updatedAt) {
+            const ageMs = Date.now() - savedStatus.updatedAt;
+            if (ageMs < 15 * 60 * 1000) {
+              isUsed = !!savedStatus.used;
+              if (isUsed && savedStatus.time) {
+                usedTime = savedStatus.time;
+              } else if (!isUsed) {
+                usedTime = "";
+              }
+            }
+          }
+
+          datesSet[dateStr] = true;
+          productsSet[product] = true;
+
+          // rowIndex trong Google Sheet là 1-indexed. Dòng 1 là tiêu đề, nên rows[0] là dòng 2
+          items.push({
+            rowIndex: r + 2,
+            date: dateStr,
+            voucherNum: voucherNum ? ("Mã " + voucherNum) : "",
+            product: product,
+            code: code,
+            isUsed: isUsed,
+            usedTime: usedTime,
+            rawText: rawText
+          });
+        }
+      }
+
+      const dates = Object.keys(datesSet).sort((a, b) => {
+        const pA = a.split("/").map(Number);
+        const pB = b.split("/").map(Number);
+        return new Date(pA[2], pA[1] - 1, pA[0]) - new Date(pB[2], pB[1] - 1, pB[0]);
+      });
+
+      onDataLoaded({
+        success: true,
+        sheetName: "1841 - PHIẾU MUA HÀNG EVENT",
+        dates: dates,
+        products: Object.keys(productsSet).sort(),
+        items: items
+      });
+    }
+
+    function onDataLoaded(res, isFromCache = false) {
+      state.isLoading = false;
+      els.loadingBox.style.display = 'none';
+      els.syncDot.className = 'sync-dot';
+      els.syncText.textContent = 'Đã kết nối trực tiếp';
+
+      if (!res || !res.success) {
+        if (!state.items || state.items.length === 0) {
+          showError('Không thể tải dữ liệu');
+        }
+        return;
+      }
+
+      // Tự động lọc mã trùng cho Bảng 1: CHỈ LỌC KHI TRÙNG MÃ PHIẾU (code), không lọc theo tên phiếu
+      const seenCodeSheet1 = new Map();
+      const uniqueSheet1Items = [];
+      (res.items || []).forEach(item => {
+        if (item.code) {
+          const norm = String(item.code).replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+          if (seenCodeSheet1.has(norm)) {
+            const ex = seenCodeSheet1.get(norm);
+            if (item.isUsed && !ex.isUsed) {
+              ex.isUsed = true;
+              ex.usedTime = item.usedTime;
+            }
+            return; // Bỏ qua vì TRÙNG MÃ PHIẾU
+          }
+          seenCodeSheet1.set(norm, item);
+        }
+        uniqueSheet1Items.push(item);
+      });
+
+      // Tự động đặt lại để AUTO ẨN toàn bộ mã phiếu thành dấu sao (*****)
+      state.sheet1RevealedCodes = {};
+      state.items = uniqueSheet1Items;
       state.dates = res.dates || [];
       state.products = res.products || [];
 
-      els.sheetInfo.textContent = 'Trang tính: ' + (res.sheetName || 'PMH') + ' (' + state.items.length + ' phiếu)';
-      els.totalCouponsBadge.textContent = state.items.length + ' phiếu • PMH Event';
+      els.sheetInfo.textContent = 'Trang tính: ' + (res.sheetName || 'PMH');
+      els.totalCouponsBadge.textContent = state.items.length + ' phiếu • Siêu thị 1841';
+
+      if (!isFromCache) {
+        try {
+          localStorage.setItem('pmh_cached_payload', JSON.stringify(res));
+        } catch (e) {}
+      }
 
       populateDates();
       renderVouchers();
@@ -1888,46 +6263,44 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
     function onDataError(err) {
       state.isLoading = false;
       els.loadingBox.style.display = 'none';
-      els.syncDot.className = 'sync-dot updating';
-      els.syncText.textContent = 'Lỗi kết nối';
-      showError('Lỗi kết nối Google Sheet: ' + err);
+      if (!state.items || state.items.length === 0) {
+        els.syncDot.className = 'sync-dot updating';
+        els.syncText.textContent = 'Lỗi kết nối';
+        showError('Lỗi kết nối Google Sheet. Vui lòng bấm 🔄 để thử lại.');
+      } else {
+        els.syncDot.className = 'sync-dot';
+        els.syncText.textContent = 'Dữ liệu offline';
+      }
     }
 
     function showError(msg) {
       els.emptyState.style.display = 'block';
-      els.emptyTitle = 'Đã có lỗi xảy ra';
       els.emptyDesc.textContent = msg;
     }
 
-    /**
-     * POPULATE DATES DROPDOWN
-     */
     function populateDates() {
       els.dateSelect.innerHTML = '';
 
       if (state.dates.length === 0) {
         const opt = document.createElement('option');
         opt.value = '';
-        opt.textContent = 'Không có dữ liệu ngày';
+        opt.textContent = 'Không có ngày';
         els.dateSelect.appendChild(opt);
         return;
       }
 
-      // Tùy chọn tất cả các ngày
       const allOpt = document.createElement('option');
       allOpt.value = 'ALL';
-      allOpt.textContent = '🌟 Tất cả các ngày (' + state.dates.length + ' ngày)';
+      allOpt.textContent = 'Tất cả các ngày (' + state.dates.length + ')';
       els.dateSelect.appendChild(allOpt);
 
-      // Thêm từng ngày
       state.dates.forEach(d => {
         const opt = document.createElement('option');
         opt.value = d;
-        opt.textContent = '📅 Ngày ' + d;
+        opt.textContent = 'Ngày ' + d;
         els.dateSelect.appendChild(opt);
       });
 
-      // Mặc định: kiểm tra ngày hôm nay
       const now = new Date();
       const pad = (n) => (n < 10 ? '0' + n : n);
       const todayStr = pad(now.getDate()) + '/' + pad(now.getMonth() + 1) + '/' + now.getFullYear();
@@ -1935,28 +6308,22 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
       if (state.dates.includes(todayStr)) {
         state.selectedDate = todayStr;
       } else if (!state.selectedDate || !state.dates.includes(state.selectedDate)) {
-        // Nếu không có hôm nay, chọn ngày đầu tiên
         state.selectedDate = state.dates[0];
       }
 
       els.dateSelect.value = state.selectedDate;
     }
 
-    /**
-     * FILTER & RENDER VOUCHERS
-     */
     function renderVouchers() {
       const queryClean = boDauTiengViet(state.searchQuery);
       const selDate = state.selectedDate;
       const statusFilt = state.statusFilter;
 
-      // 1. Lọc theo Ngày trước để tính số liệu của ngày đang xem
       const dateItems = state.items.filter(item => {
         if (!selDate || selDate === 'ALL') return true;
         return item.date === selDate;
       });
 
-      // Cập nhật đếm trạng thái cho ngày đang xem
       const totalCount = dateItems.length;
       const availCount = dateItems.filter(i => !i.isUsed).length;
       const usedCount = dateItems.filter(i => i.isUsed).length;
@@ -1971,13 +6338,10 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
       const pct = totalCount > 0 ? Math.round((usedCount / totalCount) * 100) : 0;
       els.progressBar.style.width = pct + '%';
 
-      // 2. Lọc tiếp theo từ khóa tìm kiếm và tab trạng thái
       const filtered = dateItems.filter(item => {
-        // Lọc trạng thái
         if (statusFilt === 'available' && item.isUsed) return false;
         if (statusFilt === 'used' && !item.isUsed) return false;
 
-        // Lọc từ khóa tìm kiếm (tên sản phẩm, mã phiếu, rawText)
         if (queryClean) {
           const prodClean = boDauTiengViet(item.product);
           const codeClean = boDauTiengViet(item.code);
@@ -1991,14 +6355,13 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
         return true;
       });
 
-      // 3. Render giao diện
       if (filtered.length === 0) {
         els.voucherList.style.display = 'none';
         els.emptyState.style.display = 'block';
         if (queryClean) {
-          els.emptyDesc.textContent = 'Không tìm thấy sản phẩm nào khớp với từ khóa "' + state.searchQuery + '".';
+          els.emptyDesc.textContent = 'Không có sản phẩm nào khớp từ khóa "' + state.searchQuery + '".';
         } else {
-          els.emptyDesc.textContent = 'Không có phiếu nào trong mục lọc này.';
+          els.emptyDesc.textContent = 'Không có phiếu nào trong mục này.';
         }
         return;
       }
@@ -2013,15 +6376,11 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
       });
     }
 
-    /**
-     * CREATE VOUCHER CARD ELEMENT
-     */
     function createVoucherCard(item) {
       const card = document.createElement('div');
       card.className = 'voucher-card' + (item.isUsed ? ' is-used' : '');
       card.id = 'card-row-' + item.rowIndex;
 
-      // Highlight keyword in product title
       let titleHtml = escapeHtml(item.product);
       if (state.searchQuery.trim()) {
         const q = state.searchQuery.trim();
@@ -2029,10 +6388,8 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
         titleHtml = titleHtml.replace(regex, '<mark>$1</mark>');
       }
 
-      // Tag phiếu (vd: Mã 1, Mã 2...)
       const tagHtml = item.voucherNum ? '<span class="voucher-tag">' + escapeHtml(item.voucherNum) + '</span>' : '';
 
-      // Trạng thái badge
       let statusHtml = '';
       if (item.isUsed) {
         statusHtml = '<span class="status-badge used"><span>⚫</span> <span>Đã dùng' + (item.usedTime ? ' (' + formatShortTime(item.usedTime) + ')' : '') + '</span></span>';
@@ -2040,7 +6397,6 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
         statusHtml = '<span class="status-badge available"><span>🟢</span> <span>Chưa dùng</span></span>';
       }
 
-      // Action button
       let actionButtonsHtml = '';
       if (!item.isUsed) {
         actionButtonsHtml = \`
@@ -2051,25 +6407,31 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
       } else {
         actionButtonsHtml = \`
           <button class="btn-copy-again" onclick="handleCopyAgain('\${item.code}')" title="Sao chép lại mã">
-            <span>📋</span> <span>Sao chép lại</span>
+            <span>📋</span>
           </button>
-          <button class="btn-undo" onclick="handleUndo(\${item.rowIndex})" title="Bỏ đánh dấu đã sử dụng">
-            <span>↩️</span> <span>Hoàn tác</span>
+          <button class="btn-undo" onclick="handleUndo(\${item.rowIndex}, '\${item.code}')" title="Bỏ đánh dấu">
+            <span>↩️</span>
           </button>
         \`;
       }
 
+      const normCode = String(item.code || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+      const isRevealed = !!(state.sheet1RevealedCodes && state.sheet1RevealedCodes[normCode]);
+      const maskedCode = '*'.repeat(Math.max((item.code || '').length, 10));
+      const displayCode = isRevealed ? item.code : maskedCode;
+
       card.innerHTML = \`
         <div class="card-header-row">
           <div class="product-title">\${titleHtml}</div>
-          <div style="display: flex; align-items: center; gap: 6px;">
-            \${tagHtml}
-          </div>
+          \${tagHtml}
         </div>
 
         <div class="code-action-row">
           <div class="code-box-group">
-            <span class="voucher-code" id="code-\${item.rowIndex}">\${item.code}</span>
+            <span class="voucher-code \${!isRevealed ? 'masked-stars' : ''}">\${escapeHtml(displayCode)}</span>
+            <button type="button" class="btn-eye-toggle-sheet1" onclick="toggleRevealSheet1('\${escapeHtml(item.code)}')" title="\${isRevealed ? 'Ẩn mã (*)' : 'Xem mã thực (tự ẩn sau 4s)'}">
+              \${isRevealed ? '🙈' : '👁️'}
+            </button>
             \${statusHtml}
           </div>
           <div class="card-actions">
@@ -2081,115 +6443,493 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
       return card;
     }
 
-    /**
-     * COPY CODE AND MARK AS USED
-     */
+    const sheet1AutoRevealTimers = {};
+    window.toggleRevealSheet1 = function(code) {
+      if (!state.sheet1RevealedCodes) state.sheet1RevealedCodes = {};
+      const norm = String(code || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+      const willReveal = !state.sheet1RevealedCodes[norm];
+      state.sheet1RevealedCodes[norm] = willReveal;
+
+      if (sheet1AutoRevealTimers[norm]) {
+        clearTimeout(sheet1AutoRevealTimers[norm]);
+        delete sheet1AutoRevealTimers[norm];
+      }
+
+      // AUTO ẨN: Tự động ẩn lại sau 4 giây
+      if (willReveal) {
+        sheet1AutoRevealTimers[norm] = setTimeout(() => {
+          if (state.sheet1RevealedCodes) {
+            state.sheet1RevealedCodes[norm] = false;
+          }
+          renderVouchers();
+        }, 4000);
+      }
+
+      renderVouchers();
+    };
+
     window.handleCopyAndMark = function(rowIndex, code) {
-      // 1. Copy to clipboard
+      triggerFireworks(code);
+      // BẢO MẬT: Sao chép mã thực vào clipboard nhưng giữ mã AUTO ẨN (*****)
+      if (!state.sheet1RevealedCodes) state.sheet1RevealedCodes = {};
+      const norm = String(code || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+      state.sheet1RevealedCodes[norm] = false;
+      if (sheet1AutoRevealTimers[norm]) {
+        clearTimeout(sheet1AutoRevealTimers[norm]);
+        delete sheet1AutoRevealTimers[norm];
+      }
+
       copyToClipboard(code).then(() => {
-        showToast(code, 'Đã sao chép và đánh dấu đã dùng!');
+        showToast(code, false);
       }).catch(() => {
-        showToast(code, 'Đã sao chép mã!');
+        showToast(code, false);
       });
 
-      // 2. Cập nhật state nội bộ ngay lập tức để UI phản hồi tức thì
-      const item = state.items.find(i => i.rowIndex === rowIndex);
+      let item = state.items.find(i => (code && i.code === code) || i.rowIndex == rowIndex);
+      const now = new Date();
+      const pad = (n) => (n < 10 ? '0' + n : n);
+      const timeStr = pad(now.getDate()) + '/' + pad(now.getMonth() + 1) + ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes());
+      const nowTs = Date.now();
+
       if (item) {
         item.isUsed = true;
-        const now = new Date();
-        const pad = (n) => (n < 10 ? '0' + n : n);
-        item.usedTime = pad(now.getDate()) + '/' + pad(now.getMonth() + 1) + ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds());
+        item.usedTime = timeStr;
       }
 
-      // 3. Render lại danh sách
+      saveLocalStatus(code, true, timeStr, nowTs);
+      updateCachedPayload();
       renderVouchers();
 
-      // 4. Gửi lệnh cập nhật về Google Sheet
-      els.syncDot.className = 'sync-dot updating';
-      els.syncText.textContent = 'Đang lưu Sheet...';
+      // 1. Đồng bộ thời gian thực siêu tốc đến các trình duyệt khác (50ms - 100ms)
+      broadcastRealtimeState(item ? item.rowIndex : rowIndex, true, code, timeStr, nowTs);
 
-      if (typeof google !== 'undefined' && google.script && google.script.run) {
-        google.script.run
-          .withSuccessHandler((res) => {
-            els.syncDot.className = 'sync-dot';
-            els.syncText.textContent = 'Đã kết nối Sheet';
-          })
-          .withFailureHandler((err) => {
-            els.syncDot.className = 'sync-dot updating';
-            els.syncText.textContent = 'Lỗi lưu';
-            console.error('Lỗi cập nhật dòng ' + rowIndex + ':', err);
-          })
-          .markVoucher(rowIndex, true);
-      } else {
+      // 2. Ghi vĩnh viễn vào Google Sheet
+      syncToGoogleSheet(item ? item.rowIndex : rowIndex, true, code);
+    };
+
+    window.handleCopyAgain = function(code) {
+      triggerFireworks(code);
+      if (!state.sheet1RevealedCodes) state.sheet1RevealedCodes = {};
+      const norm = String(code || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+      state.sheet1RevealedCodes[norm] = false;
+      if (sheet1AutoRevealTimers[norm]) {
+        clearTimeout(sheet1AutoRevealTimers[norm]);
+        delete sheet1AutoRevealTimers[norm];
+      }
+
+      copyToClipboard(code).then(() => {
+        showToast(code, false);
+      });
+      renderVouchers();
+    };
+
+    window.handleUndo = function(rowIndex, code) {
+      if (!state.sheet1RevealedCodes) state.sheet1RevealedCodes = {};
+      const norm = String(code || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+      state.sheet1RevealedCodes[norm] = false;
+      if (sheet1AutoRevealTimers[norm]) {
+        clearTimeout(sheet1AutoRevealTimers[norm]);
+        delete sheet1AutoRevealTimers[norm];
+      }
+
+      let item = state.items.find(i => (code && i.code === code) || i.rowIndex == rowIndex);
+      const nowTs = Date.now();
+
+      if (item) {
+        item.isUsed = false;
+        item.usedTime = '';
+      }
+
+      // Lưu trạng thái Hoàn lại (isUsed = false) có timestamp vào Local Storage
+      // Nhờ đó khi GViz đồng bộ ngầm, nó KHÔNG BAO GIỜ bị ghi đè ngược lại là 'Đã dùng'
+      saveLocalStatus(code, false, '', nowTs);
+      updateCachedPayload();
+      renderVouchers();
+
+      // Hiển thị thông báo Toast hoàn tác tức thì
+      showToast(code, true);
+
+      // 1. Đồng bộ thời gian thực siêu tốc đến tất cả các trình duyệt khác
+      broadcastRealtimeState(item ? item.rowIndex : rowIndex, false, code, '', nowTs);
+
+      // 2. Gỡ đánh dấu trong Google Sheet
+      syncToGoogleSheet(item ? item.rowIndex : rowIndex, false, code);
+    };
+
+    /**
+     * PHÁT TÍN HIỆU ĐỒNG BỘ THỜI GIAN THỰC (BROADCAST REALTIME ĐẾN CÁC TRÌNH DUYỆT KHÁC)
+     * Độ trễ siêu tốc: 20ms - 50ms qua MQTT WebSocket Broker + 0ms qua BroadcastChannel & LocalStorage
+     */
+    function broadcastRealtimeState(rowIndex, isUsed, code, timeStr, timestamp, sheet = 'Sheet1', user = '') {
+      const nowTs = timestamp || Date.now();
+      const payload = {
+        action: 'markUsed',
+        sheet: sheet || 'Sheet1',
+        user: user || '',
+        rowIndex: rowIndex,
+        isUsed: !!isUsed,
+        code: code,
+        time: timeStr || '',
+        senderId: state.clientId,
+        timestamp: nowTs
+      };
+
+      const payloadStr = JSON.stringify(payload);
+
+      // Kênh 1. MQTT qua Secure WebSocket (Đồng bộ tức thì mọi máy tính, điện thoại, trình duyệt khác nhau)
+      try {
+        if (window.mqttClient && window.mqttClient.connected) {
+          window.mqttClient.publish(REALTIME_TOPIC, payloadStr);
+        }
+      } catch (e) {}
+
+      // Kênh 2. Cùng trình duyệt qua BroadcastChannel (0ms giữa các tab)
+      try {
+        if (window.broadcastChannel) {
+          window.broadcastChannel.postMessage(payload);
+        }
+      } catch (e) {}
+
+      // Kênh 3. Cùng trình duyệt qua localStorage storage event (0ms đa cửa sổ)
+      try {
+        localStorage.setItem('pmh_sync_cross_tab', JSON.stringify({ ...payload, _t: nowTs }));
+      } catch (e) {}
+    }
+
+    /**
+     * PHÁT TÍN HIỆU TẢI LẠI SHEET PMH2 KHI CÓ DỮ LIỆU MỚI ĐƯỢC DÁN VÀO
+     */
+    function broadcastPmh2Reload() {
+      const payload = {
+        action: 'reloadPmh2',
+        senderId: state.clientId,
+        timestamp: Date.now()
+      };
+      const payloadStr = JSON.stringify(payload);
+      try {
+        if (window.mqttClient && window.mqttClient.connected) {
+          window.mqttClient.publish(REALTIME_TOPIC, payloadStr);
+        }
+      } catch (e) {}
+      try {
+        if (window.broadcastChannel) {
+          window.broadcastChannel.postMessage(payload);
+        }
+      } catch (e) {}
+      try {
+        localStorage.setItem('pmh_sync_cross_tab', JSON.stringify({ ...payload, _t: Date.now() }));
+      } catch (e) {}
+    }
+
+    /**
+     * ÁP DỤNG TRẠNG THÁI KHI TRÌNH DUYỆT KHÁC THAO TÁC (RECEIVE REMOTE EVENT)
+     * Cập nhật đồng thời CẢ BẢNG 1 VÀ BẢNG PMH2 ngay tức khắc
+     */
+    function applyVoucherStateFromRemote(code, isUsed, timeStr, rowIndex, sheet, user, timestamp) {
+      if (!code) return;
+      const nowTs = timestamp || Date.now();
+      const cleanCode = String(code).replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+      let hasChanged = false;
+
+      // 1. Cập nhật Bảng 1 (Sheet 1 - 1841 PHIẾU MUA HÀNG EVENT)
+      saveLocalStatus(code, isUsed, timeStr, nowTs);
+      if (state.items && state.items.length > 0) {
+        let item1 = state.items.find(i => (cleanCode && String(i.code).replace(/[^A-Za-z0-9]/g, '').toUpperCase() === cleanCode) || i.rowIndex == rowIndex);
+        if (item1 && item1.isUsed !== isUsed) {
+          item1.isUsed = !!isUsed;
+          item1.usedTime = isUsed ? (timeStr || formatShortTime(new Date().toLocaleTimeString('vi-VN'))) : '';
+          updateCachedPayload();
+          renderVouchers();
+          hasChanged = true;
+
+          const card = document.getElementById('card-row-' + item1.rowIndex);
+          if (card) {
+            card.classList.add('flash-updated');
+            setTimeout(() => card.classList.remove('flash-updated'), 1500);
+          }
+        }
+      }
+
+      // 2. Cập nhật Bảng 2 (Sheet PMH2 - Phiếu theo User 43751 & 7721)
+      savePmh2LocalStatus(code, isUsed, timeStr);
+      if (state.pmh2Items && state.pmh2Items.length > 0) {
+        let item2 = state.pmh2Items.find(i => String(i.pmhCode).replace(/[^A-Za-z0-9]/g, '').toUpperCase() === cleanCode);
+        if (item2 && item2.isUsed !== isUsed) {
+          item2.isUsed = !!isUsed;
+          item2.usedTime = isUsed ? (timeStr || '') : '';
+          renderPmh2List();
+          hasChanged = true;
+
+          const pmh2Cards = document.querySelectorAll('.pmh2-card');
+          pmh2Cards.forEach(c => {
+            const btn = c.querySelector(\`.btn-copy-pmh2[data-code="\${item2.pmhCode}"]\`);
+            if (btn) {
+              c.classList.add('flash-updated');
+              setTimeout(() => c.classList.remove('flash-updated'), 1500);
+            }
+          });
+        }
+      }
+
+      // 3. Hiển thị thông báo nhấp nháy báo hiệu trên thanh trạng thái
+      if (hasChanged && els.syncDot && els.syncText) {
+        els.syncDot.className = 'sync-dot updating';
+        els.syncText.textContent = isUsed 
+          ? \`⚡ Trình duyệt khác vừa dùng: \${code}\` 
+          : \`🔄 Trình duyệt khác vừa hoàn lại: \${code}\`;
         setTimeout(() => {
           els.syncDot.className = 'sync-dot';
-          els.syncText.textContent = 'Đã kết nối Sheet';
-        }, 300);
+          els.syncText.textContent = 'Đã kết nối trực tiếp (Realtime)';
+        }, 3000);
       }
-    };
+    }
 
     /**
-     * COPY AGAIN (FOR ALREADY USED VOUCHER)
+     * XỬ LÝ GÓI TIN ĐỒNG BỘ ĐẾN TỪ CÁC KÊNH REALTIME
      */
-    window.handleCopyAgain = function(code) {
-      copyToClipboard(code).then(() => {
-        showToast(code, 'Đã sao chép lại mã!');
-      });
-    };
+    const processedMsgIds = new Set();
+    function handleRealtimeIncomingMessage(rawMessageStr, msgId) {
+      if (!rawMessageStr) return;
+      if (msgId) {
+        if (processedMsgIds.has(msgId)) return;
+        processedMsgIds.add(msgId);
+        if (processedMsgIds.size > 200) {
+          const first = processedMsgIds.values().next().value;
+          processedMsgIds.delete(first);
+        }
+      }
+      try {
+        let data = typeof rawMessageStr === 'string' ? JSON.parse(rawMessageStr) : rawMessageStr;
+        if (!data || data.senderId === state.clientId) return;
+
+        if (data.action === 'markUsed') {
+          applyVoucherStateFromRemote(data.code, data.isUsed, data.time, data.rowIndex, data.sheet, data.user, data.timestamp);
+        } else if (data.action === 'reloadPmh2') {
+          loadSheetPmh2GViz();
+          if (els.syncText) {
+            els.syncText.textContent = '⚡ Trình duyệt khác vừa lưu dữ liệu PMH2!';
+            setTimeout(() => {
+              if (els.syncText) els.syncText.textContent = 'Đã kết nối trực tiếp (Realtime)';
+            }, 3000);
+          }
+        } else if (data.action === 'setTabVisibility') {
+          const s1 = data.sheet1 !== false;
+          const p2 = data.pmh2 !== false;
+          if (state.tabVisibility.sheet1 !== s1 || state.tabVisibility.pmh2 !== p2) {
+            if (typeof window.setTabVisibility === 'function') {
+              window.setTabVisibility(s1, p2, true);
+            } else {
+              state.tabVisibility.sheet1 = s1;
+              state.tabVisibility.pmh2 = p2;
+            }
+            let msg = '';
+            if (!s1 && !p2) {
+              msg = '🔒 Một trình duyệt vừa ẨN CẢ 2 BẢNG phiếu!';
+            } else if (!s1) {
+              msg = '⚡ Một trình duyệt vừa ẨN Bảng "PMH Siêu Thị (Sheet 1)"!';
+            } else if (!p2) {
+              msg = '⚡ Một trình duyệt vừa ẨN Bảng "Phiếu Mua Hàng Admin (PMH2)"!';
+            } else {
+              msg = '👁️ Một trình duyệt vừa HIỂN THỊ LẠI bảng phiếu!';
+            }
+            showToast(msg, false, true);
+          }
+        }
+      } catch (err) {}
+    }
 
     /**
-     * UNDO / UNMARK VOUCHER
+     * KHỞI TẠO LẮNG NGHE ĐỒNG BỘ THỜI GIAN THỰC ĐA KÊNH
      */
-    window.handleUndo = function(rowIndex) {
-      const item = state.items.find(i => i.rowIndex === rowIndex);
-      if (!item) return;
+    function initRealtimeSync() {
+      // 1. Lắng nghe cùng trình duyệt qua BroadcastChannel (0ms)
+      try {
+        if (window.BroadcastChannel && !window.broadcastChannel) {
+          window.broadcastChannel = new BroadcastChannel('pmh_sync_channel');
+          window.broadcastChannel.onmessage = (e) => {
+            const data = e.data;
+            if (data && data.senderId !== state.clientId) {
+              handleRealtimeIncomingMessage(data);
+            }
+          };
+        }
+      } catch (e) {}
 
-      item.isUsed = false;
-      item.usedTime = '';
+      // 2. Lắng nghe đa tab qua storage event (0ms, tối ưu cho Safari/iPhone)
+      if (!window._hasStorageListener) {
+        window._hasStorageListener = true;
+        window.addEventListener('storage', (e) => {
+          if (e.key === 'pmh_sync_cross_tab' && e.newValue) {
+            try {
+              const data = JSON.parse(e.newValue);
+              if (data && data.senderId !== state.clientId) {
+                handleRealtimeIncomingMessage(data);
+              }
+            } catch (err) {}
+          }
+        });
+      }
 
-      renderVouchers();
+      // 3. Engine A: MQTT Realtime over Secure WebSocket (Đồng bộ tức thì 20ms - 50ms giữa mọi trình duyệt/thiết bị khác nhau)
+      function connectMqttBroker() {
+        if (typeof mqtt === 'undefined') {
+          setTimeout(connectMqttBroker, 500);
+          return;
+        }
 
+        try {
+          if (window.mqttClient) {
+            try { window.mqttClient.end(); } catch (e) {}
+          }
+
+          const brokerList = [
+            'wss://broker.emqx.io:8084/mqtt',
+            'wss://broker.hivemq.com:8884/mqtt'
+          ];
+          let currentBrokerIdx = 0;
+
+          function tryConnect() {
+            const brokerUrl = brokerList[currentBrokerIdx];
+            const clientId = 'pmh_cli_' + Math.random().toString(36).substring(2, 10);
+            
+            const client = mqtt.connect(brokerUrl, {
+              clientId: clientId,
+              clean: true,
+              connectTimeout: 5000,
+              reconnectPeriod: 3000,
+              keepalive: 45
+            });
+
+            client.on('connect', () => {
+              window.mqttClient = client;
+              client.subscribe(REALTIME_TOPIC, { qos: 0 });
+              client.subscribe(VISIBILITY_TOPIC, { qos: 0 });
+              if (els.syncText) {
+                els.syncText.textContent = 'Đã kết nối trực tiếp (Realtime)';
+              }
+            });
+
+            client.on('message', (topic, message) => {
+              try {
+                handleRealtimeIncomingMessage(message.toString());
+              } catch (err) {}
+            });
+
+            client.on('error', () => {
+              currentBrokerIdx = (currentBrokerIdx + 1) % brokerList.length;
+            });
+          }
+
+          tryConnect();
+        } catch (err) {
+          console.warn('Lỗi kết nối MQTT Realtime:', err);
+        }
+      }
+
+      connectMqttBroker();
+
+      // 4. Engine B: Polling dự phòng từ Google Sheets GViz mỗi 2.5 giây cho CẢ 2 BẢNG (Chống rớt mạng)
+      if (!window.gvizPollInterval) {
+        window.gvizPollInterval = setInterval(() => {
+          if (document.visibilityState === 'visible') {
+            if (!state.isLoading) {
+              loadData(false);
+            }
+            loadSheetPmh2GViz();
+          }
+        }, 2500);
+      }
+    }
+
+    function updateCachedPayload() {
+      try {
+        const payload = {
+          success: true,
+          sheetName: "1841 - PHIẾU MUA HÀNG EVENT",
+          dates: state.dates,
+          products: state.products,
+          items: state.items
+        };
+        localStorage.setItem('pmh_cached_payload', JSON.stringify(payload));
+      } catch (e) {}
+    }
+
+    function syncToGoogleSheet(rowIndex, isUsed, code) {
       els.syncDot.className = 'sync-dot updating';
-      els.syncText.textContent = 'Đang cập nhật...';
+      els.syncText.textContent = 'Đang đồng bộ...';
 
       if (typeof google !== 'undefined' && google.script && google.script.run) {
         google.script.run
           .withSuccessHandler(() => {
             els.syncDot.className = 'sync-dot';
-            els.syncText.textContent = 'Đã kết nối Sheet';
+            els.syncText.textContent = 'Đã lưu vào Sheet';
           })
           .withFailureHandler(() => {
             els.syncDot.className = 'sync-dot updating';
             els.syncText.textContent = 'Lỗi lưu';
           })
-          .markVoucher(rowIndex, false);
+          .markVoucher(rowIndex, isUsed);
+      } else if (CONFIG.webAppUrl) {
+        const url = \`\${CONFIG.webAppUrl}?action=markUsed&row=\${rowIndex}&used=\${isUsed}&code=\${encodeURIComponent(code)}&sheetId=\${encodeURIComponent(CONFIG.sheetId || '')}&_=\${Date.now()}\`;
+        
+        // 1. sendBeacon nếu trình duyệt hỗ trợ
+        let beaconSent = false;
+        if (navigator.sendBeacon) {
+          try {
+            beaconSent = navigator.sendBeacon(url);
+          } catch (e) {}
+        }
+
+        // 2. Giữ Image beacon trong window._activeBeacons để không bị Garbage Collection ngắt kết nối
+        if (!window._activeBeacons) window._activeBeacons = [];
+        const ping = new Image();
+        window._activeBeacons.push(ping);
+        ping.onload = ping.onerror = function() {
+          const idx = window._activeBeacons.indexOf(ping);
+          if (idx > -1) window._activeBeacons.splice(idx, 1);
+        };
+        ping.src = url;
+
+        // 3. fetch no-cors dự phòng
+        try {
+          fetch(url, { mode: 'no-cors' }).catch(() => {});
+        } catch (e) {}
+
+        setTimeout(() => {
+          els.syncDot.className = 'sync-dot';
+          els.syncText.textContent = 'Đã lưu vào Sheet';
+        }, 1200);
       } else {
         setTimeout(() => {
           els.syncDot.className = 'sync-dot';
-          els.syncText.textContent = 'Đã kết nối Sheet';
-        }, 300);
+          els.syncText.textContent = 'Đã lưu máy';
+        }, 200);
       }
-    };
+    }
 
-    /**
-     * HELPERS
-     */
+    // Tự động đồng bộ ngầm khi quay lại tab (giãn cách tối thiểu 15 giây, không che màn hình)
+    let lastAutoSyncTime = Date.now();
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        const now = Date.now();
+        if (now - lastAutoSyncTime > 15000 && !state.isLoading) {
+          lastAutoSyncTime = now;
+          loadData(false);
+        }
+      }
+    });
+
     function escapeHtml(text) {
       if (!text) return '';
-      return String(text)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
+      return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
     function escapeRegex(string) {
-      return string.replace(/[.*+?^\${}()|[\\]\\\\]/g, '\\\\$&');
+      return string.replace(/[.*+?^\${}()|[\]\\]/g, '\\$&');
     }
 
     function formatShortTime(timeStr) {
       if (!timeStr) return '';
-      // Nếu có định dạng dd/MM/yyyy HH:mm:ss -> hiển thị HH:mm
       const parts = timeStr.split(' ');
       if (parts.length >= 2) {
         const tParts = parts[1].split(':');
@@ -2201,13 +6941,11 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
     /**
      * EVENT LISTENERS
      */
-    // Date Select Change
     els.dateSelect.addEventListener('change', (e) => {
       state.selectedDate = e.target.value;
       renderVouchers();
     });
 
-    // Date Previous Button
     els.btnPrevDate.addEventListener('click', () => {
       const curIdx = state.dates.indexOf(state.selectedDate);
       if (curIdx > 0) {
@@ -2217,7 +6955,6 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
       }
     });
 
-    // Date Next Button
     els.btnNextDate.addEventListener('click', () => {
       const curIdx = state.dates.indexOf(state.selectedDate);
       if (curIdx !== -1 && curIdx < state.dates.length - 1) {
@@ -2227,7 +6964,6 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
       }
     });
 
-    // Today Button
     els.btnToday.addEventListener('click', () => {
       const now = new Date();
       const pad = (n) => (n < 10 ? '0' + n : n);
@@ -2241,14 +6977,12 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
       renderVouchers();
     });
 
-    // Search Input Typing (Real-time live search)
     els.searchInput.addEventListener('input', (e) => {
       state.searchQuery = e.target.value;
       els.btnClearSearch.style.display = state.searchQuery ? 'flex' : 'none';
       renderVouchers();
     });
 
-    // Clear Search Button
     els.btnClearSearch.addEventListener('click', () => {
       state.searchQuery = '';
       els.searchInput.value = '';
@@ -2257,7 +6991,6 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
       renderVouchers();
     });
 
-    // Filter Tabs
     els.filterTabs.forEach(tab => {
       tab.addEventListener('click', () => {
         els.filterTabs.forEach(t => t.classList.remove('active'));
@@ -2267,91 +7000,477 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
       });
     });
 
-    // Refresh Button
     els.btnRefresh.addEventListener('click', () => {
-      loadData();
+      // Hiệu ứng xoay icon mượt mà
+      els.btnRefresh.style.transform = 'rotate(360deg)';
+      els.btnRefresh.style.transition = 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
+      setTimeout(() => {
+        els.btnRefresh.style.transform = 'none';
+        els.btnRefresh.style.transition = 'none';
+      }, 500);
+
+      loadData(false);
     });
 
-    // Initial load
-    document.addEventListener('DOMContentLoaded', () => {
-      loadData();
+    els.btnSettings.addEventListener('click', () => {
+      els.cfgSheetId.value = CONFIG.sheetId;
+      els.cfgWebAppUrl.value = CONFIG.webAppUrl;
+      els.settingsModal.classList.add('active');
+    });
+
+    els.btnCloseSettings.addEventListener('click', () => {
+      els.settingsModal.classList.remove('active');
+    });
+
+    els.btnSaveSettings.addEventListener('click', () => {
+      const newSheetId = els.cfgSheetId.value.trim() || CONFIG.defaultSheetId;
+      const newWebApp = els.cfgWebAppUrl.value.trim();
+
+      CONFIG.sheetId = newSheetId;
+      CONFIG.webAppUrl = newWebApp;
+
+      localStorage.setItem('pmh_sheet_id', newSheetId);
+      localStorage.setItem('pmh_webapp_url', newWebApp);
+
+      els.linkOpenSheet.href = \`https://docs.google.com/spreadsheets/d/\${newSheetId}/edit?usp=sharing\`;
+      if (els.footerSheetLink) els.footerSheetLink.href = \`https://docs.google.com/spreadsheets/d/\${newSheetId}/edit?usp=sharing\`;
+      els.settingsModal.classList.remove('active');
+
+      loadData(false);
     });
 
     /**
-     * MOCK DATA GENERATOR (CHO MÔ PHỎNG PREVIEW TRÌNH DUYỆT)
+     * =========================================================================
+     * CLONE SYSTEM CONTROLLER (QUẢN TRỊ BẢN SAO & TẠO LINK RÚT GỌN)
+     * =========================================================================
      */
-    function getMockData() {
-      const rawSample = [
-        { date: "18/09/2026", row: 3, num: "1", prod: "Bếp gas đôi Sunhouse SHB3105MD", code: "BWULE4JY86", used: false },
-        { date: "18/09/2026", row: 5, num: "2", prod: "Bếp gas đôi Sunhouse SHB3105MD", code: "RJR7KV16UI", used: false },
-        { date: "18/09/2026", row: 7, num: "3", prod: "Bếp gas đôi Sunhouse SHB3105MD", code: "489ZF7O3LH", used: true, time: "18/09/2026 10:15:00" },
-        { date: "18/09/2026", row: 71, num: "1", prod: "Nồi cơm nắp gài Toshiba RC-18JH1TVN(N) 1.8L", code: "BEUYJ75PL7", used: false },
-        { date: "18/09/2026", row: 73, num: "2", prod: "Nồi cơm nắp gài Toshiba RC-18JH1TVN(N) 1.8L", code: "PGGKMY36AF", used: false },
-        { date: "18/09/2026", row: 75, num: "3", prod: "Nồi cơm nắp gài Toshiba RC-18JH1TVN(N) 1.8L", code: "TPP66BFZ9S", used: false },
-        { date: "18/09/2026", row: 131, num: "1", prod: "Bếp điện từ đơn Kangaroo KG20IH10N", code: "S4Y8QLMPCC", used: false },
-        { date: "18/09/2026", row: 191, num: "1", prod: "Nồi cơm điện tử Toshiba RC-18DH2PV(W) 1.8L", code: "BTHNQLBZUL", used: false },
-        { date: "18/09/2026", row: 251, num: "1", prod: "Nồi chiên không dầu Kangaroo 6.5L KGAF65M1G", code: "TR1PKYZU3VYL", used: false },
-        { date: "18/09/2026", row: 311, num: "1", prod: "Quạt đứng Midea FS40-24EVN(K)", code: "663RJ6T1UQ", used: false },
-        { date: "18/09/2026", row: 371, num: "1", prod: "Máy lọc không khí Midea KJ400GVN", code: "BVVJFB5MKI", used: false },
-        { date: "18/09/2026", row: 431, num: "1", prod: "Nồi lẩu đa năng Kangaroo KG40EH2 4 lít", code: "K5HWP3NU3X", used: false },
-        { date: "18/09/2026", row: 491, num: "1", prod: "Bình đun siêu tốc Rapido RK2015-C 2L", code: "9SSUY9LBZ3", used: false },
-        { date: "18/09/2026", row: 551, num: "1", prod: "Máy xay thịt Bear CH-5H03P36", code: "1AZXD2GVAZ", used: false },
-        { date: "18/09/2026", row: 611, num: "1", prod: "Bếp nướng điện Sunhouse SHD4607", code: "GKLA190PE2", used: false },
-        // Ngày 19/09
-        { date: "19/09/2026", row: 9, num: "1", prod: "Bếp gas đôi Sunhouse SHB3105MD", code: "LFJJSXD6X3", used: false },
-        { date: "19/09/2026", row: 11, num: "2", prod: "Bếp gas đôi Sunhouse SHB3105MD", code: "MXJY1VM5F0", used: false },
-        { date: "19/09/2026", row: 13, num: "3", prod: "Bếp gas đôi Sunhouse SHB3105MD", code: "JVCU9MQL9A", used: false },
-        { date: "19/09/2026", row: 77, num: "1", prod: "Nồi cơm nắp gài Toshiba RC-18JH1TVN(N) 1.8L", code: "2CFYYVOK3V", used: false },
-        { date: "19/09/2026", row: 79, num: "2", prod: "Nồi cơm nắp gài Toshiba RC-18JH1TVN(N) 1.8L", code: "90WCCXHY6M", used: false },
-        { date: "19/09/2026", row: 81, num: "3", prod: "Nồi cơm nắp gài Toshiba RC-18JH1TVN(N) 1.8L", code: "205MJ5MK9X", used: false },
-        // Ngày 22/09 (hôm nay)
-        { date: "22/09/2026", row: 35, num: "1", prod: "Bếp gas đôi Sunhouse SHB3105MD", code: "LX67OUUZ87", used: false },
-        { date: "22/09/2026", row: 37, num: "2", prod: "Bếp gas đôi Sunhouse SHB3105MD", code: "922M517XN5", used: false },
-        { date: "22/09/2026", row: 39, num: "3", prod: "Bếp gas đôi Sunhouse SHB3105MD", code: "JE105Y0G71", used: false },
-        { date: "22/09/2026", row: 95, num: "1", prod: "Nồi cơm nắp gài Toshiba RC-18JH1TVN(N) 1.8L", code: "DQ65AOZ3K9", used: false },
-        { date: "22/09/2026", row: 97, num: "2", prod: "Nồi cơm nắp gài Toshiba RC-18JH1TVN(N) 1.8L", code: "JQUBMMH5KL", used: false },
-        { date: "22/09/2026", row: 99, num: "3", prod: "Nồi cơm nắp gài Toshiba RC-18JH1TVN(N) 1.8L", code: "BND0RWLRA0", used: false },
-        { date: "22/09/2026", row: 155, num: "1", prod: "Bếp điện từ đơn Kangaroo KG20IH10N", code: "0IBW1Z2MII", used: false },
-        { date: "22/09/2026", row: 215, num: "1", prod: "Nồi cơm điện tử Toshiba RC-18DH2PV(W) 1.8L", code: "W50ERLMLM2", used: false },
-        { date: "22/09/2026", row: 275, num: "1", prod: "Nồi chiên không dầu Kangaroo 6.5L KGAF65M1G", code: "FE8HW1QHRA4J", used: false },
-        { date: "22/09/2026", row: 335, num: "1", prod: "Quạt đứng Midea FS40-24EVN(K)", code: "OCGARYRQVG", used: false },
-        { date: "22/09/2026", row: 395, num: "1", prod: "Máy lọc không khí Midea KJ400GVN", code: "N7R89S33J3", used: false },
-        { date: "22/09/2026", row: 455, num: "1", prod: "Nồi lẩu đa năng Kangaroo KG40EH2 4 lít", code: "XNHVR17SD8", used: false },
-        { date: "22/09/2026", row: 515, num: "1", prod: "Bình đun siêu tốc Rapido RK2015-C 2L", code: "SYFKHQ93RS", used: false },
-        { date: "22/09/2026", row: 575, num: "1", prod: "Máy xay thịt Bear CH-5H03P36", code: "56JOI110QW", used: false },
-        { date: "22/09/2026", row: 635, num: "1", prod: "Bếp nướng điện Sunhouse SHD4607", code: "BYLEFLV1V9", used: false }
-      ];
+    function getBaseAppUrl() {
+      const loc = window.location;
+      return (loc.origin + loc.pathname).replace(/\/+$/, '');
+    }
 
-      const dates = ["18/09/2026", "19/09/2026", "20/09/2026", "21/09/2026", "22/09/2026", "23/09/2026", "24/09/2026", "25/09/2026", "26/09/2026", "27/09/2026"];
-      const products = [
-        "Bình đun siêu tốc Rapido RK2015-C 2L",
-        "Bếp gas đôi Sunhouse SHB3105MD",
-        "Bếp nướng điện Sunhouse SHD4607",
-        "Bếp điện từ đơn Kangaroo KG20IH10N",
-        "Máy lọc không khí Midea KJ400GVN",
-        "Máy xay thịt Bear CH-5H03P36",
-        "Nồi chiên không dầu Kangaroo 6.5L KGAF65M1G",
-        "Nồi cơm nắp gài Toshiba RC-18JH1TVN(N) 1.8L",
-        "Nồi cơm điện tử Toshiba RC-18DH2PV(W) 1.8L",
-        "Nồi lẩu đa năng Kangaroo KG40EH2 4 lít",
-        "Quạt đứng Midea FS40-24EVN(K)"
-      ];
+    function getCloneShareUrl(slug) {
+      const base = getBaseAppUrl();
+      return \`\${base}/?s=\${encodeURIComponent(slug)}\`;
+    }
 
+    let adminBannerVisible = false; // Mặc định = false (Ẩn thanh Admin)
+
+    function setAdminBannerVisibility(visible) {
+      adminBannerVisible = !!visible;
+      if (CONFIG.isClone) {
+        if (els.adminToggleBar) els.adminToggleBar.style.display = 'none';
+        if (els.adminTopBanner) els.adminTopBanner.style.display = 'none';
+        return;
+      }
+
+      if (els.adminToggleBar) els.adminToggleBar.style.display = 'flex';
+
+      if (els.adminTopBanner) {
+        els.adminTopBanner.style.display = adminBannerVisible ? 'flex' : 'none';
+      }
+
+      if (els.btnToggleAdminBanner) {
+        if (adminBannerVisible) {
+          els.btnToggleAdminBanner.classList.add('active');
+          if (els.adminToggleEye) els.adminToggleEye.textContent = '👁️';
+          if (els.adminToggleStatus) els.adminToggleStatus.textContent = 'Đang Hiện';
+        } else {
+          els.btnToggleAdminBanner.classList.remove('active');
+          if (els.adminToggleEye) els.adminToggleEye.textContent = '👁️‍🗨️';
+          if (els.adminToggleStatus) els.adminToggleStatus.textContent = 'Đang Ẩn';
+        }
+      }
+    }
+
+    function updateCloneHeaderUI() {
+      if (CONFIG.isClone) {
+        setAdminBannerVisibility(false);
+        if (els.cloneTopBanner) els.cloneTopBanner.style.display = 'flex';
+        if (els.cloneBannerTitle) els.cloneBannerTitle.textContent = 'BẢN SAO: ' + (CONFIG.branchName || CONFIG.cloneSlug).toUpperCase();
+        if (els.cloneBannerSlug) els.cloneBannerSlug.textContent = CONFIG.cloneSlug;
+        const sheetUrl = \`https://docs.google.com/spreadsheets/d/\${CONFIG.sheetId}/edit?usp=sharing\`;
+        if (els.btnOpenCloneSheet) els.btnOpenCloneSheet.href = sheetUrl;
+        if (els.linkOpenSheet) els.linkOpenSheet.href = sheetUrl;
+        if (els.footerSheetLink) els.footerSheetLink.href = sheetUrl;
+        if (els.sheetInfo) els.sheetInfo.textContent = (CONFIG.branchName || CONFIG.cloneSlug) + ' ⚡';
+        document.title = \`Tra Cứu Phiếu Mua Hàng - \${CONFIG.branchName || CONFIG.cloneSlug}\`;
+      } else {
+        if (els.cloneTopBanner) els.cloneTopBanner.style.display = 'none';
+        const clones = getStoredClones();
+        if (els.adminCloneCountBadge) els.adminCloneCountBadge.textContent = clones.length;
+        if (els.adminToggleCountBadge) els.adminToggleCountBadge.textContent = clones.length;
+        setAdminBannerVisibility(adminBannerVisible); // Mặc định = false
+        document.title = 'Tra Cứu Phiếu Mua Hàng Siêu Tốc (Link Gốc Admin Quản Trị)';
+      }
+    }
+
+    function renderClonesTable() {
+      if (!els.cloneTableBody) return;
+      const clones = getStoredClones();
+      if (els.adminCloneCountBadge) els.adminCloneCountBadge.textContent = clones.length;
+      if (els.adminToggleCountBadge) els.adminToggleCountBadge.textContent = clones.length;
+
+      if (!clones || clones.length === 0) {
+        els.cloneTableBody.innerHTML = \`
+          <tr>
+            <td colspan="4" style="text-align: center; color: #94a3b8; padding: 24px;">
+              Chưa có bản sao nào được tạo. Hãy dùng form bên trên để thêm bản sao chi nhánh đầu tiên!
+            </td>
+          </tr>
+        \`;
+        return;
+      }
+
+      let html = '';
+      clones.forEach((c) => {
+        const shareUrl = getCloneShareUrl(c.slug);
+        const sheetUrl = \`https://docs.google.com/spreadsheets/d/\${c.sheetId}/edit?usp=sharing\`;
+        const displayName = escapeHtml(c.name || c.slug);
+        const displaySlug = escapeHtml(c.slug);
+        const displaySheetId = escapeHtml(c.sheetId);
+
+        html += \`
+          <tr>
+            <td>
+              <span class="clone-slug-tag">\${displaySlug}</span>
+            </td>
+            <td>
+              <div style="font-weight:700; color:#0f172a;">\${displayName}</div>
+              <div style="font-size:11px; color:#64748b;">\${c.createdAt ? escapeHtml(c.createdAt) : ''}</div>
+            </td>
+            <td>
+              <a href="\${sheetUrl}" target="_blank" style="color:#0284c7; font-family:monospace; font-size:11px; text-decoration:none;" title="Mở Google Sheet">\${displaySheetId.slice(0, 16)}... ↗</a>
+            </td>
+            <td>
+              <div class="clone-actions-cell">
+                <button type="button" class="btn-clone-act btn-clone-copy" onclick="handleCopyCloneLink('\${displaySlug}')" title="Sao chép link nhân bản để gửi cho người dùng">
+                  📋 <span>Copy Link</span>
+                </button>
+                <a href="\${shareUrl}" target="_blank" class="btn-clone-act btn-clone-open" title="Mở thử bản sao này trong tab mới">
+                  ↗️ <span>Mở</span>
+                </a>
+                <button type="button" class="btn-clone-act btn-clone-del" onclick="handleDeleteClone('\${displaySlug}')" title="Xóa bản sao">
+                  🗑️
+                </button>
+              </div>
+            </td>
+          </tr>
+        \`;
+      });
+      els.cloneTableBody.innerHTML = html;
+    }
+
+    window.handleCopyCloneLink = function(slug) {
+      const shareUrl = getCloneShareUrl(slug);
+      copyToClipboard(shareUrl).then(() => {
+        showToast(\`<span>📋</span> <span>Đã sao chép link bản sao: <b>\${slug}</b></span>\`, false, true);
+      });
+    };
+
+    window.handleDeleteClone = function(slug) {
+      if (!confirm(\`Bạn có chắc chắn muốn xóa bản sao "\${slug}" khỏi danh sách?\`)) return;
+      const clones = getStoredClones().filter(c => c.slug !== slug);
+      saveStoredClones(clones);
+      renderClonesTable();
+
+      // Đồng bộ xóa trên Google Sheet
+      if (CONFIG.webAppUrl) {
+        fetch(\`\${CONFIG.webAppUrl}?action=deleteClone&slug=\${encodeURIComponent(slug)}&_=\${Date.now()}\`, { mode: 'no-cors' }).catch(() => {});
+      }
+      showToast(\`<span>🗑️</span> <span>Đã xóa bản sao: <b>\${slug}</b></span>\`, false, true);
+    };
+
+    function fetchClonesFromMasterGviz() {
+      return new Promise((resolve) => {
+        const callbackName = 'onClonesGvizLoaded_' + Math.floor(Math.random() * 1000000);
+        let finished = false;
+
+        const timer = setTimeout(() => {
+          if (!finished) {
+            finished = true;
+            delete window[callbackName];
+            resolve(getStoredClones());
+          }
+        }, 4000);
+
+        window[callbackName] = function(res) {
+          if (finished) return;
+          finished = true;
+          clearTimeout(timer);
+          delete window[callbackName];
+          const scriptEl = document.getElementById('gviz-clones-script');
+          if (scriptEl) scriptEl.remove();
+
+          try {
+            if (res && res.table && res.table.rows) {
+              const rows = res.table.rows;
+              const clones = [];
+              for (let i = 0; i < rows.length; i++) {
+                const r = rows[i];
+                if (!r || !r.c) continue;
+                const getVal = (idx) => (r.c[idx] ? (r.c[idx].v != null ? r.c[idx].v : r.c[idx].f) : '');
+                const slug = String(getVal(0) || '').trim().toLowerCase();
+                const name = String(getVal(1) || '').trim();
+                const sId = String(getVal(2) || '').trim();
+                const webApp = String(getVal(3) || '').trim();
+                const status = String(getVal(4) || 'active').trim().toLowerCase();
+                const createdAt = String(getVal(5) || '').trim();
+
+                if (slug && sId && slug !== 'tên rút gọn (slug)') {
+                  clones.push({
+                    slug,
+                    name: name || slug,
+                    sheetId: extractSheetId(sId),
+                    webAppUrl: webApp,
+                    status,
+                    createdAt
+                  });
+                }
+              }
+
+              if (clones.length > 0) {
+                const currentLocal = getStoredClones();
+                const map = {};
+                currentLocal.forEach(c => { if (c.slug) map[c.slug] = c; });
+                clones.forEach(c => { map[c.slug] = c; });
+                const merged = Object.values(map);
+                saveStoredClones(merged);
+                renderClonesTable();
+
+                if (CONFIG.isClone && CONFIG.cloneSlug && map[CONFIG.cloneSlug]) {
+                  const matched = map[CONFIG.cloneSlug];
+                  if (CONFIG.sheetId !== matched.sheetId) {
+                    CONFIG.sheetId = matched.sheetId;
+                    CONFIG.branchName = matched.name;
+                    updateCloneHeaderUI();
+                    loadData(true);
+                  }
+                }
+                resolve(merged);
+                return;
+              }
+            }
+          } catch (err) {
+            console.warn('Lỗi phân tích bảng Clones từ GViz:', err);
+          }
+          resolve(getStoredClones());
+        };
+
+        const gvizUrl = \`https://docs.google.com/spreadsheets/d/\${CONFIG.defaultSheetId}/gviz/tq?sheet=CLONES&tqx=responseHandler:\${callbackName}&_=\${Date.now()}\`;
+        const oldScript = document.getElementById('gviz-clones-script');
+        if (oldScript) oldScript.remove();
+
+        const script = document.createElement('script');
+        script.id = 'gviz-clones-script';
+        script.src = gvizUrl;
+        script.onerror = function() {
+          if (!finished) {
+            finished = true;
+            clearTimeout(timer);
+            delete window[callbackName];
+            if (script.parentNode) script.remove();
+            resolve(getStoredClones());
+          }
+        };
+        document.head.appendChild(script);
+      });
+    }
+
+    function initCloneSystem() {
+      updateCloneHeaderUI();
+      renderClonesTable();
+
+      // Nút Icon Ẩn/Hiện Thanh Quản Trị Admin (Mặc định = Ẩn / False)
+      if (els.btnToggleAdminBanner) {
+        els.btnToggleAdminBanner.addEventListener('click', () => {
+          setAdminBannerVisibility(!adminBannerVisible);
+        });
+      }
+
+      // Nút Icon Ẩn Thanh trên chính thanh Admin Top Banner
+      if (els.btnHideAdminBanner) {
+        els.btnHideAdminBanner.addEventListener('click', () => {
+          setAdminBannerVisibility(false);
+        });
+      }
+
+      // Cập nhật preview URL khi người dùng gõ tên rút gọn (slug)
+      if (els.inputCloneSlug && els.clonePreviewUrl) {
+        els.inputCloneSlug.addEventListener('input', (e) => {
+          const raw = e.target.value;
+          const clean = raw.toLowerCase().replace(/[^a-z0-9_-]/g, '');
+          if (clean !== raw) e.target.value = clean;
+          els.clonePreviewUrl.textContent = clean ? getCloneShareUrl(clean) : \`\${getBaseAppUrl()}/?s=...\`;
+        });
+      }
+
+      // Mở modal quản lý bản sao
+      if (els.btnOpenCloneManager) {
+        els.btnOpenCloneManager.addEventListener('click', () => {
+          renderClonesTable();
+          els.cloneManagerModal.classList.add('active');
+        });
+      }
+
+      // Đóng modal quản lý bản sao
+      const closeModal = () => {
+        if (els.cloneManagerModal) els.cloneManagerModal.classList.remove('active');
+      };
+      if (els.btnCloseCloneManager) els.btnCloseCloneManager.addEventListener('click', closeModal);
+      if (els.btnCloseCloneManagerBottom) els.btnCloseCloneManagerBottom.addEventListener('click', closeModal);
+      if (els.cloneManagerModal) {
+        els.cloneManagerModal.addEventListener('click', (e) => {
+          if (e.target === els.cloneManagerModal) closeModal();
+        });
+      }
+
+      // Nút tải lại danh sách bản sao
+      if (els.btnRefreshClonesList) {
+        els.btnRefreshClonesList.addEventListener('click', () => {
+          els.cloneTableBody.innerHTML = \`
+            <tr>
+              <td colspan="4" style="text-align: center; color: #0284c7; padding: 20px;">
+                Đang tải lại danh sách bản sao từ Google Sheet...
+              </td>
+            </tr>
+          \`;
+          fetchClonesFromMasterGviz().then(() => {
+            renderClonesTable();
+            showToast('<span>🔄</span> <span>Đã làm mới danh sách bản sao!</span>', false, true);
+          });
+        });
+      }
+
+      // Lưu bản sao mới
+      if (els.btnSaveCloneRecord) {
+        els.btnSaveCloneRecord.addEventListener('click', () => {
+          const rawSlug = (els.inputCloneSlug.value || '').trim().toLowerCase();
+          const cleanSlug = rawSlug.replace(/[^a-z0-9_-]/g, '');
+          const name = (els.inputCloneName.value || '').trim() || cleanSlug.toUpperCase();
+          const rawSheet = (els.inputCloneSheetId.value || '').trim();
+          const cleanSheetId = extractSheetId(rawSheet);
+
+          if (!cleanSlug) {
+            alert('Vui lòng nhập tên rút gọn (slug)! Chỉ gồm chữ thường a-z, số 0-9 và dấu gạch -');
+            els.inputCloneSlug.focus();
+            return;
+          }
+
+          if (!cleanSheetId) {
+            alert('Vui lòng nhập link hoặc ID Google Sheet bản sao!');
+            els.inputCloneSheetId.focus();
+            return;
+          }
+
+          const clones = getStoredClones();
+          const existingIdx = clones.findIndex(c => c.slug === cleanSlug);
+          const newClone = {
+            slug: cleanSlug,
+            name: name,
+            sheetId: cleanSheetId,
+            webAppUrl: '',
+            status: 'active',
+            createdAt: new Date().toLocaleString('vi-VN')
+          };
+
+          if (existingIdx !== -1) {
+            clones[existingIdx] = newClone;
+          } else {
+            clones.unshift(newClone);
+          }
+
+          saveStoredClones(clones);
+          renderClonesTable();
+
+          // Reset form
+          els.inputCloneSlug.value = '';
+          els.inputCloneName.value = '';
+          els.inputCloneSheetId.value = '';
+          if (els.clonePreviewUrl) els.clonePreviewUrl.textContent = \`\${getBaseAppUrl()}/?s=...\`;
+
+          // Gửi lưu ngầm vào tab CLONES của Master Sheet qua Web App
+          if (CONFIG.webAppUrl) {
+            const saveUrl = \`\${CONFIG.webAppUrl}?action=saveClone&slug=\${encodeURIComponent(cleanSlug)}&name=\${encodeURIComponent(name)}&sheetId=\${encodeURIComponent(cleanSheetId)}&_=\${Date.now()}\`;
+            fetch(saveUrl, { mode: 'no-cors' }).catch(() => {});
+          }
+
+          const shareUrl = getCloneShareUrl(cleanSlug);
+          showToast(\`<span>🎉</span> <span>Đã tạo bản sao <b>\${cleanSlug}</b> thành công!</span>\`, false, true);
+        });
+      }
+
+      // Tải ngầm danh sách bản sao mới nhất từ GViz Master Sheet
+      fetchClonesFromMasterGviz();
+    }
+
+    /**
+     * ĐỌC TỨC THÌ TỪ BỘ NHỚ ĐỆM (CACHE)
+     * Giúp hiển thị giao diện ngay lập tức trong 0.01 giây khi vừa mở trang
+     */
+    function loadCachedData() {
+      try {
+        const cacheKey = 'pmh_cached_payload_' + (CONFIG.sheetId ? CONFIG.sheetId.slice(-8) : 'default');
+        const cached = localStorage.getItem(cacheKey) || localStorage.getItem('pmh_cached_payload');
+        if (cached) {
+          const res = JSON.parse(cached);
+          if (res && res.items && res.items.length > 0) {
+            state.items = res.items;
+            state.dates = res.dates || [];
+            state.products = res.products || [];
+            els.sheetInfo.textContent = 'Trang tính: ' + (CONFIG.branchName || res.sheetName || 'PMH');
+            els.totalCouponsBadge.textContent = state.items.length + ' phiếu • ' + (CONFIG.branchName || 'Siêu thị 1841');
+            populateDates();
+            renderVouchers();
+            els.loadingBox.style.display = 'none';
+            els.voucherList.style.display = 'flex';
+          }
+        }
+      } catch (e) {
+        console.warn('Lỗi nạp cache:', e);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      els.cfgSheetId.value = CONFIG.sheetId;
+      els.cfgWebAppUrl.value = CONFIG.webAppUrl;
+      const sheetUrl = \`https://docs.google.com/spreadsheets/d/\${CONFIG.sheetId}/edit?usp=sharing\`;
+      els.linkOpenSheet.href = sheetUrl;
+      if (els.footerSheetLink) els.footerSheetLink.href = sheetUrl;
+
+      // Bước 0: Khởi chạy đồng hồ số thời gian thực hiển thị trên header chuẩn hình mẫu
+      function updateClock() {
+        const clockEl = document.getElementById('clockDisplay');
+        if (!clockEl) return;
+        const now = new Date();
+        const pad = n => (n < 10 ? '0' + n : n);
+        clockEl.textContent = \`\${pad(now.getHours())}:\${pad(now.getMinutes())}:\${pad(now.getSeconds())} \${pad(now.getDate())}/\${pad(now.getMonth() + 1)}/\${now.getFullYear()}\`;
+      }
+      setInterval(updateClock, 1000);
+      updateClock();
+
+      // Bước 0.5: Khởi tạo hệ thống bản sao & thanh nhận diện Admin / Bản sao
+      initCloneSystem();
+
+      initPmh2Controls();
+      // Bước 1: Nạp cache tức thì (0.01s người dùng thấy danh sách ngay lập tức)
+      loadCachedData();
+
+      // Bước 2: Khởi động kết nối đồng bộ thời gian thực siêu tốc giữa các trình duyệt (SSE + BroadcastChannel)
+      initRealtimeSync();
+
+      // Bước 3: Đồng bộ ngầm bản mới nhất từ Google Sheet (phản hồi trong 0.2 - 0.4s)
+      loadData(!state.items || state.items.length === 0);
+    });
+
+    function getFallbackData() {
+      const sampleDates = ["18/09/2026", "19/09/2026", "20/09/2026", "21/09/2026", "22/09/2026", "23/09/2026", "24/09/2026", "25/09/2026", "26/09/2026", "27/09/2026"];
       return {
         success: true,
-        sheetName: "PMH",
-        dates: dates,
-        products: products,
-        items: rawSample.map(s => ({
-          rowIndex: s.row,
-          date: s.date,
-          voucherNum: "Mã " + s.num,
-          product: s.prod,
-          code: s.code,
-          isUsed: s.used,
-          usedTime: s.time || '',
-          rawText: "Ngày " + s.date + " : Mã Phiếu mua hàng " + s.num + " - dùng cho " + s.prod + ": " + s.code
-        }))
+        sheetName: "1841 - PHIẾU MUA HÀNG EVENT",
+        dates: sampleDates,
+        products: [],
+        items: []
       };
     }
   </script>
