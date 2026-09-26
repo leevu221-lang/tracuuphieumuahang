@@ -14,6 +14,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
+  <!-- MQTT Realtime Client (Đồng bộ tức thì đa trình duyệt 20ms - 50ms) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/5.5.0/mqtt.min.js"></script>
+
   <style>
     :root {
       --primary: #d97706;
@@ -1096,7 +1099,8 @@
       color: var(--gray-600);
     }
 
-    .voucher-card.flash-updated {
+    .voucher-card.flash-updated,
+    .pmh2-card.flash-updated {
       animation: pulse-realtime 1.2s ease-in-out;
     }
 
@@ -2453,11 +2457,16 @@ CMA_HOA_7721_TC
                               ('0' + now.getHours()).slice(-2) + ':' + 
                               ('0' + now.getMinutes()).slice(-2) + ':' + 
                               ('0' + now.getSeconds()).slice(-2);
+              const nowTs = Date.now();
               
               item.isUsed = true;
               item.usedTime = timeStr;
               savePmh2LocalStatus(item.pmhCode, true, timeStr);
 
+              // 1. PHÁT TÍN HIỆU ĐỒNG BỘ THỜI GIAN THỰC TỨC THÌ ĐẾN CÁC TRÌNH DUYỆT KHÁC (0ms - 50ms)
+              broadcastRealtimeState(item.sheetRowIndex, true, item.pmhCode, timeStr, nowTs, 'PMH2', item.userId);
+
+              // 2. GHI LƯU VÀO GOOGLE SHEET
               syncPmh2ToGoogleSheet(item.sheetRowIndex, true, item.pmhCode, item.userId);
 
               showToast(item.pmhCode);
@@ -2478,10 +2487,15 @@ CMA_HOA_7721_TC
               delete pmh2AutoRevealTimers[codeKey];
             }
 
+            const nowTs = Date.now();
             item.isUsed = false;
             item.usedTime = '';
             savePmh2LocalStatus(item.pmhCode, false, '');
 
+            // 1. PHÁT TÍN HIỆU HOÀN TÁC THỜI GIAN THỰC TỨC THÌ ĐẾN CÁC TRÌNH DUYỆT KHÁC (0ms - 50ms)
+            broadcastRealtimeState(item.sheetRowIndex, false, item.pmhCode, '', nowTs, 'PMH2', item.userId);
+
+            // 2. GỠ ĐÁNH DẤU TRÊN GOOGLE SHEET
             syncPmh2ToGoogleSheet(item.sheetRowIndex, false, item.pmhCode, item.userId);
 
             showToast(item.pmhCode, true);
@@ -2717,6 +2731,11 @@ CMA_HOA_7721_TC
             isSavingPmh2 = false;
             if (btnSaveToSheet) btnSaveToSheet.disabled = false;
             if (saveBtnText) saveBtnText.textContent = 'Lưu Ngược Về Sheet "PMH2"';
+
+            // Phát tín hiệu đồng bộ reload PMH2 đến mọi trình duyệt khác
+            if (typeof broadcastPmh2Reload === 'function') {
+              broadcastPmh2Reload();
+            }
 
             if (isAuto) {
               showToast('✅ Đã tự động lưu vào Sheet "PMH2" & đồng bộ thành công!', false, true);
@@ -3370,12 +3389,15 @@ CMA_HOA_7721_TC
     };
 
     /**
-     * PHÁT TÍN HIỆU ĐỒNG BỘ THỜI GIAN THỰC (BROADCAST REALTIME ĐẾN TRÌNH DUYỆT B)
+     * PHÁT TÍN HIỆU ĐỒNG BỘ THỜI GIAN THỰC (BROADCAST REALTIME ĐẾN CÁC TRÌNH DUYỆT KHÁC)
+     * Độ trễ siêu tốc: 20ms - 50ms qua MQTT WebSocket Broker + 0ms qua BroadcastChannel & LocalStorage
      */
-    function broadcastRealtimeState(rowIndex, isUsed, code, timeStr, timestamp) {
+    function broadcastRealtimeState(rowIndex, isUsed, code, timeStr, timestamp, sheet = 'Sheet1', user = '') {
       const nowTs = timestamp || Date.now();
       const payload = {
         action: 'markUsed',
+        sheet: sheet || 'Sheet1',
+        user: user || '',
         rowIndex: rowIndex,
         isUsed: !!isUsed,
         code: code,
@@ -3386,83 +3408,118 @@ CMA_HOA_7721_TC
 
       const payloadStr = JSON.stringify(payload);
 
-      // Kênh 1. Cùng trình duyệt qua BroadcastChannel (0ms)
+      // Kênh 1. MQTT qua Secure WebSocket (Đồng bộ tức thì mọi máy tính, điện thoại, trình duyệt khác nhau)
+      try {
+        if (window.mqttClient && window.mqttClient.connected) {
+          window.mqttClient.publish(REALTIME_TOPIC, payloadStr);
+        }
+      } catch (e) {}
+
+      // Kênh 2. Cùng trình duyệt qua BroadcastChannel (0ms giữa các tab)
       try {
         if (window.broadcastChannel) {
           window.broadcastChannel.postMessage(payload);
         }
       } catch (e) {}
 
-      // Kênh 2. Cùng trình duyệt đa tab qua localStorage storage event (0ms, tối ưu cho iPhone/Safari)
+      // Kênh 3. Cùng trình duyệt qua localStorage storage event (0ms đa cửa sổ)
       try {
         localStorage.setItem('pmh_sync_cross_tab', JSON.stringify({ ...payload, _t: nowTs }));
       } catch (e) {}
+    }
 
-      // Kênh 3. HTTP POST qua ntfy.sh (phát sóng siêu tốc đến mọi thiết bị/trình duyệt khác)
+    /**
+     * PHÁT TÍN HIỆU TẢI LẠI SHEET PMH2 KHI CÓ DỮ LIỆU MỚI ĐƯỢC DÁN VÀO
+     */
+    function broadcastPmh2Reload() {
+      const payload = {
+        action: 'reloadPmh2',
+        senderId: state.clientId,
+        timestamp: Date.now()
+      };
+      const payloadStr = JSON.stringify(payload);
       try {
-        fetch(`https://ntfy.sh/${REALTIME_TOPIC}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain' },
-          body: payloadStr
-        }).catch(() => {});
-      } catch (e) {}
-
-      // Kênh 4. navigator.sendBeacon dự phòng
-      try {
-        if (navigator.sendBeacon) {
-          navigator.sendBeacon(`https://ntfy.sh/${REALTIME_TOPIC}`, payloadStr);
+        if (window.mqttClient && window.mqttClient.connected) {
+          window.mqttClient.publish(REALTIME_TOPIC, payloadStr);
         }
+      } catch (e) {}
+      try {
+        if (window.broadcastChannel) {
+          window.broadcastChannel.postMessage(payload);
+        }
+      } catch (e) {}
+      try {
+        localStorage.setItem('pmh_sync_cross_tab', JSON.stringify({ ...payload, _t: Date.now() }));
       } catch (e) {}
     }
 
     /**
      * ÁP DỤNG TRẠNG THÁI KHI TRÌNH DUYỆT KHÁC THAO TÁC (RECEIVE REMOTE EVENT)
+     * Cập nhật đồng thời CẢ BẢNG 1 VÀ BẢNG PMH2 ngay tức khắc
      */
-    function applyVoucherStateFromRemote(code, isUsed, timeStr, rowIndex, timestamp) {
+    function applyVoucherStateFromRemote(code, isUsed, timeStr, rowIndex, sheet, user, timestamp) {
       if (!code) return;
       const nowTs = timestamp || Date.now();
+      const cleanCode = String(code).replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+      let hasChanged = false;
+
+      // 1. Cập nhật Bảng 1 (Sheet 1 - 1841 PHIẾU MUA HÀNG EVENT)
       saveLocalStatus(code, isUsed, timeStr, nowTs);
-
-      if (!state.items || state.items.length === 0) {
-        return;
-      }
-
-      const cleanCode = String(code).trim().toUpperCase();
-      let item = state.items.find(i => (cleanCode && String(i.code).trim().toUpperCase() === cleanCode) || i.rowIndex == rowIndex);
-
-      if (item) {
-        if (item.isUsed !== isUsed) {
-          item.isUsed = !!isUsed;
-          item.usedTime = isUsed ? (timeStr || formatShortTime(new Date().toLocaleTimeString('vi-VN'))) : '';
+      if (state.items && state.items.length > 0) {
+        let item1 = state.items.find(i => (cleanCode && String(i.code).replace(/[^A-Za-z0-9]/g, '').toUpperCase() === cleanCode) || i.rowIndex == rowIndex);
+        if (item1 && item1.isUsed !== isUsed) {
+          item1.isUsed = !!isUsed;
+          item1.usedTime = isUsed ? (timeStr || formatShortTime(new Date().toLocaleTimeString('vi-VN'))) : '';
           updateCachedPayload();
           renderVouchers();
+          hasChanged = true;
 
-          // Hiệu ứng nháy viền thẻ trực quan
-          const card = document.getElementById('card-row-' + item.rowIndex);
+          const card = document.getElementById('card-row-' + item1.rowIndex);
           if (card) {
             card.classList.add('flash-updated');
             setTimeout(() => card.classList.remove('flash-updated'), 1500);
           }
-
-          // Nháy chấm báo hiệu đồng bộ
-          els.syncDot.className = 'sync-dot updating';
-          els.syncText.textContent = isUsed 
-            ? `⚡ Trình duyệt khác vừa dùng mã: ${item.code}` 
-            : `🔄 Trình duyệt khác vừa hoàn lại mã: ${item.code}`;
-          setTimeout(() => {
-            els.syncDot.className = 'sync-dot';
-            els.syncText.textContent = 'Đã kết nối trực tiếp';
-          }, 3000);
         }
+      }
+
+      // 2. Cập nhật Bảng 2 (Sheet PMH2 - Phiếu theo User 43751 & 7721)
+      savePmh2LocalStatus(code, isUsed, timeStr);
+      if (state.pmh2Items && state.pmh2Items.length > 0) {
+        let item2 = state.pmh2Items.find(i => String(i.pmhCode).replace(/[^A-Za-z0-9]/g, '').toUpperCase() === cleanCode);
+        if (item2 && item2.isUsed !== isUsed) {
+          item2.isUsed = !!isUsed;
+          item2.usedTime = isUsed ? (timeStr || '') : '';
+          renderPmh2List();
+          hasChanged = true;
+
+          const pmh2Cards = document.querySelectorAll('.pmh2-card');
+          pmh2Cards.forEach(c => {
+            const btn = c.querySelector(`.btn-copy-pmh2[data-code="${item2.pmhCode}"]`);
+            if (btn) {
+              c.classList.add('flash-updated');
+              setTimeout(() => c.classList.remove('flash-updated'), 1500);
+            }
+          });
+        }
+      }
+
+      // 3. Hiển thị thông báo nhấp nháy báo hiệu trên thanh trạng thái
+      if (hasChanged && els.syncDot && els.syncText) {
+        els.syncDot.className = 'sync-dot updating';
+        els.syncText.textContent = isUsed 
+          ? `⚡ Trình duyệt khác vừa dùng: ${code}` 
+          : `🔄 Trình duyệt khác vừa hoàn lại: ${code}`;
+        setTimeout(() => {
+          els.syncDot.className = 'sync-dot';
+          els.syncText.textContent = 'Đã kết nối trực tiếp (Realtime)';
+        }, 3000);
       }
     }
 
     /**
-     * KHỞI TẠO LẮNG NGHE ĐỒNG BỘ THỜI GIAN THỰC ĐA KÊNH
+     * XỬ LÝ GÓI TIN ĐỒNG BỘ ĐẾN TỪ CÁC KÊNH REALTIME
      */
-    let lastPollNtfyTs = Math.floor((Date.now() - 10 * 60 * 1000) / 1000); // 10 phút trước
     const processedMsgIds = new Set();
-
     function handleRealtimeIncomingMessage(rawMessageStr, msgId) {
       if (!rawMessageStr) return;
       if (msgId) {
@@ -3475,12 +3532,25 @@ CMA_HOA_7721_TC
       }
       try {
         let data = typeof rawMessageStr === 'string' ? JSON.parse(rawMessageStr) : rawMessageStr;
-        if (data && data.action === 'markUsed' && data.senderId !== state.clientId) {
-          applyVoucherStateFromRemote(data.code, data.isUsed, data.time, data.rowIndex, data.timestamp);
+        if (!data || data.senderId === state.clientId) return;
+
+        if (data.action === 'markUsed') {
+          applyVoucherStateFromRemote(data.code, data.isUsed, data.time, data.rowIndex, data.sheet, data.user, data.timestamp);
+        } else if (data.action === 'reloadPmh2') {
+          loadSheetPmh2GViz();
+          if (els.syncText) {
+            els.syncText.textContent = '⚡ Trình duyệt khác vừa lưu dữ liệu PMH2!';
+            setTimeout(() => {
+              if (els.syncText) els.syncText.textContent = 'Đã kết nối trực tiếp (Realtime)';
+            }, 3000);
+          }
         }
       } catch (err) {}
     }
 
+    /**
+     * KHỞI TẠO LẮNG NGHE ĐỒNG BỘ THỜI GIAN THỰC ĐA KÊNH
+     */
     function initRealtimeSync() {
       // 1. Lắng nghe cùng trình duyệt qua BroadcastChannel (0ms)
       try {
@@ -3488,113 +3558,95 @@ CMA_HOA_7721_TC
           window.broadcastChannel = new BroadcastChannel('pmh_sync_channel');
           window.broadcastChannel.onmessage = (e) => {
             const data = e.data;
-            if (data && data.action === 'markUsed' && data.senderId !== state.clientId) {
-              applyVoucherStateFromRemote(data.code, data.isUsed, data.time, data.rowIndex, data.timestamp);
+            if (data && data.senderId !== state.clientId) {
+              handleRealtimeIncomingMessage(data);
             }
           };
         }
       } catch (e) {}
 
-      // 2. Lắng nghe đa tab qua storage event (0ms, tối ưu cho iPhone/Safari)
+      // 2. Lắng nghe đa tab qua storage event (0ms, tối ưu cho Safari/iPhone)
       if (!window._hasStorageListener) {
         window._hasStorageListener = true;
         window.addEventListener('storage', (e) => {
           if (e.key === 'pmh_sync_cross_tab' && e.newValue) {
             try {
               const data = JSON.parse(e.newValue);
-              if (data && data.action === 'markUsed' && data.senderId !== state.clientId) {
-                applyVoucherStateFromRemote(data.code, data.isUsed, data.time, data.rowIndex, data.timestamp);
+              if (data && data.senderId !== state.clientId) {
+                handleRealtimeIncomingMessage(data);
               }
             } catch (err) {}
           }
         });
       }
 
-      // 3. Engine A: WebSocket Realtime (0ms - 30ms latency)
-      if (typeof WebSocket !== 'undefined') {
+      // 3. Engine A: MQTT Realtime over Secure WebSocket (Đồng bộ tức thì 20ms - 50ms giữa mọi trình duyệt/thiết bị khác nhau)
+      function connectMqttBroker() {
+        if (typeof mqtt === 'undefined') {
+          setTimeout(connectMqttBroker, 500);
+          return;
+        }
+
         try {
-          if (window.realtimeWebSocket) {
-            try { window.realtimeWebSocket.close(); } catch (e) {}
+          if (window.mqttClient) {
+            try { window.mqttClient.end(); } catch (e) {}
           }
-          const ws = new WebSocket(`wss://ntfy.sh/${REALTIME_TOPIC}/ws?since=10m`);
-          window.realtimeWebSocket = ws;
 
-          ws.onmessage = (e) => {
-            try {
-              const res = JSON.parse(e.data);
-              if (res.event === 'message' && res.message) {
-                handleRealtimeIncomingMessage(res.message, res.id);
+          const brokerList = [
+            'wss://broker.emqx.io:8084/mqtt',
+            'wss://broker.hivemq.com:8884/mqtt'
+          ];
+          let currentBrokerIdx = 0;
+
+          function tryConnect() {
+            const brokerUrl = brokerList[currentBrokerIdx];
+            const clientId = 'pmh_cli_' + Math.random().toString(36).substring(2, 10);
+            
+            const client = mqtt.connect(brokerUrl, {
+              clientId: clientId,
+              clean: true,
+              connectTimeout: 5000,
+              reconnectPeriod: 3000,
+              keepalive: 45
+            });
+
+            client.on('connect', () => {
+              window.mqttClient = client;
+              client.subscribe(REALTIME_TOPIC, { qos: 0 });
+              if (els.syncText) {
+                els.syncText.textContent = 'Đã kết nối trực tiếp (Realtime)';
               }
-            } catch (err) {}
-          };
+            });
 
-          ws.onerror = ws.onclose = () => {
-            window.realtimeWebSocket = null;
-          };
-        } catch (e) {}
-      }
-
-      // 4. Engine B: Server-Sent Events (SSE) có ?since=10m replay (dự phòng song song)
-      if (typeof EventSource !== 'undefined') {
-        try {
-          if (window.realtimeEventSource) {
-            try { window.realtimeEventSource.close(); } catch (e) {}
-          }
-          const sse = new EventSource(`https://ntfy.sh/${REALTIME_TOPIC}/sse?since=10m`);
-          window.realtimeEventSource = sse;
-
-          const sseHandler = (e) => {
-            try {
-              const res = JSON.parse(e.data);
-              if (res.event === 'message' && res.message) {
-                handleRealtimeIncomingMessage(res.message, res.id);
-              }
-            } catch (err) {}
-          };
-
-          sse.onmessage = sseHandler;
-          sse.addEventListener('message', sseHandler);
-        } catch (e) {}
-      }
-
-      // 5. Engine C: HTTP Fast-Polling mỗi 2 giây (Chống 100% rớt mạng, chặn WebSocket hoặc chặn SSE)
-      async function pollNtfyEvents() {
-        if (document.visibilityState !== 'visible') return;
-        try {
-          const res = await fetch(`https://ntfy.sh/${REALTIME_TOPIC}/json?poll=1&since=${lastPollNtfyTs}`);
-          if (res.ok) {
-            const text = await res.text();
-            if (!text.trim()) return;
-            const lines = text.trim().split('\n');
-            lines.forEach(line => {
-              if (!line.trim()) return;
+            client.on('message', (topic, message) => {
               try {
-                const item = JSON.parse(line);
-                if (item.time && item.time > lastPollNtfyTs) {
-                  lastPollNtfyTs = item.time;
-                }
-                if (item.event === 'message' && item.message) {
-                  handleRealtimeIncomingMessage(item.message, item.id);
-                }
+                handleRealtimeIncomingMessage(message.toString());
               } catch (err) {}
             });
+
+            client.on('error', () => {
+              currentBrokerIdx = (currentBrokerIdx + 1) % brokerList.length;
+            });
           }
-        } catch (e) {}
+
+          tryConnect();
+        } catch (err) {
+          console.warn('Lỗi kết nối MQTT Realtime:', err);
+        }
       }
 
-      pollNtfyEvents();
+      connectMqttBroker();
 
-      if (!window.ntfyPollInterval) {
-        window.ntfyPollInterval = setInterval(pollNtfyEvents, 2000);
-      }
-
-      // 6. Polling dự phòng từ Google Sheet GViz mỗi 4 giây
-      if (!window.pollInterval) {
-        window.pollInterval = setInterval(() => {
-          if (document.visibilityState === 'visible' && !state.isLoading) {
-            loadData(false);
+      // 4. Engine B: Polling dự phòng từ Google Sheets GViz mỗi 2.5 giây cho CẢ 2 BẢNG (Chống rớt mạng)
+      if (!window.gvizPollInterval) {
+        window.gvizPollInterval = setInterval(() => {
+          if (document.visibilityState === 'visible') {
+            if (!state.isLoading) {
+              loadData(false);
+            }
+            loadSheetPmh2GViz();
           }
-        }, 4000);
+        }, 2500);
       }
     }
 
