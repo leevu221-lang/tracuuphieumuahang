@@ -1747,9 +1747,111 @@
     }
 
     /* ==========================================================================
+    /* ==========================================================================
        HỆ THỐNG NHÂN BẢN ỨNG DỤNG (CLONE SYSTEM) & LINK GỐC ADMIN QUẢN LÝ
        ========================================================================== */
     
+    /* Thanh điều khiển nút Ẩn/Hiện Admin Bar (Mặc định = Ẩn / False) */
+    .admin-toggle-bar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      margin-bottom: 12px;
+      gap: 10px;
+    }
+
+    .btn-toggle-admin-bar {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: #ffffff;
+      color: #334155;
+      border: 1.5px solid #cbd5e1;
+      padding: 5px 13px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+
+    .btn-toggle-admin-bar:hover {
+      background: #f8fafc;
+      border-color: #0284c7;
+      color: #0284c7;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(2, 132, 199, 0.15);
+    }
+
+    .btn-toggle-admin-bar.active {
+      background: #0f172a;
+      color: #38bdf8;
+      border-color: #38bdf8;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.25);
+    }
+
+    .btn-toggle-admin-bar .toggle-eye {
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    .btn-toggle-admin-bar .admin-toggle-count {
+      background: #e0f2fe;
+      color: #0284c7;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 1px 7px;
+      border-radius: 10px;
+    }
+
+    .btn-toggle-admin-bar.active .admin-toggle-count {
+      background: rgba(56, 189, 248, 0.2);
+      color: #38bdf8;
+    }
+
+    .btn-toggle-admin-bar .toggle-status {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 1px 7px;
+      border-radius: 10px;
+    }
+
+    .btn-toggle-admin-bar:not(.active) .toggle-status {
+      background: #f1f5f9;
+      color: #64748b;
+    }
+
+    .btn-toggle-admin-bar.active .toggle-status {
+      background: rgba(56, 189, 248, 0.25);
+      color: #38bdf8;
+    }
+
+    /* Nút icon Ẩn thanh đặt ngay trên thanh Admin */
+    .btn-hide-admin-banner {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(255, 255, 255, 0.12);
+      color: #e2e8f0;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .btn-hide-admin-banner:hover {
+      background: rgba(255, 255, 255, 0.22);
+      color: #ffffff;
+      border-color: rgba(255, 255, 255, 0.4);
+      transform: translateY(-1px);
+    }
+
     /* 1. Thanh Admin Top Banner (Trên link gốc) */
     .admin-top-banner {
       background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
@@ -2111,8 +2213,19 @@
 
   <div class="app-container mode-parallel" id="appContainer">
 
-    <!-- 1. Thanh Quản Trị Admin (Chỉ hiển thị trên Link Gốc Admin) -->
-    <div class="admin-top-banner" id="adminTopBanner">
+    <!-- Nút Icon Ẩn/Hiện Thanh Quản Trị Admin (Mặc định = Ẩn / False) -->
+    <div class="admin-toggle-bar" id="adminToggleBar" style="display: none;">
+      <button type="button" class="btn-toggle-admin-bar" id="btnToggleAdminBanner" title="Bấm để Ẩn / Hiện Thanh Quản Trị Admin (Mặc định = Ẩn)">
+        <span class="toggle-eye" id="adminToggleEye">👁️‍🗨️</span>
+        <span class="toggle-crown">👑</span>
+        <span>Quản Trị Admin</span>
+        <span class="admin-toggle-count" id="adminToggleCountBadge">0</span>
+        <span class="toggle-status" id="adminToggleStatus">Đang Ẩn</span>
+      </button>
+    </div>
+
+    <!-- 1. Thanh Quản Trị Admin (Chỉ hiển thị trên Link Gốc Admin khi được bấm Hiện) -->
+    <div class="admin-top-banner" id="adminTopBanner" style="display: none;">
       <div class="admin-banner-left">
         <div class="admin-badge">
           <span class="admin-badge-icon">👑</span>
@@ -2127,6 +2240,10 @@
           <span>⚡</span>
           <span>Quản Lý Nhân Bản &amp; Bản Sao Mới</span>
           <span class="clone-count-badge" id="adminCloneCountBadge">0</span>
+        </button>
+        <button type="button" class="btn-hide-admin-banner" id="btnHideAdminBanner" title="Bấm để ẩn thanh quản trị này">
+          <span>👁️</span>
+          <span>Ẩn Thanh</span>
         </button>
       </div>
     </div>
@@ -2963,7 +3080,13 @@ CMA_HOA_7721_TC
       btnSaveCloneRecord: document.getElementById('btnSaveCloneRecord'),
       cloneTableBody: document.getElementById('cloneTableBody'),
       btnRefreshClonesList: document.getElementById('btnRefreshClonesList'),
-      clonePreviewUrl: document.getElementById('clonePreviewUrl')
+      clonePreviewUrl: document.getElementById('clonePreviewUrl'),
+      adminToggleBar: document.getElementById('adminToggleBar'),
+      btnToggleAdminBanner: document.getElementById('btnToggleAdminBanner'),
+      adminToggleEye: document.getElementById('adminToggleEye'),
+      adminToggleStatus: document.getElementById('adminToggleStatus'),
+      adminToggleCountBadge: document.getElementById('adminToggleCountBadge'),
+      btnHideAdminBanner: document.getElementById('btnHideAdminBanner')
     };
 
     /**
@@ -5183,9 +5306,38 @@ CMA_HOA_7721_TC
       return `${base}/?s=${encodeURIComponent(slug)}`;
     }
 
+    let adminBannerVisible = false; // Mặc định = false (Ẩn thanh Admin)
+
+    function setAdminBannerVisibility(visible) {
+      adminBannerVisible = !!visible;
+      if (CONFIG.isClone) {
+        if (els.adminToggleBar) els.adminToggleBar.style.display = 'none';
+        if (els.adminTopBanner) els.adminTopBanner.style.display = 'none';
+        return;
+      }
+
+      if (els.adminToggleBar) els.adminToggleBar.style.display = 'flex';
+
+      if (els.adminTopBanner) {
+        els.adminTopBanner.style.display = adminBannerVisible ? 'flex' : 'none';
+      }
+
+      if (els.btnToggleAdminBanner) {
+        if (adminBannerVisible) {
+          els.btnToggleAdminBanner.classList.add('active');
+          if (els.adminToggleEye) els.adminToggleEye.textContent = '👁️';
+          if (els.adminToggleStatus) els.adminToggleStatus.textContent = 'Đang Hiện';
+        } else {
+          els.btnToggleAdminBanner.classList.remove('active');
+          if (els.adminToggleEye) els.adminToggleEye.textContent = '👁️‍🗨️';
+          if (els.adminToggleStatus) els.adminToggleStatus.textContent = 'Đang Ẩn';
+        }
+      }
+    }
+
     function updateCloneHeaderUI() {
       if (CONFIG.isClone) {
-        if (els.adminTopBanner) els.adminTopBanner.style.display = 'none';
+        setAdminBannerVisibility(false);
         if (els.cloneTopBanner) els.cloneTopBanner.style.display = 'flex';
         if (els.cloneBannerTitle) els.cloneBannerTitle.textContent = 'BẢN SAO: ' + (CONFIG.branchName || CONFIG.cloneSlug).toUpperCase();
         if (els.cloneBannerSlug) els.cloneBannerSlug.textContent = CONFIG.cloneSlug;
@@ -5196,10 +5348,11 @@ CMA_HOA_7721_TC
         if (els.sheetInfo) els.sheetInfo.textContent = (CONFIG.branchName || CONFIG.cloneSlug) + ' ⚡';
         document.title = `Tra Cứu Phiếu Mua Hàng - ${CONFIG.branchName || CONFIG.cloneSlug}`;
       } else {
-        if (els.adminTopBanner) els.adminTopBanner.style.display = 'flex';
         if (els.cloneTopBanner) els.cloneTopBanner.style.display = 'none';
         const clones = getStoredClones();
         if (els.adminCloneCountBadge) els.adminCloneCountBadge.textContent = clones.length;
+        if (els.adminToggleCountBadge) els.adminToggleCountBadge.textContent = clones.length;
+        setAdminBannerVisibility(adminBannerVisible); // Mặc định = false
         document.title = 'Tra Cứu Phiếu Mua Hàng Siêu Tốc (Link Gốc Admin Quản Trị)';
       }
     }
@@ -5208,6 +5361,7 @@ CMA_HOA_7721_TC
       if (!els.cloneTableBody) return;
       const clones = getStoredClones();
       if (els.adminCloneCountBadge) els.adminCloneCountBadge.textContent = clones.length;
+      if (els.adminToggleCountBadge) els.adminToggleCountBadge.textContent = clones.length;
 
       if (!clones || clones.length === 0) {
         els.cloneTableBody.innerHTML = `
@@ -5378,6 +5532,20 @@ CMA_HOA_7721_TC
     function initCloneSystem() {
       updateCloneHeaderUI();
       renderClonesTable();
+
+      // Nút Icon Ẩn/Hiện Thanh Quản Trị Admin (Mặc định = Ẩn / False)
+      if (els.btnToggleAdminBanner) {
+        els.btnToggleAdminBanner.addEventListener('click', () => {
+          setAdminBannerVisibility(!adminBannerVisible);
+        });
+      }
+
+      // Nút Icon Ẩn Thanh trên chính thanh Admin Top Banner
+      if (els.btnHideAdminBanner) {
+        els.btnHideAdminBanner.addEventListener('click', () => {
+          setAdminBannerVisibility(false);
+        });
+      }
 
       // Cập nhật preview URL khi người dùng gõ tên rút gọn (slug)
       if (els.inputCloneSlug && els.clonePreviewUrl) {
