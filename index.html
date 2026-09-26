@@ -278,14 +278,16 @@
       transition: all 0.2s ease;
     }
 
-    .pmh2-code-val.masked-stars {
+    .pmh2-code-val.masked-stars,
+    .voucher-code.masked-stars {
       letter-spacing: 0.22em;
       color: #0284c7;
       font-size: 15px;
       font-weight: 700;
     }
 
-    .btn-eye-toggle {
+    .btn-eye-toggle,
+    .btn-eye-toggle-sheet1 {
       background: #f1f5f9;
       border: 1px solid #cbd5e1;
       color: #475569;
@@ -302,7 +304,8 @@
       flex-shrink: 0;
     }
 
-    .btn-eye-toggle:hover {
+    .btn-eye-toggle:hover,
+    .btn-eye-toggle-sheet1:hover {
       background: #e2e8f0;
       color: #0f172a;
       transform: scale(1.05);
@@ -1922,6 +1925,7 @@ CMA_HOA_7721_TC
       pmh2StatusFilter: 'all',
       pmh2Search: '',
       pmh2RevealedCodes: {},
+      sheet1RevealedCodes: {},
       pmh2DrawerOpen: false
     };
 
@@ -2233,13 +2237,15 @@ CMA_HOA_7721_TC
         }
       }
 
-      // Tự động lọc mã trùng: nếu cùng 1 mã phiếu hợp lệ xuất hiện nhiều lần, chỉ hiển thị 1 mã duy nhất
+      // Tự động lọc mã trùng: CHỈ LỌC KHI TRÙNG MÃ PMH (VD: X0P4P5NEMX, X0P4P5NEMX)
+      // KHÔNG LỌC THEO TÊN PHIẾU (VD: cùng tên PMH MM200 nhưng khác mã PMH vẫn hiển thị đầy đủ)
       const codeMap = new Map();
       const uniqueItems = [];
 
       for (const item of items) {
         if (!item.isError && item.pmhCode && item.pmhCode !== 'N/A') {
-          const normCode = item.pmhCode.trim().toUpperCase();
+          // Chuẩn hoá mã phiếu mua hàng: chỉ lấy chữ và số viết hoa để so khớp chính xác
+          const normCode = String(item.pmhCode).replace(/[^A-Za-z0-9]/g, '').toUpperCase();
           if (codeMap.has(normCode)) {
             const existing = codeMap.get(normCode);
             // Hợp nhất trạng thái đã sử dụng nếu có bản ghi đã dùng
@@ -2247,16 +2253,21 @@ CMA_HOA_7721_TC
               existing.isUsed = true;
               existing.usedTime = item.usedTime;
             }
-            continue; // Bỏ qua mã trùng, chỉ giữ lại 1 mã duy nhất
+            continue; // Bỏ qua vì TRÙNG MÃ PMH, chỉ giữ lại 1 mã duy nhất
           }
           codeMap.set(normCode, item);
         }
         uniqueItems.push(item);
       }
 
+      // Luôn đặt lại để AUTO ẨN toàn bộ mã phiếu thành dấu sao (*****) khi tải/làm mới dữ liệu
+      state.pmh2RevealedCodes = {};
       state.pmh2Items = uniqueItems;
       renderPmh2List();
     }
+
+    // Bộ timer tự động ẩn lại mã phiếu sau khi bấm xem
+    const pmh2AutoRevealTimers = {};
 
     function renderPmh2List() {
       const listEl = document.getElementById('pmh2List');
@@ -2336,9 +2347,13 @@ CMA_HOA_7721_TC
         const userTagClass = item.userId === '7721' ? 'pmh2-user-badge user-7721' : 'pmh2-user-badge';
         const typeClass = item.isICT ? 'pmh2-type-tag tag-ict' : 'pmh2-type-tag tag-mm';
 
-        const isRevealed = !!(state.pmh2RevealedCodes && state.pmh2RevealedCodes[item.id]);
         const hasValidCode = !item.isError && item.pmhCode && item.pmhCode !== 'N/A';
-        const maskedStars = hasValidCode ? '*'.repeat(Math.max(item.pmhCode.length, 8)) : (item.pmhCode || 'N/A');
+        const codeKey = hasValidCode 
+          ? String(item.pmhCode).replace(/[^A-Za-z0-9]/g, '').toUpperCase() 
+          : item.id;
+
+        const isRevealed = !!(state.pmh2RevealedCodes && state.pmh2RevealedCodes[codeKey]);
+        const maskedStars = hasValidCode ? '*'.repeat(Math.max(item.pmhCode.length, 10)) : (item.pmhCode || 'N/A');
         const displayCode = isRevealed ? item.pmhCode : maskedStars;
 
         card.innerHTML = `
@@ -2355,7 +2370,7 @@ CMA_HOA_7721_TC
               <div class="pmh2-code-row">
                 <span class="pmh2-code-val ${!isRevealed && hasValidCode ? 'masked-stars' : ''}">${escapeHtml(displayCode)}</span>
                 ${hasValidCode ? `
-                  <button type="button" class="btn-eye-toggle" data-id="${item.id}" title="${isRevealed ? 'Ẩn mã (*)' : 'Xem mã thực'}">
+                  <button type="button" class="btn-eye-toggle" data-code="${escapeHtml(codeKey)}" title="${isRevealed ? 'Ẩn mã (*)' : 'Xem mã thực (tự ẩn sau 4s)'}">
                     ${isRevealed ? '🙈' : '👁️'}
                   </button>
                 ` : ''}
@@ -2388,24 +2403,49 @@ CMA_HOA_7721_TC
           </div>
         `;
 
-        // Event: Bấm icon Mắt Ẩn/Hiện mã
+        // Event: Bấm icon Mắt Ẩn/Hiện mã (AUTO ẨN LẠI SAU 4 GIÂY)
         const btnEye = card.querySelector('.btn-eye-toggle');
         if (btnEye) {
           btnEye.addEventListener('click', (e) => {
             e.stopPropagation();
-            state.pmh2RevealedCodes[item.id] = !state.pmh2RevealedCodes[item.id];
+            if (!state.pmh2RevealedCodes) state.pmh2RevealedCodes = {};
+            const willReveal = !state.pmh2RevealedCodes[codeKey];
+            state.pmh2RevealedCodes[codeKey] = willReveal;
+
+            // Huỷ bỏ timer cũ nếu có
+            if (pmh2AutoRevealTimers[codeKey]) {
+              clearTimeout(pmh2AutoRevealTimers[codeKey]);
+              delete pmh2AutoRevealTimers[codeKey];
+            }
+
+            // AUTO ẨN MÃ PHIẾU: Tự động ẩn lại thành ***** sau 4 giây
+            if (willReveal) {
+              pmh2AutoRevealTimers[codeKey] = setTimeout(() => {
+                if (state.pmh2RevealedCodes) {
+                  state.pmh2RevealedCodes[codeKey] = false;
+                }
+                renderPmh2List();
+              }, 4000);
+            }
+
             renderPmh2List();
           });
         }
 
-        // Event: Bấm nút Sao chép
+        // Event: Bấm nút Sao chép (Sao chép mã thực nhưng GIỮ AUTO ẨN *****)
         const btnCopy = card.querySelector('.btn-copy-pmh2');
         if (btnCopy) {
           btnCopy.addEventListener('click', (e) => {
             e.stopPropagation();
             copyToClipboard(item.pmhCode).then(() => {
-              state.pmh2RevealedCodes[item.id] = true;
-              
+              // BẢO MẬT: Giữ mã phiếu AUTO ẨN (*****), KHÔNG tự ý mở mã khi sao chép
+              if (!state.pmh2RevealedCodes) state.pmh2RevealedCodes = {};
+              state.pmh2RevealedCodes[codeKey] = false;
+              if (pmh2AutoRevealTimers[codeKey]) {
+                clearTimeout(pmh2AutoRevealTimers[codeKey]);
+                delete pmh2AutoRevealTimers[codeKey];
+              }
+
               const now = new Date();
               const timeStr = ('0' + now.getDate()).slice(-2) + '/' + 
                               ('0' + (now.getMonth() + 1)).slice(-2) + '/' + 
@@ -2431,6 +2471,13 @@ CMA_HOA_7721_TC
         if (btnUndo) {
           btnUndo.addEventListener('click', (e) => {
             e.stopPropagation();
+            if (!state.pmh2RevealedCodes) state.pmh2RevealedCodes = {};
+            state.pmh2RevealedCodes[codeKey] = false;
+            if (pmh2AutoRevealTimers[codeKey]) {
+              clearTimeout(pmh2AutoRevealTimers[codeKey]);
+              delete pmh2AutoRevealTimers[codeKey];
+            }
+
             item.isUsed = false;
             item.usedTime = '';
             savePmh2LocalStatus(item.pmhCode, false, '');
@@ -2990,25 +3037,27 @@ CMA_HOA_7721_TC
         return;
       }
 
-      // Tự động lọc mã trùng cho Bảng 1: mỗi mã phiếu chỉ hiển thị 1 lần
+      // Tự động lọc mã trùng cho Bảng 1: CHỈ LỌC KHI TRÙNG MÃ PHIẾU (code), không lọc theo tên phiếu
       const seenCodeSheet1 = new Map();
       const uniqueSheet1Items = [];
       (res.items || []).forEach(item => {
         if (item.code) {
-          const norm = item.code.trim().toUpperCase();
+          const norm = String(item.code).replace(/[^A-Za-z0-9]/g, '').toUpperCase();
           if (seenCodeSheet1.has(norm)) {
             const ex = seenCodeSheet1.get(norm);
             if (item.isUsed && !ex.isUsed) {
               ex.isUsed = true;
               ex.usedTime = item.usedTime;
             }
-            return;
+            return; // Bỏ qua vì TRÙNG MÃ PHIẾU
           }
           seenCodeSheet1.set(norm, item);
         }
         uniqueSheet1Items.push(item);
       });
 
+      // Tự động đặt lại để AUTO ẨN toàn bộ mã phiếu thành dấu sao (*****)
+      state.sheet1RevealedCodes = {};
       state.items = uniqueSheet1Items;
       state.dates = res.dates || [];
       state.products = res.products || [];
@@ -3181,6 +3230,11 @@ CMA_HOA_7721_TC
         `;
       }
 
+      const normCode = String(item.code || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+      const isRevealed = !!(state.sheet1RevealedCodes && state.sheet1RevealedCodes[normCode]);
+      const maskedCode = '*'.repeat(Math.max((item.code || '').length, 10));
+      const displayCode = isRevealed ? item.code : maskedCode;
+
       card.innerHTML = `
         <div class="card-header-row">
           <div class="product-title">${titleHtml}</div>
@@ -3189,7 +3243,10 @@ CMA_HOA_7721_TC
 
         <div class="code-action-row">
           <div class="code-box-group">
-            <span class="voucher-code">${item.code}</span>
+            <span class="voucher-code ${!isRevealed ? 'masked-stars' : ''}">${escapeHtml(displayCode)}</span>
+            <button type="button" class="btn-eye-toggle-sheet1" onclick="toggleRevealSheet1('${escapeHtml(item.code)}')" title="${isRevealed ? 'Ẩn mã (*)' : 'Xem mã thực (tự ẩn sau 4s)'}">
+              ${isRevealed ? '🙈' : '👁️'}
+            </button>
             ${statusHtml}
           </div>
           <div class="card-actions">
@@ -3201,7 +3258,41 @@ CMA_HOA_7721_TC
       return card;
     }
 
+    const sheet1AutoRevealTimers = {};
+    window.toggleRevealSheet1 = function(code) {
+      if (!state.sheet1RevealedCodes) state.sheet1RevealedCodes = {};
+      const norm = String(code || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+      const willReveal = !state.sheet1RevealedCodes[norm];
+      state.sheet1RevealedCodes[norm] = willReveal;
+
+      if (sheet1AutoRevealTimers[norm]) {
+        clearTimeout(sheet1AutoRevealTimers[norm]);
+        delete sheet1AutoRevealTimers[norm];
+      }
+
+      // AUTO ẨN: Tự động ẩn lại sau 4 giây
+      if (willReveal) {
+        sheet1AutoRevealTimers[norm] = setTimeout(() => {
+          if (state.sheet1RevealedCodes) {
+            state.sheet1RevealedCodes[norm] = false;
+          }
+          renderVouchers();
+        }, 4000);
+      }
+
+      renderVouchers();
+    };
+
     window.handleCopyAndMark = function(rowIndex, code) {
+      // BẢO MẬT: Sao chép mã thực vào clipboard nhưng giữ mã AUTO ẨN (*****)
+      if (!state.sheet1RevealedCodes) state.sheet1RevealedCodes = {};
+      const norm = String(code || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+      state.sheet1RevealedCodes[norm] = false;
+      if (sheet1AutoRevealTimers[norm]) {
+        clearTimeout(sheet1AutoRevealTimers[norm]);
+        delete sheet1AutoRevealTimers[norm];
+      }
+
       copyToClipboard(code).then(() => {
         showToast(code, false);
       }).catch(() => {
@@ -3231,12 +3322,29 @@ CMA_HOA_7721_TC
     };
 
     window.handleCopyAgain = function(code) {
+      if (!state.sheet1RevealedCodes) state.sheet1RevealedCodes = {};
+      const norm = String(code || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+      state.sheet1RevealedCodes[norm] = false;
+      if (sheet1AutoRevealTimers[norm]) {
+        clearTimeout(sheet1AutoRevealTimers[norm]);
+        delete sheet1AutoRevealTimers[norm];
+      }
+
       copyToClipboard(code).then(() => {
         showToast(code, false);
       });
+      renderVouchers();
     };
 
     window.handleUndo = function(rowIndex, code) {
+      if (!state.sheet1RevealedCodes) state.sheet1RevealedCodes = {};
+      const norm = String(code || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+      state.sheet1RevealedCodes[norm] = false;
+      if (sheet1AutoRevealTimers[norm]) {
+        clearTimeout(sheet1AutoRevealTimers[norm]);
+        delete sheet1AutoRevealTimers[norm];
+      }
+
       let item = state.items.find(i => (code && i.code === code) || i.rowIndex == rowIndex);
       const nowTs = Date.now();
 
