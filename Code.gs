@@ -46,19 +46,53 @@ function showDialog() {
  * 4. Mở qua link Web App và API tiếp nhận dữ liệu từ GitHub Pages
  */
 function doGet(e) {
-  // API: Cập nhật trạng thái phiếu mua hàng khi nhấn từ xa (trên GitHub Pages/điện thoại)
-  if (e && e.parameter && (e.parameter.action === "markUsed" || e.parameter.action === "mark")) {
-    const row = parseInt(e.parameter.row || e.parameter.rowIndex, 10);
-    const isUsed = (e.parameter.used === "true" || e.parameter.used === "1");
-    const targetCode = e.parameter.code ? String(e.parameter.code).trim() : "";
-    const res = markVoucher(row, isUsed, targetCode);
+  return handleApiOrHtml(e);
+}
+
+function doPost(e) {
+  return handleApiOrHtml(e);
+}
+
+function handleApiOrHtml(e) {
+  let params = (e && e.parameter) ? Object.assign({}, e.parameter) : {};
+  let postBody = null;
+
+  if (e && e.postData && e.postData.contents) {
+    try {
+      postBody = JSON.parse(e.postData.contents);
+      for (const k in postBody) {
+        if (params[k] === undefined) params[k] = postBody[k];
+      }
+    } catch (err) {
+      if (!params.data) params.data = e.postData.contents;
+    }
+  }
+
+  // API 1: Cập nhật trạng thái phiếu mua hàng (Sheet 1 hoặc sheet PMH2)
+  if (params && (params.action === "markUsed" || params.action === "mark")) {
+    const row = parseInt(params.row || params.rowIndex, 10);
+    const isUsed = (params.used === "true" || params.used === true || params.used === "1");
+    const targetCode = params.code ? String(params.code).trim() : "";
+    const sheetName = params.sheet ? String(params.sheet).trim() : "";
+    const user = params.user ? String(params.user).trim() : "";
+    const res = markVoucher(row, isUsed, targetCode, sheetName, user);
     return ContentService.createTextOutput(JSON.stringify(res))
       .setMimeType(ContentService.MimeType.JSON);
   }
 
-  // API: Lấy danh sách phiếu mua hàng dạng JSON
-  if (e && e.parameter && e.parameter.action === "getData") {
-    const data = getSheetData();
+  // API 2: Dán và lưu ngược dữ liệu vào sheet PMH2
+  if (params && (params.action === "savePmh2" || params.action === "appendPmh2")) {
+    const rawData = params.data || (postBody && postBody.data) || "";
+    const mode = params.mode || "append"; // 'append' hoặc 'overwrite'
+    const res = savePmh2Data(rawData, mode);
+    return ContentService.createTextOutput(JSON.stringify(res))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // API 3: Lấy danh sách phiếu mua hàng dạng JSON
+  if (params && params.action === "getData") {
+    const sheetName = params.sheet ? String(params.sheet).trim() : "";
+    const data = getSheetData(sheetName);
     return ContentService.createTextOutput(JSON.stringify(data))
       .setMimeType(ContentService.MimeType.JSON);
   }
@@ -69,17 +103,19 @@ function doGet(e) {
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
-function doPost(e) {
-  return doGet(e);
-}
-
 /**
- * 5. Lấy đối tượng Sheet dữ liệu mục tiêu
+ * 5. Lấy đối tượng Sheet dữ liệu mục tiêu (hỗ trợ chỉ định SheetName hoặc sheet PMH2)
  */
-function getTargetSheet() {
+function getTargetSheet(sheetName) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sheet = null;
-  if (SHEET_NAME) {
+  if (sheetName) {
+    sheet = ss.getSheetByName(sheetName);
+    if (!sheet && sheetName.toUpperCase() === "PMH2") {
+      sheet = ss.insertSheet("PMH2");
+    }
+  }
+  if (!sheet && SHEET_NAME) {
     sheet = ss.getSheetByName(SHEET_NAME);
   }
   if (!sheet) {
@@ -209,20 +245,21 @@ function getSheetData() {
 
 /**
  * 7. Cập nhật trạng thái phiếu mua hàng (Đã dùng / Chưa dùng)
- * Đồng bộ ngay vào Google Sheet:
+ * Đồng bộ ngay vào Google Sheet (Hỗ trợ cả Sheet 1 và sheet PMH2):
  * - Cột B: Checkbox TRUE / FALSE
  * - Cột C: Thời gian sử dụng (dd/MM/yyyy HH:mm:ss)
+ * - Cột D: User thao tác
  * - Cột A: Gạch ngang chữ (line-through) nếu đã dùng
  */
-function markVoucher(rowIndex, isUsed, targetCode) {
+function markVoucher(rowIndex, isUsed, targetCode, sheetName, user) {
   try {
-    const sheet = getTargetSheet();
+    const sheet = getTargetSheet(sheetName);
     let targetRow = parseInt(rowIndex, 10);
     const lastRow = sheet.getLastRow();
 
     // Nếu có targetCode, kiểm tra xem targetRow có chứa targetCode không.
     // Nếu không khớp (do thêm/xóa dòng), quét toàn bộ cột A để tìm chính xác dòng chứa mã
-    if (targetCode) {
+    if (targetCode && lastRow > 0) {
       let matched = false;
       if (!isNaN(targetRow) && targetRow >= 1 && targetRow <= lastRow) {
         const val = String(sheet.getRange(targetRow, 1).getValue());
@@ -250,6 +287,7 @@ function markVoucher(rowIndex, isUsed, targetCode) {
     const cellA = sheet.getRange(targetRow, 1);
     const cellB = sheet.getRange(targetRow, 2);
     const cellC = sheet.getRange(targetRow, 3);
+    const cellD = sheet.getRange(targetRow, 4);
 
     let timeStr = "";
 
@@ -259,18 +297,26 @@ function markVoucher(rowIndex, isUsed, targetCode) {
       const now = new Date();
       timeStr = Utilities.formatDate(now, Session.getScriptTimeZone() || "GMT+7", "dd/MM/yyyy HH:mm:ss");
       cellC.setValue(timeStr);
+      if (user) {
+        cellD.setValue(user);
+      }
 
-      // Định dạng Cột A: Gạch ngang và đổi chữ sang màu xám mờ
-      cellA.setFontLine("line-through");
-      cellA.setFontColor("#718096");
+      // Định dạng Cột A: Nếu là Sheet chính thì gạch ngang
+      if (!sheetName || sheetName === "PMH") {
+        cellA.setFontLine("line-through");
+        cellA.setFontColor("#718096");
+      }
     } else {
       // Hủy đánh dấu (Hoàn tác)
       cellB.setValue(false);
       cellC.setValue("");
+      cellD.setValue("");
 
       // Định dạng Cột A: Khôi phục chữ bình thường
-      cellA.setFontLine("none");
-      cellA.setFontColor("#000000");
+      if (!sheetName || sheetName === "PMH") {
+        cellA.setFontLine("none");
+        cellA.setFontColor("#000000");
+      }
     }
 
     // Đảm bảo dữ liệu được ghi ngay xuống Sheet
@@ -279,8 +325,63 @@ function markVoucher(rowIndex, isUsed, targetCode) {
     return {
       success: true,
       rowIndex: targetRow,
+      code: targetCode,
       isUsed: isUsed,
-      usedTime: timeStr
+      usedTime: timeStr,
+      sheet: sheet.getName()
+    };
+  } catch (err) {
+    return {
+      success: false,
+      message: err.toString()
+    };
+  }
+}
+
+/**
+ * 8. Dán dữ liệu thô và lưu ngược vào Sheet "PMH2"
+ * - Hỗ trợ mode = 'append' (mặc định: thêm tiếp vào cuối) hoặc 'overwrite' (ghi đè toàn bộ)
+ */
+function savePmh2Data(rawData, mode) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName("PMH2");
+    if (!sheet) {
+      sheet = ss.insertSheet("PMH2");
+    }
+
+    if (!rawData || typeof rawData !== "string") {
+      return { success: false, message: "Dữ liệu trống hoặc không hợp lệ" };
+    }
+
+    const lines = rawData.split(/\r?\n/).map(function(l) { return l.trimEnd(); });
+    while (lines.length > 0 && lines[lines.length - 1].trim() === "") {
+      lines.pop();
+    }
+
+    if (lines.length === 0) {
+      return { success: false, message: "Không có dòng dữ liệu nào để lưu" };
+    }
+
+    const rowData = lines.map(function(line) { return [line]; });
+
+    if (mode === "overwrite") {
+      sheet.clearContents();
+      sheet.getRange(1, 1, rowData.length, 1).setValues(rowData);
+    } else {
+      const lastRow = sheet.getLastRow();
+      const startRow = lastRow + 1;
+      sheet.getRange(startRow, 1, rowData.length, 1).setValues(rowData);
+    }
+
+    SpreadsheetApp.flush();
+
+    return {
+      success: true,
+      mode: mode || "append",
+      totalLines: lines.length,
+      lastRow: sheet.getLastRow(),
+      message: "Đã lưu thành công " + lines.length + " dòng vào sheet PMH2"
     };
   } catch (err) {
     return {

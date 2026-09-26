@@ -72,3 +72,8 @@ Dành cho Google Spreadsheet: **[1841 - PHIẾU MUA HÀNG EVENT](https://docs.go
    - Gạch ngang và làm mờ dòng ở Cột A trên Sheet.
    - Có nút **"Hoàn tác"** nếu lỡ bấm nhầm.
 4. **Bộ đếm tiến độ**: Thống kê số phiếu còn lại, số phiếu đã dùng và thanh tiến độ trực quan trong ngày.
+5. **Hỗ trợ Sheet "PMH2" (Cấp theo User 43751 & 7721)**:
+   - **Mã hoá mã phiếu thành dấu `*`**: Mã phiếu được bảo mật dưới dạng `**********` với nút mắt 👁️ để xem/ẩn.
+   - **Ghi nhận sử dụng tự động**: Khi bấm "Sao chép", mã thực được copy vào clipboard, tự động ghi nhận trạng thái "Đã sử dụng" lên Google Sheet (Cột B: TRUE, Cột C: Thời gian sử dụng, Cột D: User) để thống kê chính xác số phiếu đã dùng và chưa dùng.
+   - **Nút Dán dữ liệu PMH2 (Dạng ẩn/hiện)**: Bấm nút "📝 Dán Dữ Liệu PMH2 & Lưu Sheet ▾" để mở khung dán nội dung từ bot, chọn chế độ (Thêm tiếp Append hoặc Ghi đè Overwrite) và bấm "💾 Lưu Ngược Về Sheet PMH2" để cập nhật trực tiếp lên Google Sheets.
+   - **Thống kê & Bộ lọc trạng thái**: Dễ dàng lọc và theo dõi theo từng nhân viên (43751 Linh / 7721 Hoa), loại phiếu (ICT / MM) và trạng thái (Khả dụng / Đã dùng / Lỗi).

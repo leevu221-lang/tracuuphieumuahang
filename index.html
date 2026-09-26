@@ -259,14 +259,60 @@
       justify-content: space-between;
       gap: 10px;
       margin: 8px 0;
+      transition: all 0.2s ease;
+    }
+
+    .pmh2-code-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
     }
 
     .pmh2-code-val {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 800;
       color: #0f172a;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.05em;
+      transition: all 0.2s ease;
+    }
+
+    .pmh2-code-val.masked-stars {
+      letter-spacing: 0.22em;
+      color: #0284c7;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .btn-eye-toggle {
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      color: #475569;
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.15s ease;
+      padding: 0;
+      flex-shrink: 0;
+    }
+
+    .btn-eye-toggle:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+      transform: scale(1.05);
+    }
+
+    .pmh2-actions-cell {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      flex-shrink: 0;
     }
 
     .btn-copy-pmh2 {
@@ -288,11 +334,48 @@
 
     .btn-copy-pmh2:hover {
       filter: brightness(1.08);
-      transform: scale(1.02);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(2, 132, 199, 0.35);
     }
 
     .btn-copy-pmh2:active {
       transform: scale(0.97);
+    }
+
+    .btn-copy-pmh2.is-used {
+      background: linear-gradient(135deg, #475569 0%, #334155 100%);
+      box-shadow: 0 2px 5px rgba(51, 65, 85, 0.2);
+    }
+
+    .btn-undo-pmh2 {
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      color: #64748b;
+      padding: 5px 8px;
+      border-radius: 7px;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+
+    .btn-undo-pmh2:hover {
+      background: #fee2e2;
+      color: #dc2626;
+      border-color: #fca5a5;
+    }
+
+    .pmh2-card.card-is-used {
+      background: #f8fafc;
+      border-color: #e2e8f0;
+      opacity: 0.94;
+    }
+
+    .pmh2-card.card-is-used .pmh2-code-val:not(.masked-stars) {
+      color: #64748b;
     }
 
     .pmh2-card-bottom {
@@ -315,8 +398,289 @@
       color: #059669;
     }
 
+    .pmh2-status.status-used {
+      color: #4f46e5;
+      background: #eef2ff;
+      padding: 2px 7px;
+      border-radius: 5px;
+      font-size: 10.5px;
+      border: 1px solid #e0e7ff;
+    }
+
     .pmh2-status.status-err {
       color: #dc2626;
+    }
+
+    /* Thanh công cụ PMH2 & Nút Ẩn/Hiện Dán Dữ Liệu */
+    .pmh2-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .btn-toggle-drawer {
+      flex: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+      border: 1.5px dashed #38bdf8;
+      color: #0369a1;
+      padding: 9px 14px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-toggle-drawer:hover {
+      background: #bae6fd;
+      color: #0c4a6e;
+      border-style: solid;
+      transform: translateY(-1px);
+    }
+
+    .btn-toggle-drawer.active {
+      background: #0284c7;
+      color: #ffffff;
+      border-style: solid;
+      border-color: #0284c7;
+      box-shadow: 0 3px 8px rgba(2, 132, 199, 0.25);
+    }
+
+    .drawer-caret {
+      font-size: 13px;
+      transition: transform 0.2s ease;
+      display: inline-block;
+    }
+
+    .btn-toggle-drawer.active .drawer-caret {
+      transform: rotate(180deg);
+    }
+
+    .btn-refresh-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: #0284c7;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.15s ease;
+      flex-shrink: 0;
+    }
+
+    .btn-refresh-icon:hover {
+      background: #f0f9ff;
+      border-color: #7dd3fc;
+      transform: rotate(45deg);
+    }
+
+    /* Khung Dán Dữ Liệu PMH2 (Collapsible Drawer Ẩn/Hiện) */
+    .pmh2-paste-drawer {
+      background: #f0fdf4;
+      border: 1.5px solid #86efac;
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 14px;
+      animation: slideDownFade 0.22s ease forwards;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.08);
+    }
+
+    @keyframes slideDownFade {
+      from {
+        opacity: 0;
+        transform: translateY(-6px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .drawer-inner-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .drawer-title {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #15803d;
+    }
+
+    .btn-close-drawer {
+      background: none;
+      border: none;
+      font-size: 14px;
+      color: #64748b;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .btn-close-drawer:hover {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+
+    .drawer-subtext {
+      font-size: 11px;
+      color: #4b5563;
+      margin: 0 0 10px 0;
+      line-height: 1.45;
+    }
+
+    .drawer-textarea {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11.5px;
+      line-height: 1.5;
+      background: #ffffff;
+      color: #0f172a;
+      resize: vertical;
+      transition: border-color 0.15s ease;
+      outline: none;
+    }
+
+    .drawer-textarea:focus {
+      border-color: #059669;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+    }
+
+    .drawer-mode-select {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin: 10px 0 12px 0;
+      font-size: 11.5px;
+    }
+
+    .mode-radio-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+      color: #374151;
+    }
+
+    .drawer-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-save-to-sheet {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      color: #ffffff;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 9px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      box-shadow: 0 2px 6px rgba(5, 150, 105, 0.25);
+    }
+
+    .btn-save-to-sheet:hover:not(:disabled) {
+      filter: brightness(1.08);
+      transform: translateY(-1px);
+    }
+
+    .btn-save-to-sheet:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+
+    .btn-clear-text {
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      color: #64748b;
+      padding: 8px 12px;
+      border-radius: 9px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-clear-text:hover {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+
+    .drawer-status-msg {
+      margin-top: 10px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 11.5px;
+      font-weight: 600;
+    }
+
+    .drawer-status-msg.success {
+      background: #dcfce7;
+      color: #15803d;
+      border: 1px solid #86efac;
+    }
+
+    .drawer-status-msg.error {
+      background: #fee2e2;
+      color: #b91c1c;
+      border: 1px solid #fca5a5;
+    }
+
+    /* Bộ lọc Trạng thái PMH2: Tất cả | Khả dụng | Đã dùng | Lỗi */
+    .status-pill-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .status-pill {
+      padding: 5px 11px;
+      border-radius: 20px;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: #475569;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .status-pill:hover {
+      border-color: #0284c7;
+      color: #0284c7;
+      background: #f0f9ff;
+    }
+
+    .status-pill.active {
+      background: #0284c7;
+      color: #ffffff;
+      border-color: #0284c7;
+      box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25);
     }
 
 
@@ -1317,6 +1681,71 @@
         </div>
 
         <div class="card-body">
+          <!-- Nút Ẩn/Hiện Ô Dán Dữ Liệu PMH2 & Nút Tải lại -->
+          <div class="pmh2-toolbar">
+            <button type="button" class="btn-toggle-drawer" id="btnToggleDrawerPmh2" aria-expanded="false">
+              <span style="display:flex;align-items:center;gap:6px;">
+                <span>📝</span>
+                <span>Dán Dữ Liệu PMH2 & Lưu Sheet</span>
+              </span>
+              <span class="drawer-caret" id="drawerCaretPmh2">▾</span>
+            </button>
+            <button type="button" class="btn-refresh-icon" id="btnRefreshPmh2" title="Tải lại dữ liệu sheet PMH2">
+              <span>🔄</span>
+            </button>
+          </div>
+
+          <!-- Khung Dán Dữ Liệu PMH2 (Collapsible Drawer Ẩn/Hiện) -->
+          <div class="pmh2-paste-drawer" id="drawerPastePmh2" style="display: none;">
+            <div class="drawer-inner-header">
+              <div class="drawer-title">
+                <span>📥</span>
+                <span>Dán Dữ Liệu & Lưu Ngược Về Sheet "PMH2"</span>
+              </div>
+              <button type="button" class="btn-close-drawer" id="btnCloseDrawerPmh2" title="Đóng khung">✕</button>
+            </div>
+            <p class="drawer-subtext">
+              Dán nội dung tin nhắn bot/danh sách từ Google Sheet, Zalo hoặc Telegram. Dữ liệu sẽ được ghi trực tiếp vào trang tính <strong>PMH2</strong>.
+            </p>
+            <textarea 
+              id="txtPastePmh2" 
+              class="drawer-textarea" 
+              rows="6" 
+              placeholder="Dán nội dung bot vào đây...
+Ví dụ:
+CMA_LINH_43751_TC
+➜ PMH MM200 : OXIL5VY5SA
+━━━━━━
+CMA_HOA_7721_TC
+➜ PMH ICT1000 : ZKL789421A
+━━━━━━"
+            ></textarea>
+
+            <div class="drawer-mode-select">
+              <span style="font-weight:700;color:#0369a1;">Chế độ lưu:</span>
+              <label class="mode-radio-label">
+                <input type="radio" name="pmh2SaveMode" value="append" checked>
+                <span>Thêm tiếp vào cuối (Append)</span>
+              </label>
+              <label class="mode-radio-label">
+                <input type="radio" name="pmh2SaveMode" value="overwrite">
+                <span>Ghi đè toàn bộ Sheet PMH2</span>
+              </label>
+            </div>
+
+            <div class="drawer-actions">
+              <button type="button" class="btn-save-to-sheet" id="btnSaveToSheetPmh2">
+                <span>💾</span>
+                <span id="saveBtnTextPmh2">Lưu Ngược Về Sheet "PMH2"</span>
+              </button>
+              <button type="button" class="btn-clear-text" id="btnClearTextPmh2">
+                <span>🗑️ Xoá</span>
+              </button>
+            </div>
+
+            <div class="drawer-status-msg" id="drawerStatusMsg" style="display: none;"></div>
+          </div>
+
           <!-- Bộ lọc User: Tất cả | 43751 (Linh) | 7721 (Hoa) -->
           <div class="form-group-item">
             <label class="form-field-label">
@@ -1338,6 +1767,19 @@
               <button class="type-pill active" data-type="all">Tất cả loại</button>
               <button class="type-pill" data-type="ICT">📱 PMH ICT</button>
               <button class="type-pill" data-type="MM">🧺 PMH MM</button>
+            </div>
+          </div>
+
+          <!-- Bộ lọc Trạng thái: Tất cả | Khả dụng | Đã sử dụng | Lỗi/Hết -->
+          <div class="form-group-item">
+            <label class="form-field-label">
+              <span>Trạng Thái Phiếu</span>
+            </label>
+            <div class="status-pill-row" id="pmh2StatusFilterRow">
+              <button class="status-pill active" data-status="all">Tất cả</button>
+              <button class="status-pill" data-status="avail">✅ Khả dụng (<span id="pmh2StatAvailBadge">0</span>)</button>
+              <button class="status-pill" data-status="used">🔒 Đã dùng (<span id="pmh2StatUsedBadge">0</span>)</button>
+              <button class="status-pill" data-status="error">❌ Lỗi / Hết (<span id="pmh2StatErrBadge">0</span>)</button>
             </div>
           </div>
 
@@ -1364,9 +1806,10 @@
             <div class="filter-tabs">
               <span style="font-size:12px;font-weight:700;color:#0284c7;" id="pmh2StatsText">0 phiếu</span>
             </div>
-            <div class="stats-summary" style="display:flex;">
-              <span class="stat-item"><span class="stat-dot dot-avail"></span> Thành công: <strong id="pmh2CountOk" style="color:var(--success-dark)">0</strong></span>
-              <span class="stat-item"><span class="stat-dot dot-used"></span> Hết / Lỗi: <strong id="pmh2CountErr" style="color:var(--danger)">0</strong></span>
+            <div class="stats-summary" style="display:flex;flex-wrap:wrap;gap:8px;">
+              <span class="stat-item"><span class="stat-dot dot-avail"></span> Khả dụng: <strong id="pmh2CountAvail" style="color:var(--success-dark)">0</strong></span>
+              <span class="stat-item"><span class="stat-dot" style="background:#4f46e5;width:8px;height:8px;border-radius:50%;display:inline-block;"></span> Đã dùng: <strong id="pmh2CountUsed" style="color:#4f46e5">0</strong></span>
+              <span class="stat-item"><span class="stat-dot dot-used"></span> Lỗi / Hết: <strong id="pmh2CountErr" style="color:var(--danger)">0</strong></span>
             </div>
           </div>
 
@@ -1470,8 +1913,36 @@
       pmh2Items: [],
       pmh2FilterUser: 'all',
       pmh2FilterType: 'all',
-      pmh2Search: ''
+      pmh2StatusFilter: 'all',
+      pmh2Search: '',
+      pmh2RevealedCodes: {},
+      pmh2DrawerOpen: false
     };
+
+    /**
+     * BỘ NHỚ TRẠNG THÁI PHIẾU SHEET PMH2
+     */
+    function getPmh2LocalStatusMap() {
+      try {
+        return JSON.parse(localStorage.getItem('pmh2_voucher_status_v1') || '{}');
+      } catch (e) {
+        return {};
+      }
+    }
+
+    function savePmh2LocalStatus(code, isUsed, timeStr) {
+      if (!code) return;
+      const cleanCode = String(code).trim().toUpperCase();
+      const map = getPmh2LocalStatusMap();
+      map[cleanCode] = {
+        used: !!isUsed,
+        time: isUsed ? (timeStr || new Date().toLocaleString('vi-VN')) : '',
+        updatedAt: Date.now()
+      };
+      try {
+        localStorage.setItem('pmh2_voucher_status_v1', JSON.stringify(map));
+      } catch (e) {}
+    }
 
     /**
      * BỘ NHỚ TRẠNG THÁI PHIẾU (LOCAL STATUS STORE CÓ TIMESTAMP)
@@ -1661,7 +2132,8 @@
       if (!res || !res.table || !res.table.rows) return;
       const rawRows = res.table.rows;
       const rawLines = rawRows.map(r => (r && r.c && r.c[0] && r.c[0].v != null) ? String(r.c[0].v).trim() : '');
-      
+      const localStatusMap = getPmh2LocalStatusMap();
+
       const targetUsers = ['43751', '7721'];
       const items = [];
 
@@ -1670,10 +2142,12 @@
         const matchedUser = targetUsers.find(u => currentLine.includes(u));
         if (matchedUser) {
           let pmhLine = '';
+          let pmhRowIdx = -1;
           for (let j = 1; j <= 2 && (i + j) < rawLines.length; j++) {
             const next = rawLines[i + j];
             if (next.includes('PMH') || next.includes('➜') || next.includes('❌')) {
               pmhLine = next;
+              pmhRowIdx = i + j;
               break;
             }
           }
@@ -1701,6 +2175,39 @@
 
           const isICT = pmhType.toUpperCase().includes('ICT') || pmhLine.toUpperCase().includes('ICT');
 
+          // Kiểm tra trạng thái đã sử dụng từ Cột B / Cột C của Google Sheet
+          let isUsedFromSheet = false;
+          let usedTimeFromSheet = '';
+
+          const checkRowStatus = (rIdx) => {
+            if (rIdx >= 0 && rIdx < rawRows.length && rawRows[rIdx] && rawRows[rIdx].c) {
+              const c1 = rawRows[rIdx].c[1];
+              const c2 = rawRows[rIdx].c[2];
+              const colB = c1 ? (c1.v != null ? c1.v : c1.f) : null;
+              const colC = c2 ? (c2.v != null ? c2.v : c2.f) : null;
+              if (colB === true || String(colB).toUpperCase() === 'TRUE' || String(colB).toLowerCase().includes('dùng') || colB === 1 || colB === '1') {
+                isUsedFromSheet = true;
+                if (colC) usedTimeFromSheet = String(colC);
+              }
+            }
+          };
+
+          if (pmhRowIdx !== -1) checkRowStatus(pmhRowIdx);
+          checkRowStatus(i);
+
+          // Kết hợp trạng thái từ Local Storage
+          let isUsed = isUsedFromSheet;
+          let usedTime = usedTimeFromSheet;
+          if (pmhCode) {
+            const cleanCode = pmhCode.trim().toUpperCase();
+            if (localStatusMap[cleanCode]) {
+              isUsed = localStatusMap[cleanCode].used;
+              if (localStatusMap[cleanCode].time) usedTime = localStatusMap[cleanCode].time;
+            }
+          }
+
+          const targetSheetRow = (pmhRowIdx !== -1 ? pmhRowIdx : i) + 1;
+
           items.push({
             id: 'pmh2_' + matchedUser + '_' + i,
             userId: matchedUser,
@@ -1710,7 +2217,10 @@
             isICT: isICT,
             isError: isError,
             statusText: statusText,
-            rawText: pmhLine
+            rawText: pmhLine,
+            isUsed: isUsed,
+            usedTime: usedTime,
+            sheetRowIndex: targetSheetRow
           });
         }
       }
@@ -1724,14 +2234,26 @@
       const emptyEl = document.getElementById('emptyStatePmh2');
       const badgeEl = document.getElementById('pmh2CountBadge');
       const statsTextEl = document.getElementById('pmh2StatsText');
-      const countOkEl = document.getElementById('pmh2CountOk');
+      const countAvailEl = document.getElementById('pmh2CountAvail');
+      const countUsedEl = document.getElementById('pmh2CountUsed');
       const countErrEl = document.getElementById('pmh2CountErr');
+      const statAvailBadge = document.getElementById('pmh2StatAvailBadge');
+      const statUsedBadge = document.getElementById('pmh2StatUsedBadge');
+      const statErrBadge = document.getElementById('pmh2StatErrBadge');
 
       if (!listEl) return;
 
       const total = state.pmh2Items.length;
       const count43751 = state.pmh2Items.filter(i => i.userId === '43751').length;
       const count7721 = state.pmh2Items.filter(i => i.userId === '7721').length;
+
+      const totalAvail = state.pmh2Items.filter(i => !i.isError && !i.isUsed).length;
+      const totalUsed = state.pmh2Items.filter(i => !i.isError && i.isUsed).length;
+      const totalErr = state.pmh2Items.filter(i => i.isError).length;
+
+      if (statAvailBadge) statAvailBadge.textContent = totalAvail;
+      if (statUsedBadge) statUsedBadge.textContent = totalUsed;
+      if (statErrBadge) statErrBadge.textContent = totalErr;
 
       if (badgeEl) {
         badgeEl.textContent = total + ' phiếu (Linh: ' + count43751 + ' • Hoa: ' + count7721 + ')';
@@ -1742,6 +2264,11 @@
         if (state.pmh2FilterUser !== 'all' && item.userId !== state.pmh2FilterUser) return false;
         if (state.pmh2FilterType === 'ICT' && !item.isICT) return false;
         if (state.pmh2FilterType === 'MM' && item.isICT) return false;
+
+        // Lọc theo trạng thái: Tất cả / Khả dụng / Đã dùng / Lỗi
+        if (state.pmh2StatusFilter === 'avail' && (item.isError || item.isUsed)) return false;
+        if (state.pmh2StatusFilter === 'used' && (item.isError || !item.isUsed)) return false;
+        if (state.pmh2StatusFilter === 'error' && !item.isError) return false;
 
         if (q) {
           const userClean = boDauTiengViet(item.userRaw);
@@ -1754,10 +2281,13 @@
         return true;
       });
 
-      const okCount = filtered.filter(i => !i.isError).length;
+      const okAvailCount = filtered.filter(i => !i.isError && !i.isUsed).length;
+      const okUsedCount = filtered.filter(i => !i.isError && i.isUsed).length;
       const errCount = filtered.filter(i => i.isError).length;
+
       if (statsTextEl) statsTextEl.textContent = filtered.length + ' phiếu hiển thị';
-      if (countOkEl) countOkEl.textContent = okCount;
+      if (countAvailEl) countAvailEl.textContent = okAvailCount;
+      if (countUsedEl) countUsedEl.textContent = okUsedCount;
       if (countErrEl) countErrEl.textContent = errCount;
 
       if (filtered.length === 0) {
@@ -1772,10 +2302,15 @@
 
       filtered.forEach(item => {
         const card = document.createElement('div');
-        card.className = 'pmh2-card';
+        card.className = 'pmh2-card' + (item.isUsed ? ' card-is-used' : '');
 
         const userTagClass = item.userId === '7721' ? 'pmh2-user-badge user-7721' : 'pmh2-user-badge';
         const typeClass = item.isICT ? 'pmh2-type-tag tag-ict' : 'pmh2-type-tag tag-mm';
+
+        const isRevealed = !!(state.pmh2RevealedCodes && state.pmh2RevealedCodes[item.id]);
+        const hasValidCode = !item.isError && item.pmhCode && item.pmhCode !== 'N/A';
+        const maskedStars = hasValidCode ? '*'.repeat(Math.max(item.pmhCode.length, 8)) : (item.pmhCode || 'N/A');
+        const displayCode = isRevealed ? item.pmhCode : maskedStars;
 
         card.innerHTML = `
           <div class="pmh2-card-top">
@@ -1786,36 +2321,188 @@
           </div>
 
           <div class="pmh2-code-box">
-            <div>
-              <div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;">Mã Phiếu Mua Hàng:</div>
-              <div class="pmh2-code-val">${escapeHtml(item.pmhCode)}</div>
+            <div style="flex:1; min-width:0;">
+              <div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:2px;">MÃ PHIẾU MUA HÀNG:</div>
+              <div class="pmh2-code-row">
+                <span class="pmh2-code-val ${!isRevealed && hasValidCode ? 'masked-stars' : ''}">${escapeHtml(displayCode)}</span>
+                ${hasValidCode ? `
+                  <button type="button" class="btn-eye-toggle" data-id="${item.id}" title="${isRevealed ? 'Ẩn mã (*)' : 'Xem mã thực'}">
+                    ${isRevealed ? '🙈' : '👁️'}
+                  </button>
+                ` : ''}
+              </div>
             </div>
-            ${!item.isError && item.pmhCode && item.pmhCode !== 'N/A' ? `
-              <button class="btn-copy-pmh2" data-code="${escapeHtml(item.pmhCode)}">
-                <span>📋</span> <span>Sao chép</span>
-              </button>
+            ${hasValidCode ? `
+              <div class="pmh2-actions-cell">
+                <button type="button" class="btn-copy-pmh2 ${item.isUsed ? 'is-used' : ''}" data-id="${item.id}" data-code="${escapeHtml(item.pmhCode)}" title="Sao chép mã thực và ghi nhận ĐÃ DÙNG">
+                  <span>${item.isUsed ? '✓' : '📋'}</span>
+                  <span>${item.isUsed ? 'Đã sao chép' : 'Sao chép'}</span>
+                </button>
+                ${item.isUsed ? `
+                  <button type="button" class="btn-undo-pmh2" data-id="${item.id}" data-code="${escapeHtml(item.pmhCode)}" title="Hoàn tác thành Chưa sử dụng">
+                    <span>↩️</span>
+                  </button>
+                ` : ''}
+              </div>
             ` : ''}
           </div>
 
           <div class="pmh2-card-bottom">
-            <span class="pmh2-status ${item.isError ? 'status-err' : 'status-ok'}">
-              ${item.isError ? '❌ ' + escapeHtml(item.statusText) : '✅ Khả dụng'}
+            <span class="pmh2-status ${item.isError ? 'status-err' : (item.isUsed ? 'status-used' : 'status-ok')}">
+              ${item.isError 
+                ? '❌ ' + escapeHtml(item.statusText) 
+                : (item.isUsed 
+                    ? '🔒 Đã sử dụng' + (item.usedTime ? ' (' + item.usedTime + ')' : '') 
+                    : '✅ Khả dụng')}
             </span>
             <span style="font-size:10.5px;color:#94a3b8;">User: ${item.userId}</span>
           </div>
         `;
 
+        // Event: Bấm icon Mắt Ẩn/Hiện mã
+        const btnEye = card.querySelector('.btn-eye-toggle');
+        if (btnEye) {
+          btnEye.addEventListener('click', (e) => {
+            e.stopPropagation();
+            state.pmh2RevealedCodes[item.id] = !state.pmh2RevealedCodes[item.id];
+            renderPmh2List();
+          });
+        }
+
+        // Event: Bấm nút Sao chép
         const btnCopy = card.querySelector('.btn-copy-pmh2');
         if (btnCopy) {
           btnCopy.addEventListener('click', (e) => {
             e.stopPropagation();
             copyToClipboard(item.pmhCode).then(() => {
+              state.pmh2RevealedCodes[item.id] = true;
+              
+              const now = new Date();
+              const timeStr = ('0' + now.getDate()).slice(-2) + '/' + 
+                              ('0' + (now.getMonth() + 1)).slice(-2) + '/' + 
+                              now.getFullYear() + ' ' + 
+                              ('0' + now.getHours()).slice(-2) + ':' + 
+                              ('0' + now.getMinutes()).slice(-2) + ':' + 
+                              ('0' + now.getSeconds()).slice(-2);
+              
+              item.isUsed = true;
+              item.usedTime = timeStr;
+              savePmh2LocalStatus(item.pmhCode, true, timeStr);
+
+              syncPmh2ToGoogleSheet(item.sheetRowIndex, true, item.pmhCode, item.userId);
+
               showToast(item.pmhCode);
+              renderPmh2List();
             });
           });
         }
 
+        // Event: Bấm nút Hoàn tác
+        const btnUndo = card.querySelector('.btn-undo-pmh2');
+        if (btnUndo) {
+          btnUndo.addEventListener('click', (e) => {
+            e.stopPropagation();
+            item.isUsed = false;
+            item.usedTime = '';
+            savePmh2LocalStatus(item.pmhCode, false, '');
+
+            syncPmh2ToGoogleSheet(item.sheetRowIndex, false, item.pmhCode, item.userId);
+
+            showToast(item.pmhCode, true);
+            renderPmh2List();
+          });
+        }
+
         listEl.appendChild(card);
+      });
+    }
+
+    /**
+     * ĐỒNG BỘ TRẠNG THÁI PHIẾU SHEET PMH2 LÊN GOOGLE SHEETS
+     */
+    function syncPmh2ToGoogleSheet(rowIndex, isUsed, code, user) {
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(() => {
+            console.log('Đã đồng bộ PMH2 vào Sheet');
+          })
+          .withFailureHandler((err) => {
+            console.warn('Lỗi đồng bộ PMH2 vào Sheet:', err);
+          })
+          .markVoucher(rowIndex, isUsed, code, 'PMH2', user);
+        return;
+      }
+
+      if (CONFIG.webAppUrl) {
+        const url = `${CONFIG.webAppUrl}?action=markUsed&sheet=PMH2&row=${rowIndex}&used=${isUsed}&code=${encodeURIComponent(code)}&user=${encodeURIComponent(user || '')}&_=${Date.now()}`;
+
+        if (navigator.sendBeacon) {
+          try { navigator.sendBeacon(url); } catch (e) {}
+        }
+
+        if (!window._activeBeacons) window._activeBeacons = [];
+        const ping = new Image();
+        window._activeBeacons.push(ping);
+        ping.onload = ping.onerror = function() {
+          const idx = window._activeBeacons.indexOf(ping);
+          if (idx > -1) window._activeBeacons.splice(idx, 1);
+        };
+        ping.src = url;
+
+        try {
+          fetch(url, { mode: 'no-cors' }).catch(() => {});
+        } catch (e) {}
+      }
+    }
+
+    /**
+     * DÁN DỮ LIỆU THÔ VÀ LƯU NGƯỢC VỀ GOOGLE SHEET (SHEET PMH2)
+     */
+    function savePmh2DataToGoogleSheet(rawData, mode) {
+      return new Promise((resolve, reject) => {
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          google.script.run
+            .withSuccessHandler((res) => {
+              resolve(res || { success: true });
+            })
+            .withFailureHandler((err) => {
+              reject(err || new Error('Lỗi Google Apps Script'));
+            })
+            .savePmh2Data(rawData, mode);
+          return;
+        }
+
+        if (!CONFIG.webAppUrl) {
+          reject(new Error('Chưa cấu hình URL Web App Google Apps Script'));
+          return;
+        }
+
+        const formData = new URLSearchParams();
+        formData.append('action', 'savePmh2');
+        formData.append('mode', mode || 'append');
+        formData.append('data', rawData);
+
+        fetch(CONFIG.webAppUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: formData.toString()
+        })
+        .then(() => {
+          resolve({ success: true });
+        })
+        .catch((err) => {
+          try {
+            const url = `${CONFIG.webAppUrl}?action=savePmh2&mode=${mode || 'append'}&data=${encodeURIComponent(rawData)}&_=${Date.now()}`;
+            const ping = new Image();
+            ping.src = url;
+            resolve({ success: true });
+          } catch (e2) {
+            reject(err);
+          }
+        });
       });
     }
 
@@ -1849,7 +2536,106 @@
         });
       });
 
-      // 2. Lọc User PMH2
+      // 2. Nút Ẩn/Hiện Ô Dán Dữ Liệu PMH2 (Collapsible Drawer)
+      const btnToggleDrawer = document.getElementById('btnToggleDrawerPmh2');
+      const drawerPaste = document.getElementById('drawerPastePmh2');
+      const btnCloseDrawer = document.getElementById('btnCloseDrawerPmh2');
+      const btnClearText = document.getElementById('btnClearTextPmh2');
+      const txtPaste = document.getElementById('txtPastePmh2');
+      const btnSaveToSheet = document.getElementById('btnSaveToSheetPmh2');
+      const saveBtnText = document.getElementById('saveBtnTextPmh2');
+      const drawerStatusMsg = document.getElementById('drawerStatusMsg');
+      const btnRefreshPmh2 = document.getElementById('btnRefreshPmh2');
+
+      if (btnToggleDrawer && drawerPaste) {
+        btnToggleDrawer.addEventListener('click', () => {
+          state.pmh2DrawerOpen = !state.pmh2DrawerOpen;
+          drawerPaste.style.display = state.pmh2DrawerOpen ? 'block' : 'none';
+          btnToggleDrawer.classList.toggle('active', state.pmh2DrawerOpen);
+          btnToggleDrawer.setAttribute('aria-expanded', state.pmh2DrawerOpen ? 'true' : 'false');
+          if (state.pmh2DrawerOpen && txtPaste) {
+            txtPaste.focus();
+          }
+        });
+      }
+
+      if (btnCloseDrawer && drawerPaste && btnToggleDrawer) {
+        btnCloseDrawer.addEventListener('click', () => {
+          state.pmh2DrawerOpen = false;
+          drawerPaste.style.display = 'none';
+          btnToggleDrawer.classList.remove('active');
+          btnToggleDrawer.setAttribute('aria-expanded', 'false');
+        });
+      }
+
+      if (btnClearText && txtPaste) {
+        btnClearText.addEventListener('click', () => {
+          txtPaste.value = '';
+          if (drawerStatusMsg) drawerStatusMsg.style.display = 'none';
+          txtPaste.focus();
+        });
+      }
+
+      if (btnRefreshPmh2) {
+        btnRefreshPmh2.addEventListener('click', () => {
+          loadSheetPmh2GViz();
+        });
+      }
+
+      // Xử lý Lưu Ngược Về Sheet "PMH2"
+      if (btnSaveToSheet && txtPaste) {
+        btnSaveToSheet.addEventListener('click', () => {
+          const rawText = txtPaste.value.trim();
+          if (!rawText) {
+            if (drawerStatusMsg) {
+              drawerStatusMsg.className = 'drawer-status-msg error';
+              drawerStatusMsg.textContent = '⚠️ Vui lòng dán nội dung phiếu trước khi lưu!';
+              drawerStatusMsg.style.display = 'block';
+            }
+            txtPaste.focus();
+            return;
+          }
+
+          const modeRadio = document.querySelector('input[name="pmh2SaveMode"]:checked');
+          const saveMode = modeRadio ? modeRadio.value : 'append';
+
+          btnSaveToSheet.disabled = true;
+          if (saveBtnText) saveBtnText.textContent = 'Đang lưu lên Google Sheet...';
+          if (drawerStatusMsg) {
+            drawerStatusMsg.className = 'drawer-status-msg';
+            drawerStatusMsg.style.background = '#e0f2fe';
+            drawerStatusMsg.style.color = '#0369a1';
+            drawerStatusMsg.style.border = '1px solid #bae6fd';
+            drawerStatusMsg.textContent = '⏳ Đang truyền dữ liệu vào sheet PMH2...';
+            drawerStatusMsg.style.display = 'block';
+          }
+
+          savePmh2DataToGoogleSheet(rawText, saveMode)
+            .then(() => {
+              btnSaveToSheet.disabled = false;
+              if (saveBtnText) saveBtnText.textContent = 'Lưu Ngược Về Sheet "PMH2"';
+              if (drawerStatusMsg) {
+                drawerStatusMsg.className = 'drawer-status-msg success';
+                drawerStatusMsg.style.display = 'block';
+                drawerStatusMsg.textContent = '✅ Đã lưu thành công vào sheet "PMH2"! Đang tải lại danh sách phiếu...';
+              }
+              setTimeout(() => {
+                loadSheetPmh2GViz();
+              }, 1200);
+            })
+            .catch((err) => {
+              btnSaveToSheet.disabled = false;
+              if (saveBtnText) saveBtnText.textContent = 'Lưu Ngược Về Sheet "PMH2"';
+              if (drawerStatusMsg) {
+                drawerStatusMsg.className = 'drawer-status-msg error';
+                drawerStatusMsg.style.display = 'block';
+                drawerStatusMsg.textContent = '❌ Lỗi khi lưu: ' + (err.message || err);
+              }
+            });
+        });
+      }
+
+      // 3. Lọc User PMH2
       const userPills = document.querySelectorAll('#pmh2UserFilterRow .user-pill');
       userPills.forEach(pill => {
         pill.addEventListener('click', () => {
@@ -1860,7 +2646,7 @@
         });
       });
 
-      // 3. Lọc Loại PMH2 (ICT vs MM)
+      // 4. Lọc Loại PMH2 (ICT vs MM)
       const typePills = document.querySelectorAll('#pmh2TypeFilterRow .type-pill');
       typePills.forEach(pill => {
         pill.addEventListener('click', () => {
@@ -1871,7 +2657,18 @@
         });
       });
 
-      // 4. Ô tìm kiếm PMH2
+      // 5. Lọc Trạng Thái PMH2 (Tất cả / Khả dụng / Đã dùng / Lỗi)
+      const statusPills = document.querySelectorAll('#pmh2StatusFilterRow .status-pill');
+      statusPills.forEach(pill => {
+        pill.addEventListener('click', () => {
+          statusPills.forEach(p => p.classList.remove('active'));
+          pill.classList.add('active');
+          state.pmh2StatusFilter = pill.dataset.status;
+          renderPmh2List();
+        });
+      });
+
+      // 6. Ô tìm kiếm PMH2
       const searchInput = document.getElementById('searchPmh2Input');
       const btnClear = document.getElementById('btnClearSearchPmh2');
       if (searchInput) {
