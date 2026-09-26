@@ -1362,22 +1362,23 @@
       bottom: 20px;
       left: 50%;
       transform: translateX(-50%) translateY(100px);
-      background: linear-gradient(135deg, #78350f 0%, #451a03 100%);
+      background: linear-gradient(135deg, #0369a1 0%, #0f172a 100%);
       color: #ffffff;
-      padding: 10px 18px;
+      padding: 10px 20px;
       border-radius: 30px;
-      font-size: 12.5px;
+      font-size: 13px;
       font-weight: 700;
       display: flex;
       align-items: center;
-      gap: 7px;
-      box-shadow: 0 10px 25px rgba(120, 53, 15, 0.35), 0 2px 6px rgba(0, 0, 0, 0.1);
+      gap: 8px;
+      box-shadow: 0 10px 25px rgba(3, 105, 161, 0.4), 0 2px 6px rgba(0, 0, 0, 0.15);
       z-index: 9999;
       opacity: 0;
       transition: all 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
       pointer-events: none;
-      white-space: nowrap;
-      border: 1px solid rgba(254, 215, 170, 0.4);
+      white-space: normal;
+      text-align: center;
+      border: 1px solid rgba(186, 230, 253, 0.5);
       max-width: 90vw;
     }
 
@@ -1686,7 +1687,7 @@
             <button type="button" class="btn-toggle-drawer" id="btnToggleDrawerPmh2" aria-expanded="false">
               <span style="display:flex;align-items:center;gap:6px;">
                 <span>📝</span>
-                <span>Dán Dữ Liệu PMH2 & Lưu Sheet</span>
+                <span>Dán Dữ Liệu PMH2 (Auto Lưu & Đóng)</span>
               </span>
               <span class="drawer-caret" id="drawerCaretPmh2">▾</span>
             </button>
@@ -1700,18 +1701,23 @@
             <div class="drawer-inner-header">
               <div class="drawer-title">
                 <span>📥</span>
-                <span>Dán Dữ Liệu & Lưu Ngược Về Sheet "PMH2"</span>
+                <span>Dán Dữ Liệu & Tự Động Lưu Về Sheet "PMH2"</span>
               </div>
               <button type="button" class="btn-close-drawer" id="btnCloseDrawerPmh2" title="Đóng khung">✕</button>
             </div>
+            <div style="margin: 0 0 10px 0; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+              <span style="display:inline-flex;align-items:center;gap:5px;background:#e0f2fe;color:#0369a1;padding:4px 10px;border-radius:12px;font-size:11.5px;font-weight:700;border:1px solid #bae6fd;">
+                ⚡ Tự động lưu & đóng khung ngay khi dán dữ liệu
+              </span>
+            </div>
             <p class="drawer-subtext">
-              Dán nội dung tin nhắn bot/danh sách từ Google Sheet, Zalo hoặc Telegram. Dữ liệu sẽ được ghi trực tiếp vào trang tính <strong>PMH2</strong>.
+              Chỉ cần <strong>dán (Paste / Ctrl+V)</strong> nội dung tin nhắn bot/danh sách vào ô bên dưới. Hệ thống sẽ <strong>tự động lưu vào Sheet "PMH2" và tự đóng khung ngay</strong>.
             </p>
             <textarea 
               id="txtPastePmh2" 
               class="drawer-textarea" 
               rows="6" 
-              placeholder="Dán nội dung bot vào đây...
+              placeholder="⚡ Dán nội dung bot vào đây (Sẽ TỰ ĐỘNG LƯU VÀ ĐÓNG LẠI sau khi dán)...
 Ví dụ:
 CMA_LINH_43751_TC
 ➜ PMH MM200 : OXIL5VY5SA
@@ -2040,9 +2046,11 @@ CMA_HOA_7721_TC
      * TOAST NOTIFICATION
      */
     let toastTimeout = null;
-    function showToast(code, isUndo = false) {
+    function showToast(code, isUndo = false, isCustom = false) {
       if (toastTimeout) clearTimeout(toastTimeout);
-      if (isUndo) {
+      if (isCustom) {
+        els.toastBox.innerHTML = `<span>${code}</span>`;
+      } else if (isUndo) {
         els.toastBox.innerHTML = `<span>🔄</span> <span>Đã hoàn lại mã: <span class="toast-code">${code}</span> (Chưa dùng)</span>`;
       } else {
         els.toastBox.innerHTML = `<span>✅</span> <span>Đã sao chép: <span class="toast-code">${code}</span> & đánh dấu đã dùng!</span>`;
@@ -2050,7 +2058,7 @@ CMA_HOA_7721_TC
       els.toastBox.classList.add('show');
       toastTimeout = setTimeout(() => {
         els.toastBox.classList.remove('show');
-      }, 2500);
+      }, 3000);
     }
 
     /**
@@ -2568,24 +2576,40 @@ CMA_HOA_7721_TC
       const drawerStatusMsg = document.getElementById('drawerStatusMsg');
       const btnRefreshPmh2 = document.getElementById('btnRefreshPmh2');
 
+      function closePmh2Drawer() {
+        state.pmh2DrawerOpen = false;
+        if (drawerPaste) drawerPaste.style.display = 'none';
+        if (btnToggleDrawer) {
+          btnToggleDrawer.classList.remove('active');
+          btnToggleDrawer.setAttribute('aria-expanded', 'false');
+        }
+      }
+
+      function openPmh2Drawer() {
+        state.pmh2DrawerOpen = true;
+        if (drawerPaste) drawerPaste.style.display = 'block';
+        if (btnToggleDrawer) {
+          btnToggleDrawer.classList.add('active');
+          btnToggleDrawer.setAttribute('aria-expanded', 'true');
+        }
+        if (txtPaste) {
+          setTimeout(() => txtPaste.focus(), 60);
+        }
+      }
+
       if (btnToggleDrawer && drawerPaste) {
         btnToggleDrawer.addEventListener('click', () => {
-          state.pmh2DrawerOpen = !state.pmh2DrawerOpen;
-          drawerPaste.style.display = state.pmh2DrawerOpen ? 'block' : 'none';
-          btnToggleDrawer.classList.toggle('active', state.pmh2DrawerOpen);
-          btnToggleDrawer.setAttribute('aria-expanded', state.pmh2DrawerOpen ? 'true' : 'false');
-          if (state.pmh2DrawerOpen && txtPaste) {
-            txtPaste.focus();
+          if (state.pmh2DrawerOpen) {
+            closePmh2Drawer();
+          } else {
+            openPmh2Drawer();
           }
         });
       }
 
-      if (btnCloseDrawer && drawerPaste && btnToggleDrawer) {
+      if (btnCloseDrawer) {
         btnCloseDrawer.addEventListener('click', () => {
-          state.pmh2DrawerOpen = false;
-          drawerPaste.style.display = 'none';
-          btnToggleDrawer.classList.remove('active');
-          btnToggleDrawer.setAttribute('aria-expanded', 'false');
+          closePmh2Drawer();
         });
       }
 
@@ -2603,25 +2627,34 @@ CMA_HOA_7721_TC
         });
       }
 
-      // Xử lý Lưu Ngược Về Sheet "PMH2"
-      if (btnSaveToSheet && txtPaste) {
-        btnSaveToSheet.addEventListener('click', () => {
-          const rawText = txtPaste.value.trim();
-          if (!rawText) {
-            if (drawerStatusMsg) {
-              drawerStatusMsg.className = 'drawer-status-msg error';
-              drawerStatusMsg.textContent = '⚠️ Vui lòng dán nội dung phiếu trước khi lưu!';
-              drawerStatusMsg.style.display = 'block';
-            }
-            txtPaste.focus();
-            return;
+      let isSavingPmh2 = false;
+
+      function executeSavePmh2(rawText, isAuto = false) {
+        if (isSavingPmh2) return;
+        const text = (rawText || '').trim();
+        if (!text) {
+          if (!isAuto && drawerStatusMsg) {
+            drawerStatusMsg.className = 'drawer-status-msg error';
+            drawerStatusMsg.textContent = '⚠️ Vui lòng dán nội dung phiếu trước khi lưu!';
+            drawerStatusMsg.style.display = 'block';
+            if (txtPaste) txtPaste.focus();
           }
+          return;
+        }
 
-          const modeRadio = document.querySelector('input[name="pmh2SaveMode"]:checked');
-          const saveMode = modeRadio ? modeRadio.value : 'append';
+        const modeRadio = document.querySelector('input[name="pmh2SaveMode"]:checked');
+        const saveMode = modeRadio ? modeRadio.value : 'append';
 
-          btnSaveToSheet.disabled = true;
-          if (saveBtnText) saveBtnText.textContent = 'Đang lưu lên Google Sheet...';
+        isSavingPmh2 = true;
+        if (btnSaveToSheet) btnSaveToSheet.disabled = true;
+        if (saveBtnText) saveBtnText.textContent = 'Đang lưu lên Google Sheet...';
+
+        if (isAuto) {
+          // Tự động đóng khung ngay sau khi dán dữ liệu vào ô
+          closePmh2Drawer();
+          if (txtPaste) txtPaste.value = '';
+          showToast('⚡ Đã nhận dữ liệu dán! Đang tự động lưu về Sheet "PMH2"...', false, true);
+        } else {
           if (drawerStatusMsg) {
             drawerStatusMsg.className = 'drawer-status-msg';
             drawerStatusMsg.style.background = '#e0f2fe';
@@ -2630,29 +2663,80 @@ CMA_HOA_7721_TC
             drawerStatusMsg.textContent = '⏳ Đang truyền dữ liệu vào sheet PMH2...';
             drawerStatusMsg.style.display = 'block';
           }
+        }
 
-          savePmh2DataToGoogleSheet(rawText, saveMode)
-            .then(() => {
-              btnSaveToSheet.disabled = false;
-              if (saveBtnText) saveBtnText.textContent = 'Lưu Ngược Về Sheet "PMH2"';
+        savePmh2DataToGoogleSheet(text, saveMode)
+          .then(() => {
+            isSavingPmh2 = false;
+            if (btnSaveToSheet) btnSaveToSheet.disabled = false;
+            if (saveBtnText) saveBtnText.textContent = 'Lưu Ngược Về Sheet "PMH2"';
+
+            if (isAuto) {
+              showToast('✅ Đã tự động lưu vào Sheet "PMH2" & đồng bộ thành công!', false, true);
+            } else {
               if (drawerStatusMsg) {
                 drawerStatusMsg.className = 'drawer-status-msg success';
                 drawerStatusMsg.style.display = 'block';
-                drawerStatusMsg.textContent = '✅ Đã lưu thành công vào sheet "PMH2"! Đang tải lại danh sách phiếu...';
+                drawerStatusMsg.textContent = '✅ Đã lưu thành công vào sheet "PMH2"! Tự động đóng khung...';
               }
+              if (txtPaste) txtPaste.value = '';
               setTimeout(() => {
-                loadSheetPmh2GViz();
-              }, 1200);
-            })
-            .catch((err) => {
-              btnSaveToSheet.disabled = false;
-              if (saveBtnText) saveBtnText.textContent = 'Lưu Ngược Về Sheet "PMH2"';
-              if (drawerStatusMsg) {
-                drawerStatusMsg.className = 'drawer-status-msg error';
-                drawerStatusMsg.style.display = 'block';
-                drawerStatusMsg.textContent = '❌ Lỗi khi lưu: ' + (err.message || err);
-              }
-            });
+                closePmh2Drawer();
+              }, 1000);
+            }
+
+            // Tự động tải lại danh sách phiếu từ Google Sheet
+            setTimeout(() => {
+              loadSheetPmh2GViz();
+            }, 800);
+          })
+          .catch((err) => {
+            isSavingPmh2 = false;
+            if (btnSaveToSheet) btnSaveToSheet.disabled = false;
+            if (saveBtnText) saveBtnText.textContent = 'Lưu Ngược Về Sheet "PMH2"';
+            showToast('❌ Lỗi khi lưu: ' + (err.message || err), false, true);
+            if (!isAuto && drawerStatusMsg) {
+              drawerStatusMsg.className = 'drawer-status-msg error';
+              drawerStatusMsg.style.display = 'block';
+              drawerStatusMsg.textContent = '❌ Lỗi khi lưu: ' + (err.message || err);
+            }
+          });
+      }
+
+      // LẮNG NGHE SỰ KIỆN DÁN (PASTE) VÀO Ô DỮ LIỆU
+      if (txtPaste) {
+        txtPaste.addEventListener('paste', (e) => {
+          let pastedData = '';
+          if (e.clipboardData && e.clipboardData.getData) {
+            pastedData = e.clipboardData.getData('text/plain') || e.clipboardData.getData('text');
+          }
+          setTimeout(() => {
+            const textToSave = (pastedData && pastedData.trim()) ? pastedData.trim() : (txtPaste.value ? txtPaste.value.trim() : '');
+            if (textToSave) {
+              executeSavePmh2(textToSave, true);
+            }
+          }, 60);
+        });
+
+        // Bổ sung hỗ trợ dán trên thiết bị di động
+        txtPaste.addEventListener('input', (e) => {
+          if (isSavingPmh2) return;
+          if (e.inputType === 'insertFromPaste' || (txtPaste.value && txtPaste.value.length > 20 && (txtPaste.value.includes('\n') || txtPaste.value.includes('CMA_') || txtPaste.value.includes('PMH')))) {
+            const textToSave = txtPaste.value.trim();
+            if (textToSave) {
+              setTimeout(() => {
+                executeSavePmh2(textToSave, true);
+              }, 60);
+            }
+          }
+        });
+      }
+
+      // Xử lý nút bấm thủ công Lưu Ngược Về Sheet "PMH2"
+      if (btnSaveToSheet && txtPaste) {
+        btnSaveToSheet.addEventListener('click', () => {
+          const rawText = txtPaste.value.trim();
+          executeSavePmh2(rawText, false);
         });
       }
 
