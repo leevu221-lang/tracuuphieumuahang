@@ -3279,37 +3279,41 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
       .vis-control-label {
         display: none !important;
       }
-    /* Canvas hiệu ứng pháo hoa tung lên khi bấm Sao Chép */
-    #fireworksCanvas {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      pointer-events: none;
-      z-index: 99999999;
     }
 
-    /* Khung hiệu ứng pháo hoa bùng nổ giữa màn hình */
+    /* ==========================================================================
+       HIỆU ỨNG PHÁO HOA TUNG LÊN CHÍNH GIỮA MÀN HÌNH KHI BẤM SAO CHÉP
+       ========================================================================== */
+    #fireworksCanvas {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      pointer-events: none !important;
+      z-index: 99999999 !important;
+    }
+
+    /* Khung hiệu ứng pháo hoa bùng nổ CHÍNH GIỮA MÀN HÌNH (50%, 50%) */
     .celebration-center-burst {
-      position: fixed;
-      top: 42%;
-      left: 50%;
-      transform: translate(-50%, -50%) scale(0.6);
-      background: linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.99));
-      color: #fff;
-      padding: 14px 28px;
-      border-radius: 999px;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55), 0 0 40px rgba(245, 158, 11, 0.6);
-      border: 3px solid #f59e0b;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      pointer-events: none;
-      z-index: 100000000;
-      opacity: 0;
-      visibility: hidden;
-      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      position: fixed !important;
+      top: 50% !important;
+      left: 50% !important;
+      transform: translate(-50%, -50%) scale(0.5) !important;
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.99)) !important;
+      color: #fff !important;
+      padding: 16px 32px !important;
+      border-radius: 999px !important;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55), 0 0 40px rgba(245, 158, 11, 0.6) !important;
+      border: 3px solid #f59e0b !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 14px !important;
+      pointer-events: none !important;
+      z-index: 100000000 !important;
+      opacity: 0 !important;
+      visibility: hidden !important;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
     }
     .celebration-center-burst.show {
       opacity: 1 !important;
@@ -3317,32 +3321,32 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
       transform: translate(-50%, -50%) scale(1.1) !important;
     }
     .burst-icon {
-      font-size: 32px;
-      animation: burstIconBounce 0.6s infinite alternate;
+      font-size: 32px !important;
+      animation: burstIconBounce 0.6s infinite alternate !important;
     }
     @keyframes burstIconBounce {
       from { transform: scale(0.9) rotate(-8deg); }
       to { transform: scale(1.25) rotate(8deg); }
     }
     .burst-content {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      line-height: 1.25;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: flex-start !important;
+      line-height: 1.25 !important;
     }
     .burst-title {
-      font-size: 13.5px;
-      font-weight: 800;
-      color: #fde047;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
+      font-size: 14px !important;
+      font-weight: 800 !important;
+      color: #fde047 !important;
+      letter-spacing: 0.5px !important;
+      text-transform: uppercase !important;
     }
     .burst-code {
-      font-size: 17px;
-      font-weight: 900;
-      color: #ffffff;
-      font-family: monospace;
-      letter-spacing: 1.2px;
+      font-size: 17px !important;
+      font-weight: 900 !important;
+      color: #ffffff !important;
+      font-family: monospace !important;
+      letter-spacing: 1.2px !important;
     }
 
     /* Hiệu ứng pháo hoa CSS bung toả giữa màn hình */
@@ -3360,16 +3364,16 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
       }
     }
     .fw-css-spark {
-      position: fixed;
-      pointer-events: none;
-      z-index: 100000001;
-      border-radius: 50%;
-      will-change: transform, opacity;
-      animation: fwPopOut 1.3s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      user-select: none;
+      position: fixed !important;
+      pointer-events: none !important;
+      z-index: 100000001 !important;
+      border-radius: 50% !important;
+      will-change: transform, opacity !important;
+      animation: fwPopOut 1.3s cubic-bezier(0.2, 0.9, 0.3, 1) forwards !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      user-select: none !important;
     }
   </style>
 </head>
@@ -3379,7 +3383,7 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
   <canvas id="fireworksCanvas"></canvas>
 
   <!-- Khung Bùng Nổ Giữa Màn Hình Khi Bấm Sao Chép -->
-  <div class="celebration-center-burst" id="celebrationBurst">
+  <div class="celebration-center-burst" id="celebrationBurst" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.5); opacity: 0; visibility: hidden; pointer-events: none; z-index: 100000000;">
     <div class="burst-icon" id="burstIcon">🎉</div>
     <div class="burst-content">
       <div class="burst-title">ĐÃ SAO CHÉP MÃ!</div>
@@ -4007,7 +4011,7 @@ CMA_HOA_7721_TC
     function extractSheetId(input) {
       if (!input) return '';
       const trimmed = String(input).trim();
-      const match = trimmed.match(/\/d\/([a-zA-Z0-9-_]+)/);
+      const match = trimmed.match(/\\/d\\/([a-zA-Z0-9-_]+)/);
       if (match) return match[1];
       return trimmed.split('/')[0].split('?')[0].split('#')[0];
     }
@@ -4040,7 +4044,7 @@ CMA_HOA_7721_TC
 
       // Kiểm tra dạng hash #hanoi
       if (!slug && window.location.hash) {
-        const hashVal = window.location.hash.replace(/^#\/?/, '').trim().toLowerCase();
+        const hashVal = window.location.hash.replace(/^#\\/?/, '').trim().toLowerCase();
         if (hashVal && /^[a-z0-9_-]+$/.test(hashVal)) {
           slug = hashVal;
         }
@@ -4048,7 +4052,7 @@ CMA_HOA_7721_TC
 
       // Kiểm tra đường dẫn URL dạng /tracuuphieumuahang/hanoi
       if (!slug) {
-        const pathname = window.location.pathname.replace(/^\/tracuuphieumuahang\/?/, '').replace(/^\/+|\/+$/g, '');
+        const pathname = window.location.pathname.replace(/^\\/tracuuphieumuahang\\/?/, '').replace(/^\\/+|\\/+$/g, '');
         const parts = pathname.split('/').filter(Boolean);
         if (parts.length > 0 && parts[0] !== 'index.html' && /^[a-z0-9_-]+$/.test(parts[0])) {
           slug = parts[0];
@@ -4286,7 +4290,7 @@ CMA_HOA_7721_TC
       return str
         .toLowerCase()
         .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[\\u0300-\\u036f]/g, '')
         .replace(/[đĐ]/g, 'd')
         .trim();
     }
@@ -4838,7 +4842,7 @@ CMA_HOA_7721_TC
         const h = window.innerHeight || document.documentElement.clientHeight || 640;
 
         const centerX = w / 2;
-        const centerY = h * 0.42;
+        const centerY = h * 0.50;
 
         // 1. NỔ NGAY LẬP TỨC 48 HẠT PHÁO HOA CSS GIỮA MÀN HÌNH (0ms không cần chờ)
         spawnCssFireworks(centerX, centerY);
@@ -5008,12 +5012,12 @@ CMA_HOA_7721_TC
           let pmhCode = '';
           let statusText = isError ? 'Thất bại' : 'Thành công';
 
-          const match = pmhLine.match(/(?:➜\s*)?(PMH\s*[^:]+)\s*:\s*([A-Za-z0-9]+)/i);
+          const match = pmhLine.match(/(?:➜\\s*)?(PMH\\s*[^:]+)\\s*:\\s*([A-Za-z0-9]+)/i);
           if (match) {
             pmhType = match[1].trim();
             pmhCode = match[2].trim();
           } else if (isError) {
-            statusText = pmhLine.replace(/^➜\s*/, '').trim();
+            statusText = pmhLine.replace(/^➜\\s*/, '').trim();
           } else if (pmhLine.includes('ICT')) {
             pmhType = 'PMH ICT';
           } else if (pmhLine.includes('MM')) {
@@ -5791,7 +5795,7 @@ CMA_HOA_7721_TC
       function filterPmh2RawDataForTargetUsers(rawData) {
         if (!rawData || typeof rawData !== 'string') return '';
         const targetUsers = ['43751', '7721'];
-        const lines = rawData.split(/\r?\n/).map(l => l.trimEnd());
+        const lines = rawData.split(/\\r?\\n/).map(l => l.trimEnd());
         const resultLines = [];
 
         function isVoucherOrStatus(l) {
@@ -5802,7 +5806,7 @@ CMA_HOA_7721_TC
         }
 
         function isSeparator(l) {
-          return /^[━\-=─_~*#]{3,}$/.test(l);
+          return /^[━\\-=─_~*#]{3,}$/.test(l);
         }
 
         for (let i = 0; i < lines.length; i++) {
@@ -5850,7 +5854,7 @@ CMA_HOA_7721_TC
           }
         }
 
-        return resultLines.join('\n').trim();
+        return resultLines.join('\\n').trim();
       }
 
       function executeSavePmh2(rawText, isAuto = false) {
@@ -5894,7 +5898,7 @@ CMA_HOA_7721_TC
         if (saveBtnText) saveBtnText.textContent = 'Đang lưu lên Google Sheet...';
 
         // Đếm số dòng đã lọc
-        const filteredLinesCount = filteredText.split('\n').filter(l => l.trim()).length;
+        const filteredLinesCount = filteredText.split('\\n').filter(l => l.trim()).length;
 
         if (isAuto) {
           // Tự động đóng khung ngay sau khi dán dữ liệu vào ô
@@ -5973,7 +5977,7 @@ CMA_HOA_7721_TC
         // Bổ sung hỗ trợ dán trên thiết bị di động
         txtPaste.addEventListener('input', (e) => {
           if (isSavingPmh2) return;
-          if (e.inputType === 'insertFromPaste' || (txtPaste.value && txtPaste.value.length > 20 && (txtPaste.value.includes('\n') || txtPaste.value.includes('CMA_') || txtPaste.value.includes('PMH')))) {
+          if (e.inputType === 'insertFromPaste' || (txtPaste.value && txtPaste.value.length > 20 && (txtPaste.value.includes('\\n') || txtPaste.value.includes('CMA_') || txtPaste.value.includes('PMH')))) {
             const textToSave = txtPaste.value.trim();
             if (textToSave) {
               setTimeout(() => {
@@ -6147,7 +6151,7 @@ CMA_HOA_7721_TC
       const productsSet = {};
       const localStatusMap = getLocalStatusMap();
 
-      const lineRegex = /^Ngày\s+(\d{1,2}\/\d{1,2}\/\d{4})\s*:\s*(?:Mã\s*Phiếu\s*mua\s*hàng\s*(\d+)\s*-\s*dùng\s*cho\s*)?([^:]+?)\s*:\s*([A-Za-z0-9]+)\s*$/i;
+      const lineRegex = /^Ngày\\s+(\\d{1,2}\\/\\d{1,2}\\/\\d{4})\\s*:\\s*(?:Mã\\s*Phiếu\\s*mua\\s*hàng\\s*(\\d+)\\s*-\\s*dùng\\s*cho\\s*)?([^:]+?)\\s*:\\s*([A-Za-z0-9]+)\\s*$/i;
 
       for (let r = 0; r < rows.length; r++) {
         const row = rows[r];
@@ -6170,7 +6174,7 @@ CMA_HOA_7721_TC
             if (row.c[2].f) {
               usedTime = String(row.c[2].f);
             } else if (typeof row.c[2].v === 'string' && row.c[2].v.startsWith('Date(')) {
-              const m = row.c[2].v.match(/Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+),(\d+))?\)/);
+              const m = row.c[2].v.match(/Date\\((\\d+),(\\d+),(\\d+)(?:,(\\d+),(\\d+),(\\d+))?\\)/);
               if (m) {
                 const pad = n => (n < 10 ? '0' + n : n);
                 usedTime = \`\${pad(m[3])}/\${pad(Number(m[2]) + 1)}/\${m[1]} \${pad(m[4] || 0)}:\${pad(m[5] || 0)}\`;
@@ -6945,7 +6949,7 @@ CMA_HOA_7721_TC
     }
 
     function escapeRegex(string) {
-      return string.replace(/[.*+?^\${}()|[\]\\]/g, '\\$&');
+      return string.replace(/[.*+?^\${}()|[\\]\\\\]/g, '\\\\$&');
     }
 
     function formatShortTime(timeStr) {
@@ -7066,7 +7070,7 @@ CMA_HOA_7721_TC
      */
     function getBaseAppUrl() {
       const loc = window.location;
-      return (loc.origin + loc.pathname).replace(/\/+$/, '');
+      return (loc.origin + loc.pathname).replace(/\\/+$/, '');
     }
 
     function getCloneShareUrl(slug) {
