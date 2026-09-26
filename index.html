@@ -2427,7 +2427,7 @@
       width: 100vw;
       height: 100vh;
       pointer-events: none;
-      z-index: 999999;
+      z-index: 99999999;
     }
 
     /* Khung hiệu ứng pháo hoa bùng nổ giữa màn hình */
@@ -2435,34 +2435,34 @@
       position: fixed;
       top: 42%;
       left: 50%;
-      transform: translate(-50%, -50%) scale(0.65);
-      background: linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.98));
+      transform: translate(-50%, -50%) scale(0.6);
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.99));
       color: #fff;
-      padding: 12px 24px;
+      padding: 14px 28px;
       border-radius: 999px;
-      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4), 0 0 25px rgba(245, 158, 11, 0.5);
-      border: 2px solid #f59e0b;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55), 0 0 40px rgba(245, 158, 11, 0.6);
+      border: 3px solid #f59e0b;
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 14px;
       pointer-events: none;
-      z-index: 1000000;
+      z-index: 100000000;
       opacity: 0;
       visibility: hidden;
-      transition: all 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
     .celebration-center-burst.show {
-      opacity: 1;
-      visibility: visible;
-      transform: translate(-50%, -50%) scale(1.05);
+      opacity: 1 !important;
+      visibility: visible !important;
+      transform: translate(-50%, -50%) scale(1.1) !important;
     }
     .burst-icon {
-      font-size: 28px;
+      font-size: 32px;
       animation: burstIconBounce 0.6s infinite alternate;
     }
     @keyframes burstIconBounce {
-      from { transform: scale(0.9) rotate(-6deg); }
-      to { transform: scale(1.2) rotate(6deg); }
+      from { transform: scale(0.9) rotate(-8deg); }
+      to { transform: scale(1.25) rotate(8deg); }
     }
     .burst-content {
       display: flex;
@@ -2471,41 +2471,41 @@
       line-height: 1.25;
     }
     .burst-title {
-      font-size: 13px;
+      font-size: 13.5px;
       font-weight: 800;
       color: #fde047;
       letter-spacing: 0.5px;
       text-transform: uppercase;
     }
     .burst-code {
-      font-size: 16px;
+      font-size: 17px;
       font-weight: 900;
       color: #ffffff;
       font-family: monospace;
-      letter-spacing: 1px;
+      letter-spacing: 1.2px;
     }
 
     /* Hiệu ứng pháo hoa CSS bung toả giữa màn hình */
     @keyframes fwPopOut {
       0% {
-        transform: translate(-50%, -50%) translate(0, 0) scale(1.1);
+        transform: translate(-50%, -50%) translate(0, 0) scale(1.2);
         opacity: 1;
       }
-      65% {
+      70% {
         opacity: 1;
       }
       100% {
-        transform: translate(-50%, -50%) translate(var(--tx), var(--ty)) scale(0.25);
+        transform: translate(-50%, -50%) translate(var(--tx), var(--ty)) scale(0.2);
         opacity: 0;
       }
     }
     .fw-css-spark {
       position: fixed;
       pointer-events: none;
-      z-index: 1000001;
+      z-index: 100000001;
       border-radius: 50%;
       will-change: transform, opacity;
-      animation: fwPopOut 1.15s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      animation: fwPopOut 1.3s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -3645,15 +3645,15 @@ CMA_HOA_7721_TC
         this.y = y;
         this.color = color;
         const angle = Math.random() * Math.PI * 2;
-        const speed = Math.random() * 8 + 3;
+        const speed = Math.random() * 15 + 5;
         this.vx = Math.cos(angle) * speed;
         this.vy = Math.sin(angle) * speed;
-        this.friction = 0.955;
-        this.gravity = 0.13;
+        this.friction = 0.96;
+        this.gravity = 0.11;
         this.alpha = 1.0;
-        this.decay = Math.random() * 0.014 + 0.012;
+        this.decay = Math.random() * 0.007 + 0.006;
         this.history = [];
-        this.size = Math.random() * 2.5 + 2;
+        this.size = Math.random() * 4 + 4.5;
       }
 
       update() {
@@ -3671,6 +3671,8 @@ CMA_HOA_7721_TC
         if (this.alpha <= 0) return;
         ctx.save();
         ctx.globalAlpha = Math.max(0, this.alpha);
+        ctx.shadowColor = this.color;
+        ctx.shadowBlur = 8;
 
         // Đuôi tia lửa phát sáng
         ctx.strokeStyle = this.color;
@@ -3700,16 +3702,16 @@ CMA_HOA_7721_TC
         this.y = y;
         this.color = color;
         const angle = Math.random() * Math.PI * 2;
-        const speed = Math.random() * 9 + 3.5;
+        const speed = Math.random() * 14 + 4;
         this.vx = Math.cos(angle) * speed;
         this.vy = Math.sin(angle) * speed;
-        this.friction = 0.95;
-        this.gravity = 0.14;
+        this.friction = 0.955;
+        this.gravity = 0.12;
         this.rot = Math.random() * Math.PI;
-        this.rotSpeed = (Math.random() - 0.5) * 0.22;
-        this.size = Math.random() * 4 + 4;
+        this.rotSpeed = (Math.random() - 0.5) * 0.25;
+        this.size = Math.random() * 6 + 6;
         this.alpha = 1.0;
-        this.decay = Math.random() * 0.015 + 0.012;
+        this.decay = Math.random() * 0.008 + 0.006;
       }
 
       update() {
@@ -3725,6 +3727,8 @@ CMA_HOA_7721_TC
         if (this.alpha <= 0) return;
         ctx.save();
         ctx.globalAlpha = Math.max(0, this.alpha);
+        ctx.shadowColor = this.color;
+        ctx.shadowBlur = 8;
         ctx.translate(this.x, this.y);
         ctx.rotate(this.rot);
         ctx.fillStyle = this.color;
@@ -3739,19 +3743,19 @@ CMA_HOA_7721_TC
         this.y = y;
         this.color = color;
         const angle = Math.random() * Math.PI * 2;
-        const speed = Math.random() * 7 + 2.5;
+        const speed = Math.random() * 11 + 3;
         this.vx = Math.cos(angle) * speed;
         this.vy = Math.sin(angle) * speed;
         this.friction = 0.955;
-        this.gravity = 0.12;
-        this.w = Math.random() * 5 + 4;
-        this.h = Math.random() * 7 + 6;
+        this.gravity = 0.11;
+        this.w = Math.random() * 6 + 6;
+        this.h = Math.random() * 10 + 8;
         this.rot = Math.random() * Math.PI;
-        this.rotSpeed = (Math.random() - 0.5) * 0.18;
+        this.rotSpeed = (Math.random() - 0.5) * 0.2;
         this.wobble = Math.random() * Math.PI * 2;
-        this.wobbleSpeed = Math.random() * 0.15 + 0.08;
+        this.wobbleSpeed = Math.random() * 0.16 + 0.08;
         this.alpha = 1.0;
-        this.decay = Math.random() * 0.014 + 0.011;
+        this.decay = Math.random() * 0.008 + 0.006;
       }
 
       update() {
@@ -3783,21 +3787,21 @@ CMA_HOA_7721_TC
       fwFlashes.push(new FwFlashRing(x, y, palette[0] || '#F59E0B'));
       fwFlashes.push(new FwFlashRing(x, y, '#FFFFFF'));
 
-      // 2. Bung toả 50 tia pháo hoa 360 độ
-      const particleCount = 50;
+      // 2. Bung toả 100 tia pháo hoa 360 độ
+      const particleCount = 100;
       for (let i = 0; i < particleCount; i++) {
         const color = palette[Math.floor(Math.random() * palette.length)];
         fwParticles.push(new FwParticle(x, y, color));
       }
 
-      // 3. Bung toả 20 ngôi sao 5 cánh lấp lánh
-      for (let i = 0; i < 20; i++) {
+      // 3. Bung toả 35 ngôi sao 5 cánh lấp lánh
+      for (let i = 0; i < 35; i++) {
         const color = palette[Math.floor(Math.random() * palette.length)];
         fwStars.push(new FwStar(x, y, color));
       }
 
-      // 4. Bung toả 18 mảnh ruy băng confetti lật xoay 3D
-      for (let i = 0; i < 18; i++) {
+      // 4. Bung toả 30 mảnh ruy băng confetti lật xoay 3D
+      for (let i = 0; i < 30; i++) {
         const color = palette[Math.floor(Math.random() * palette.length)];
         fwConfetti.push(new FwConfettiStrip(x, y, color));
       }
@@ -3906,17 +3910,17 @@ CMA_HOA_7721_TC
     function spawnCssFireworks(centerX, centerY) {
       try {
         const colors = ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899', '#FFD700', '#FF5722'];
-        const symbols = ['★', '✦', '●', '■', '▲', '🎉', '✨', '⭐'];
-        const count = 36;
+        const symbols = ['★', '✦', '●', '■', '▲', '🎉', '✨', '⭐', '🎇', '🎆'];
+        const count = 48;
         for (let i = 0; i < count; i++) {
           const spark = document.createElement('div');
           spark.className = 'fw-css-spark';
           const angle = Math.random() * Math.PI * 2;
-          const dist = Math.random() * 170 + 40;
+          const dist = Math.random() * 240 + 60;
           const tx = Math.cos(angle) * dist;
-          const ty = Math.sin(angle) * dist + 45; // Trọng lực kéo xuống nhẹ
+          const ty = Math.sin(angle) * dist + 55; // Trọng lực kéo xuống nhẹ
           const color = colors[Math.floor(Math.random() * colors.length)];
-          const isSymbol = Math.random() < 0.45;
+          const isSymbol = Math.random() < 0.5;
 
           spark.style.setProperty('--tx', `${tx}px`);
           spark.style.setProperty('--ty', `${ty}px`);
@@ -3926,21 +3930,35 @@ CMA_HOA_7721_TC
           if (isSymbol) {
             spark.textContent = symbols[Math.floor(Math.random() * symbols.length)];
             spark.style.color = color;
-            spark.style.fontSize = `${Math.random() * 12 + 14}px`;
+            spark.style.fontSize = `${Math.random() * 14 + 16}px`;
             spark.style.background = 'transparent';
           } else {
-            const sz = Math.random() * 8 + 6;
+            const sz = Math.random() * 10 + 8;
             spark.style.width = `${sz}px`;
             spark.style.height = `${sz}px`;
             spark.style.backgroundColor = color;
-            spark.style.boxShadow = `0 0 8px ${color}`;
-            if (Math.random() > 0.5) spark.style.borderRadius = '2px';
+            spark.style.boxShadow = `0 0 10px ${color}`;
+            if (Math.random() > 0.5) spark.style.borderRadius = '3px';
           }
 
           document.body.appendChild(spark);
+
+          // Kích hoạt animation mượt mà qua Web Animations API nếu được hỗ trợ
+          if (typeof spark.animate === 'function') {
+            spark.animate([
+              { transform: 'translate(-50%, -50%) translate(0px, 0px) scale(1.3)', opacity: 1 },
+              { transform: `translate(-50%, -50%) translate(${tx * 0.75}px, ${ty * 0.75}px) scale(1)`, opacity: 1, offset: 0.7 },
+              { transform: `translate(-50%, -50%) translate(${tx}px, ${ty + 45}px) scale(0.2)`, opacity: 0 }
+            ], {
+              duration: 1350,
+              easing: 'cubic-bezier(0.15, 0.9, 0.35, 1)',
+              fill: 'forwards'
+            });
+          }
+
           setTimeout(() => {
             if (spark && spark.parentNode) spark.parentNode.removeChild(spark);
-          }, 1250);
+          }, 1400);
         }
       } catch (err) {
         console.warn('CSS Fireworks error:', err);
@@ -3953,7 +3971,7 @@ CMA_HOA_7721_TC
     function triggerFireworks(code) {
       try {
         const now = Date.now();
-        if (now - lastFwTriggerTime < 200) return;
+        if (now - lastFwTriggerTime < 180) return;
         lastFwTriggerTime = now;
 
         const w = window.innerWidth || document.documentElement.clientWidth || 360;
@@ -3962,7 +3980,7 @@ CMA_HOA_7721_TC
         const centerX = w / 2;
         const centerY = h * 0.42;
 
-        // 1. NỔ NGAY LẬP TỨC 36 HẠT PHÁO HOA CSS GIỮA MÀN HÌNH (0ms không cần chờ)
+        // 1. NỔ NGAY LẬP TỨC 48 HẠT PHÁO HOA CSS GIỮA MÀN HÌNH (0ms không cần chờ)
         spawnCssFireworks(centerX, centerY);
 
         // 2. HIỂN THỊ KHUNG NỔ BẬT BÙNG NỔ GIỮA MÀN HÌNH (Trung tâm màn hình)
@@ -3974,7 +3992,7 @@ CMA_HOA_7721_TC
           if (burstPopupTimeout) clearTimeout(burstPopupTimeout);
           burstPopupTimeout = setTimeout(() => {
             burstEl.classList.remove('show');
-          }, 1400);
+          }, 1600);
         }
 
         // 3. ĐỒNG THỜI KÍCH HOẠT CANVAS PHÁO HOA NỔ NGAY Ở TÂM VÀ PHÓNG 2 QUẢ TỪ ĐÁY LÊN
@@ -3985,8 +4003,8 @@ CMA_HOA_7721_TC
 
         // 2 quả pháo vút từ đáy màn hình lên bổ sung hiệu ứng
         const burstConfigs = [
-          { delay: 100, startX: centerX - 35, targetX: centerX - 45, targetY: centerY + 20, palette: FW_PALETTES[1] },
-          { delay: 220, startX: centerX + 40, targetX: centerX + 50, targetY: centerY - 25, palette: FW_PALETTES[3] }
+          { delay: 80,  startX: centerX - 40, targetX: centerX - 55, targetY: centerY + 25, palette: FW_PALETTES[1] },
+          { delay: 180, startX: centerX + 45, targetX: centerX + 55, targetY: centerY - 30, palette: FW_PALETTES[3] }
         ];
 
         burstConfigs.forEach(cfg => {
@@ -4004,40 +4022,47 @@ CMA_HOA_7721_TC
     // BẮT SỰ KIỆN CLICK TOÀN TRANG Ở TẦNG CAPTURING (Đảm bảo 100% bắt được click Sao chép)
     document.addEventListener('click', (e) => {
       try {
-        const btn = e.target.closest && e.target.closest('.btn-copy-pmh2, .btn-copy, .btn-copy-again, [data-code]');
-        if (btn) {
-          const code = btn.getAttribute('data-code') || '';
+        const target = e.target;
+        if (!target) return;
+        const btn = target.closest && target.closest('.btn-copy-pmh2, .btn-copy, .btn-copy-again, [data-code]');
+        const isCopyBtn = btn || (target.textContent && target.textContent.includes('Sao chép'));
+        if (isCopyBtn) {
+          const code = (btn && btn.getAttribute('data-code')) || '';
           triggerFireworks(code);
         }
       } catch (err) {}
     }, true);
 
+    function fallbackCopyText(text) {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      textarea.style.top = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        return Promise.resolve();
+      } catch (err) {
+        document.body.removeChild(textarea);
+        return Promise.resolve();
+      }
+    }
+
     /**
      * COPY TO CLIPBOARD
      */
     function copyToClipboard(text) {
-      // Tung pháo hoa rực rỡ giữa màn hình mỗi khi sao chép
       triggerFireworks(text);
       if (navigator.clipboard && window.isSecureContext) {
-        return navigator.clipboard.writeText(text);
-
+        return navigator.clipboard.writeText(text).catch(() => {
+          return fallbackCopyText(text);
+        });
       } else {
-        const textarea = document.createElement('textarea');
-        textarea.value = text;
-        textarea.style.position = 'fixed';
-        textarea.style.left = '-9999px';
-        textarea.style.top = '-9999px';
-        document.body.appendChild(textarea);
-        textarea.focus();
-        textarea.select();
-        try {
-          document.execCommand('copy');
-          document.body.removeChild(textarea);
-          return Promise.resolve();
-        } catch (err) {
-          document.body.removeChild(textarea);
-          return Promise.reject(err);
-        }
+        return fallbackCopyText(text);
       }
     }
 
