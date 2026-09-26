@@ -3294,96 +3294,77 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
       z-index: 99999999 !important;
     }
 
-    /* Khung hiệu ứng pháo hoa bùng nổ CHÍNH GIỮA MÀN HÌNH (50%, 50%) */
+    /* Thông báo Đã sao chép nhỏ gọn, thanh lịch ngay tâm màn hình (Chuẩn Hình 2) */
     .celebration-center-burst {
       position: fixed !important;
       top: 50% !important;
       left: 50% !important;
-      transform: translate(-50%, -50%) scale(0.5) !important;
-      background: linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.99)) !important;
-      color: #fff !important;
-      padding: 16px 32px !important;
+      transform: translate(-50%, -50%) scale(0.85) !important;
+      background: rgba(15, 23, 42, 0.92) !important;
+      backdrop-filter: blur(10px) !important;
+      -webkit-backdrop-filter: blur(10px) !important;
+      color: #ffffff !important;
+      padding: 7px 16px !important;
       border-radius: 999px !important;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55), 0 0 40px rgba(245, 158, 11, 0.6) !important;
-      border: 3px solid #f59e0b !important;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 0 14px rgba(245, 158, 11, 0.25) !important;
+      border: 1.5px solid rgba(245, 158, 11, 0.7) !important;
       display: flex !important;
       align-items: center !important;
-      gap: 14px !important;
+      gap: 8px !important;
       pointer-events: none !important;
       z-index: 100000000 !important;
       opacity: 0 !important;
       visibility: hidden !important;
-      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+      transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.25s ease !important;
+      max-width: 90vw !important;
+      white-space: nowrap !important;
     }
     .celebration-center-burst.show {
       opacity: 1 !important;
       visibility: visible !important;
-      transform: translate(-50%, -50%) scale(1.1) !important;
+      transform: translate(-50%, -50%) scale(1.0) !important;
     }
     .burst-icon {
-      font-size: 32px !important;
-      animation: burstIconBounce 0.6s infinite alternate !important;
+      font-size: 16px !important;
+      line-height: 1 !important;
+      animation: burstIconBounce 0.5s infinite alternate !important;
     }
     @keyframes burstIconBounce {
-      from { transform: scale(0.9) rotate(-8deg); }
-      to { transform: scale(1.25) rotate(8deg); }
+      from { transform: scale(0.95) rotate(-6deg); }
+      to { transform: scale(1.15) rotate(6deg); }
     }
     .burst-content {
       display: flex !important;
-      flex-direction: column !important;
-      align-items: flex-start !important;
-      line-height: 1.25 !important;
+      flex-direction: row !important;
+      align-items: center !important;
+      gap: 6px !important;
+      line-height: 1.2 !important;
     }
     .burst-title {
-      font-size: 14px !important;
-      font-weight: 800 !important;
+      font-size: 12.5px !important;
+      font-weight: 700 !important;
       color: #fde047 !important;
-      letter-spacing: 0.5px !important;
-      text-transform: uppercase !important;
+      letter-spacing: 0.3px !important;
     }
     .burst-code {
-      font-size: 17px !important;
-      font-weight: 900 !important;
-      color: #ffffff !important;
-      font-family: monospace !important;
-      letter-spacing: 1.2px !important;
+      font-size: 13px !important;
+      font-weight: 800 !important;
+      color: #38bdf8 !important;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+      letter-spacing: 0.8px !important;
     }
-
-    /* Hiệu ứng pháo hoa CSS bung toả giữa màn hình */
-    @keyframes fwPopOut {
-      0% {
-        transform: translate(-50%, -50%) translate(0, 0) scale(1.2);
-        opacity: 1;
-      }
-      70% {
-        opacity: 1;
-      }
-      100% {
-        transform: translate(-50%, -50%) translate(var(--tx), var(--ty)) scale(0.2);
-        opacity: 0;
-      }
-    }
-    .fw-css-spark {
-      position: fixed !important;
-      pointer-events: none !important;
-      z-index: 100000001 !important;
-      border-radius: 50% !important;
-      will-change: transform, opacity !important;
-      animation: fwPopOut 1.3s cubic-bezier(0.2, 0.9, 0.3, 1) forwards !important;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-      user-select: none !important;
+    .burst-code:empty {
+      display: none !important;
     }
   </style>
 </head>
 <body>
 
-  <!-- Canvas Pháo Hoa Tung Lên Giữa Màn Hình Khi Bấm Sao Chép -->
+  <!-- Canvas Pháo Hoa / Pháo Giấy Tung Lên Giữa Màn Hình Khi Bấm Sao Chép -->
   <canvas id="fireworksCanvas"></canvas>
 
-  <!-- Khung Bùng Nổ Giữa Màn Hình Khi Bấm Sao Chép -->
-  <div class="celebration-center-burst" id="celebrationBurst" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.5); opacity: 0; visibility: hidden; pointer-events: none; z-index: 100000000;">
+  <!-- Khung Bùng Nổ Giữa Màn Hình Khi Bấm Sao Chép (Nhỏ gọn, thanh lịch) -->
+  <div class="celebration-center-burst" id="celebrationBurst" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.85); opacity: 0; visibility: hidden; pointer-events: none; z-index: 100000000;">
     <div class="burst-icon" id="burstIcon">🎉</div>
     <div class="burst-content">
       <div class="burst-title">ĐÃ SAO CHÉP MÃ!</div>
@@ -4316,440 +4297,144 @@ CMA_HOA_7721_TC
 
     /**
      * =========================================================================
-     * HIỆU ỨNG PHÁO HOA TUNG LÊN GIỮA MÀN HÌNH KHI BẤM "SAO CHÉP"
+     * HIỆU ỨNG PHÁO GIẤY (CONFETTI) BUNG TOẢ VÀ RƠI CHAO LIỆNG KHI SAO CHÉP
+     * - Xuất hiện tức thì 0ms không độ trễ
+     * - Kiểu pháo giấy (confetti flutter 3D) bồng bềnh chuẩn đẹp như Hình 2
+     * - Thời lượng khoảng 3 giây, rơi lượn và mờ dần êm ái
      * =========================================================================
      */
     const fireworksCanvas = document.getElementById('fireworksCanvas');
     const fwCtx = fireworksCanvas ? fireworksCanvas.getContext('2d') : null;
-    let fwRockets = [];
-    let fwParticles = [];
-    let fwStars = [];
-    let fwConfetti = [];
-    let fwTrailSparks = [];
-    let fwFlashes = [];
+    let confettiPieces = [];
     let fwAnimating = false;
     let fwAnimId = null;
     let lastFwTriggerTime = 0;
     let burstPopupTimeout = null;
 
+    // Bảng màu rực rỡ, tươi vui chuẩn pháo giấy lễ hội (như Hình 2)
+    const CONFETTI_PALETTE = [
+      '#2ED573', // Xanh bạc hà tươi
+      '#1E90FF', // Xanh dương thiên thanh
+      '#FF4757', // Đỏ san hô
+      '#FFA502', // Cam vàng rực rỡ
+      '#9C88FF', // Tím hoa cà
+      '#FF6B81', // Hồng phấn
+      '#00D2D3', // Xanh ngọc biển
+      '#FFD32A', // Vàng hoàng yến
+      '#FF7F50', // Cam đào
+      '#2BCBBA', // Ngọc lam
+      '#EB4D4B'  // Đỏ lễ hội
+    ];
+
     function resizeFireworksCanvas() {
       if (!fireworksCanvas || !fwCtx) return;
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const w = window.innerWidth;
-      const h = window.innerHeight;
+      const w = window.innerWidth || document.documentElement.clientWidth || 360;
+      const h = window.innerHeight || document.documentElement.clientHeight || 640;
       fireworksCanvas.width = Math.floor(w * dpr);
       fireworksCanvas.height = Math.floor(h * dpr);
       fireworksCanvas.style.width = w + 'px';
       fireworksCanvas.style.height = h + 'px';
       fwCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
+    // Khởi tạo kích thước canvas 1 lần ngay từ đầu và khi đổi kích thước màn hình
+    resizeFireworksCanvas();
     window.addEventListener('resize', resizeFireworksCanvas);
     window.addEventListener('orientationchange', () => setTimeout(resizeFireworksCanvas, 150));
 
-    // Bộ màu lễ hội độ tương phản cao, nổi bật rực rỡ trên cả nền sáng và tối
-    const FW_PALETTES = [
-      ['#F59E0B', '#EF4444', '#FFD700', '#EA580C', '#FEF08A'], // Lửa vàng hoàng kim
-      ['#EF4444', '#DC2626', '#F43F5E', '#FDA4AF', '#B91C1C'], // Đỏ Ruby đại cát
-      ['#10B981', '#059669', '#84CC16', '#34D399', '#047857'], // Lục bảo may mắn
-      ['#06B6D4', '#0284C7', '#3B82F6', '#60A5FA', '#1D4ED8'], // Lam ngọc đại dương
-      ['#8B5CF6', '#7C3AED', '#D946EF', '#EC4899', '#6D28D9']  // Tím ánh kim rực rỡ
-    ];
+    /**
+     * Mảnh pháo giấy rơi chao liệng 3D (Confetti Paper Piece)
+     */
+    class ConfettiPiece {
+      constructor(originX, originY) {
+        // Tọa độ xuất phát: bung từ giữa màn hình lan toả ra
+        this.x = originX + (Math.random() - 0.5) * 80;
+        this.y = originY + (Math.random() - 0.5) * 40;
+        this.color = CONFETTI_PALETTE[Math.floor(Math.random() * CONFETTI_PALETTE.length)];
 
-    // Vẽ hình ngôi sao 5 cánh
-    function drawFwStarShape(ctx, cx, cy, spikes, outerRadius, innerRadius) {
-      let rot = Math.PI / 2 * 3;
-      let x = cx;
-      let y = cy;
-      const step = Math.PI / spikes;
-      ctx.beginPath();
-      ctx.moveTo(cx, cy - outerRadius);
-      for (let i = 0; i < spikes; i++) {
-        x = cx + Math.cos(rot) * outerRadius;
-        y = cy + Math.sin(rot) * outerRadius;
-        ctx.lineTo(x, y);
-        rot += step;
-        x = cx + Math.cos(rot) * innerRadius;
-        y = cy + Math.sin(rot) * innerRadius;
-        ctx.lineTo(x, y);
-        rot += step;
-      }
-      ctx.lineTo(cx, cy - outerRadius);
-      ctx.closePath();
-      ctx.fill();
-    }
+        // Kích thước pháo giấy chữ nhật / vuông nhỏ xinh (chuẩn Hình 2)
+        const isRibbon = Math.random() < 0.25;
+        this.w = isRibbon ? (Math.random() * 3 + 5) : (Math.random() * 5 + 6);
+        this.h = isRibbon ? (Math.random() * 10 + 12) : (Math.random() * 6 + 8);
 
-    class FwRocket {
-      constructor(startX, startY, targetX, targetY, palette) {
-        this.x = startX;
-        this.y = startY;
-        this.targetX = targetX;
-        this.targetY = targetY;
-        this.palette = palette;
-        this.angle = Math.atan2(targetY - startY, targetX - startX);
-        const dist = Math.hypot(targetX - startX, targetY - startY);
-        this.speed = Math.max(16, dist / 22);
-        this.history = [];
-        this.exploded = false;
-        this.headColor = palette[0] || '#F59E0B';
-      }
-
-      update() {
-        this.history.push({ x: this.x, y: this.y });
-        if (this.history.length > 6) this.history.shift();
-
-        // Tàn lửa đuôi pháo cam đỏ sáng rực
-        fwTrailSparks.push(new FwTrailSpark(this.x, this.y, this.headColor));
-        if (Math.random() < 0.5) {
-          fwTrailSparks.push(new FwTrailSpark(this.x, this.y, '#FFD700'));
-        }
-
-        const vx = Math.cos(this.angle) * this.speed;
-        const vy = Math.sin(this.angle) * this.speed;
-        this.x += vx;
-        this.y += vy;
-        this.speed *= 0.985;
-
-        const currentDist = Math.hypot(this.targetX - this.x, this.targetY - this.y);
-        if (this.y <= this.targetY || currentDist <= Math.max(this.speed, 12)) {
-          this.exploded = true;
-        }
-      }
-
-      draw(ctx) {
-        ctx.save();
-        ctx.strokeStyle = this.headColor;
-        ctx.lineWidth = 3.5;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        if (this.history.length > 0) {
-          ctx.moveTo(this.history[0].x, this.history[0].y);
-          for (let i = 1; i < this.history.length; i++) {
-            ctx.lineTo(this.history[i].x, this.history[i].y);
-          }
-        } else {
-          ctx.moveTo(this.x, this.y);
-        }
-        ctx.lineTo(this.x, this.y);
-        ctx.stroke();
-
-        // Đầu tên lửa phát sáng rực rỡ
-        ctx.fillStyle = '#FFFFFF';
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, 4, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.strokeStyle = '#F59E0B';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        ctx.restore();
-      }
-    }
-
-    class FwTrailSpark {
-      constructor(x, y, color) {
-        this.x = x + (Math.random() - 0.5) * 5;
-        this.y = y;
-        this.vx = (Math.random() - 0.5) * 2;
-        this.vy = Math.random() * 3 + 1.5;
-        this.alpha = 0.9;
-        this.decay = Math.random() * 0.045 + 0.04;
-        this.size = Math.random() * 2.5 + 1.5;
-        this.color = color || '#F59E0B';
-      }
-
-      update() {
-        this.x += this.vx;
-        this.y += this.vy;
-        this.alpha -= this.decay;
-      }
-
-      draw(ctx) {
-        if (this.alpha <= 0) return;
-        ctx.save();
-        ctx.globalAlpha = Math.max(0, this.alpha);
-        ctx.fillStyle = this.color;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-      }
-    }
-
-    class FwFlashRing {
-      constructor(x, y, color) {
-        this.x = x;
-        this.y = y;
-        this.color = color;
-        this.radius = 6;
-        this.maxRadius = 70 + Math.random() * 30;
-        this.alpha = 0.85;
-      }
-
-      update() {
-        this.radius += (this.maxRadius - this.radius) * 0.28;
-        this.alpha -= 0.065;
-      }
-
-      draw(ctx) {
-        if (this.alpha <= 0) return;
-        ctx.save();
-        ctx.globalAlpha = Math.max(0, this.alpha);
-        ctx.strokeStyle = this.color;
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.restore();
-      }
-    }
-
-    class FwParticle {
-      constructor(x, y, color) {
-        this.x = x;
-        this.y = y;
-        this.color = color;
-        const angle = Math.random() * Math.PI * 2;
-        const speed = Math.random() * 15 + 5;
+        // Vận tốc bung ban đầu: bung lên và xòe đều xung quanh
+        const angle = -Math.PI / 2 + (Math.random() - 0.5) * 2.4;
+        const speed = Math.random() * 14 + 6;
         this.vx = Math.cos(angle) * speed;
-        this.vy = Math.sin(angle) * speed;
-        this.friction = 0.96;
-        this.gravity = 0.11;
-        this.alpha = 1.0;
-        this.decay = Math.random() * 0.007 + 0.006;
-        this.history = [];
-        this.size = Math.random() * 4 + 4.5;
-      }
+        this.vy = Math.sin(angle) * speed - (Math.random() * 4 + 2); // Đẩy bổng lên trên
 
-      update() {
-        this.history.push({ x: this.x, y: this.y });
-        if (this.history.length > 5) this.history.shift();
+        // Vật lý giấy: lực cản không khí + trọng lực rơi nhẹ
+        this.drag = Math.random() * 0.02 + 0.96;
+        this.gravity = Math.random() * 0.06 + 0.14;
 
-        this.vx *= this.friction;
-        this.vy = this.vy * this.friction + this.gravity;
-        this.x += this.vx;
-        this.y += this.vy;
-        this.alpha -= this.decay;
-      }
+        // Xoay lật 3D (lật mặt giấy khi rơi)
+        this.rotZ = Math.random() * Math.PI * 2;
+        this.rotSpeedZ = (Math.random() - 0.5) * 0.16;
+        this.rotX = Math.random() * Math.PI * 2;
+        this.rotSpeedX = Math.random() * 0.16 + 0.06;
 
-      draw(ctx) {
-        if (this.alpha <= 0) return;
-        ctx.save();
-        ctx.globalAlpha = Math.max(0, this.alpha);
-        ctx.shadowColor = this.color;
-        ctx.shadowBlur = 8;
-
-        // Đuôi tia lửa phát sáng
-        ctx.strokeStyle = this.color;
-        ctx.lineWidth = this.size;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        const first = this.history[0] || { x: this.x, y: this.y };
-        ctx.moveTo(first.x, first.y);
-        for (let i = 1; i < this.history.length; i++) {
-          ctx.lineTo(this.history[i].x, this.history[i].y);
-        }
-        ctx.lineTo(this.x, this.y);
-        ctx.stroke();
-
-        // Hạt đốm ở đầu
-        ctx.fillStyle = this.color;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size * 0.8, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-      }
-    }
-
-    class FwStar {
-      constructor(x, y, color) {
-        this.x = x;
-        this.y = y;
-        this.color = color;
-        const angle = Math.random() * Math.PI * 2;
-        const speed = Math.random() * 14 + 4;
-        this.vx = Math.cos(angle) * speed;
-        this.vy = Math.sin(angle) * speed;
-        this.friction = 0.955;
-        this.gravity = 0.12;
-        this.rot = Math.random() * Math.PI;
-        this.rotSpeed = (Math.random() - 0.5) * 0.25;
-        this.size = Math.random() * 6 + 6;
-        this.alpha = 1.0;
-        this.decay = Math.random() * 0.008 + 0.006;
-      }
-
-      update() {
-        this.vx *= this.friction;
-        this.vy = this.vy * this.friction + this.gravity;
-        this.x += this.vx;
-        this.y += this.vy;
-        this.rot += this.rotSpeed;
-        this.alpha -= this.decay;
-      }
-
-      draw(ctx) {
-        if (this.alpha <= 0) return;
-        ctx.save();
-        ctx.globalAlpha = Math.max(0, this.alpha);
-        ctx.shadowColor = this.color;
-        ctx.shadowBlur = 8;
-        ctx.translate(this.x, this.y);
-        ctx.rotate(this.rot);
-        ctx.fillStyle = this.color;
-        drawFwStarShape(ctx, 0, 0, 5, this.size, this.size * 0.45);
-        ctx.restore();
-      }
-    }
-
-    class FwConfettiStrip {
-      constructor(x, y, color) {
-        this.x = x;
-        this.y = y;
-        this.color = color;
-        const angle = Math.random() * Math.PI * 2;
-        const speed = Math.random() * 11 + 3;
-        this.vx = Math.cos(angle) * speed;
-        this.vy = Math.sin(angle) * speed;
-        this.friction = 0.955;
-        this.gravity = 0.11;
-        this.w = Math.random() * 6 + 6;
-        this.h = Math.random() * 10 + 8;
-        this.rot = Math.random() * Math.PI;
-        this.rotSpeed = (Math.random() - 0.5) * 0.2;
+        // Lắc lư chao liệng theo gió (wobble)
         this.wobble = Math.random() * Math.PI * 2;
-        this.wobbleSpeed = Math.random() * 0.16 + 0.08;
+        this.wobbleSpeed = Math.random() * 0.12 + 0.06;
+        this.wobbleAmp = Math.random() * 1.6 + 0.6;
+
+        // Tuổi thọ đúng ~3 giây (khoảng 180 frames @ 60fps)
+        this.life = 0;
+        this.maxLife = Math.floor(Math.random() * 25 + 165); // ~2.8s - 3.2s
         this.alpha = 1.0;
-        this.decay = Math.random() * 0.008 + 0.006;
       }
 
       update() {
-        this.vx *= this.friction;
-        this.vy = this.vy * this.friction + this.gravity;
-        this.x += this.vx;
-        this.y += this.vy;
-        this.rot += this.rotSpeed;
+        this.life++;
+        this.vx *= this.drag;
+        this.vy = this.vy * this.drag + this.gravity;
+
         this.wobble += this.wobbleSpeed;
-        this.alpha -= this.decay;
+        this.x += this.vx + Math.sin(this.wobble) * this.wobbleAmp;
+        this.y += this.vy;
+
+        this.rotZ += this.rotSpeedZ;
+        this.rotX += this.rotSpeedX;
+
+        // Mờ dần êm ái ở ~0.6s cuối
+        if (this.life > this.maxLife - 36) {
+          this.alpha = Math.max(0, (this.maxLife - this.life) / 36);
+        }
       }
 
       draw(ctx) {
         if (this.alpha <= 0) return;
         ctx.save();
-        ctx.globalAlpha = Math.max(0, this.alpha);
+        ctx.globalAlpha = this.alpha;
         ctx.translate(this.x, this.y);
-        ctx.rotate(this.rot);
-        const scaleX = Math.cos(this.wobble);
-        ctx.scale(scaleX, 1);
+        ctx.rotate(this.rotZ);
+        // Hiệu ứng lật mặt giấy 3D bằng tỉ lệ cos góc xoay
+        ctx.scale(1, Math.cos(this.rotX));
         ctx.fillStyle = this.color;
         ctx.fillRect(-this.w / 2, -this.h / 2, this.w, this.h);
         ctx.restore();
       }
     }
 
-    function fwExplode(x, y, palette) {
-      // 1. Vòng chớp sáng mở rộng (Shockwave ring)
-      fwFlashes.push(new FwFlashRing(x, y, palette[0] || '#F59E0B'));
-      fwFlashes.push(new FwFlashRing(x, y, '#FFFFFF'));
-
-      // 2. Bung toả 100 tia pháo hoa 360 độ
-      const particleCount = 100;
-      for (let i = 0; i < particleCount; i++) {
-        const color = palette[Math.floor(Math.random() * palette.length)];
-        fwParticles.push(new FwParticle(x, y, color));
-      }
-
-      // 3. Bung toả 35 ngôi sao 5 cánh lấp lánh
-      for (let i = 0; i < 35; i++) {
-        const color = palette[Math.floor(Math.random() * palette.length)];
-        fwStars.push(new FwStar(x, y, color));
-      }
-
-      // 4. Bung toả 30 mảnh ruy băng confetti lật xoay 3D
-      for (let i = 0; i < 30; i++) {
-        const color = palette[Math.floor(Math.random() * palette.length)];
-        fwConfetti.push(new FwConfettiStrip(x, y, color));
-      }
-    }
-
-    function animateFireworks() {
+    function animateConfetti() {
       if (!fireworksCanvas || !fwCtx) return;
+      const w = window.innerWidth || document.documentElement.clientWidth || 360;
+      const h = window.innerHeight || document.documentElement.clientHeight || 640;
 
-      const w = window.innerWidth;
-      const h = window.innerHeight;
-
-      // Xoá sạch canvas mỗi khung hình (CHUẨN 100% cho mọi màn hình / safari / webkit)
       fwCtx.clearRect(0, 0, w, h);
-      fwCtx.globalCompositeOperation = 'source-over';
 
-      // 1. Cập nhật & Vẽ Tàn lửa phóng tên lửa
-      for (let i = fwTrailSparks.length - 1; i >= 0; i--) {
-        const s = fwTrailSparks[i];
-        s.update();
-        if (s.alpha <= 0) {
-          fwTrailSparks.splice(i, 1);
-        } else {
-          s.draw(fwCtx);
-        }
-      }
-
-      // 2. Cập nhật & Vẽ Tên lửa bay lên giữa màn hình
-      for (let i = fwRockets.length - 1; i >= 0; i--) {
-        const r = fwRockets[i];
-        r.update();
-        if (r.exploded) {
-          fwExplode(r.x, r.y, r.palette);
-          fwRockets.splice(i, 1);
-        } else {
-          r.draw(fwCtx);
-        }
-      }
-
-      // 3. Cập nhật & Vẽ Vòng chớp sáng bùng nổ
-      for (let i = fwFlashes.length - 1; i >= 0; i--) {
-        const f = fwFlashes[i];
-        f.update();
-        if (f.alpha <= 0) {
-          fwFlashes.splice(i, 1);
-        } else {
-          f.draw(fwCtx);
-        }
-      }
-
-      // 4. Cập nhật & Vẽ Hạt pháo hoa tung tóe
-      for (let i = fwParticles.length - 1; i >= 0; i--) {
-        const p = fwParticles[i];
+      for (let i = confettiPieces.length - 1; i >= 0; i--) {
+        const p = confettiPieces[i];
         p.update();
-        if (p.alpha <= 0) {
-          fwParticles.splice(i, 1);
+        if (p.alpha <= 0 || p.y > h + 40) {
+          confettiPieces.splice(i, 1);
         } else {
           p.draw(fwCtx);
         }
       }
 
-      // 5. Cập nhật & Vẽ Ngôi sao lấp lánh
-      for (let i = fwStars.length - 1; i >= 0; i--) {
-        const star = fwStars[i];
-        star.update();
-        if (star.alpha <= 0) {
-          fwStars.splice(i, 1);
-        } else {
-          star.draw(fwCtx);
-        }
-      }
-
-      // 6. Cập nhật & Vẽ Ruy băng confetti xoay lật 3D
-      for (let i = fwConfetti.length - 1; i >= 0; i--) {
-        const c = fwConfetti[i];
-        c.update();
-        if (c.alpha <= 0) {
-          fwConfetti.splice(i, 1);
-        } else {
-          c.draw(fwCtx);
-        }
-      }
-
-      // Nếu tất cả đã kết thúc: giải phóng tài nguyên CPU 0%
-      if (fwRockets.length === 0 && fwParticles.length === 0 && fwStars.length === 0 && fwConfetti.length === 0 && fwTrailSparks.length === 0 && fwFlashes.length === 0) {
+      // Khi hết pháo giấy: Dừng vòng lặp để giải phóng 100% CPU
+      if (confettiPieces.length === 0) {
         fwCtx.clearRect(0, 0, w, h);
         fwAnimating = false;
         if (fwAnimId) cancelAnimationFrame(fwAnimId);
@@ -4757,134 +4442,55 @@ CMA_HOA_7721_TC
         return;
       }
 
-      fwAnimId = requestAnimationFrame(animateFireworks);
-    }
-
-    function startFwLoop() {
-      if (!fwAnimating) {
-        resizeFireworksCanvas();
-        fwAnimating = true;
-        fwAnimId = requestAnimationFrame(animateFireworks);
-      }
+      fwAnimId = requestAnimationFrame(animateConfetti);
     }
 
     /**
-     * BẮN PHÁO HOA DẠNG CSS SPARK (CHẠY ĐỘC LẬP TRÊN COMPOSITOR, 100% HIỆN RÕ TRÊN MỌI THIẾT BỊ)
-     */
-    function spawnCssFireworks(centerX, centerY) {
-      try {
-        const colors = ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899', '#FFD700', '#FF5722'];
-        const symbols = ['★', '✦', '●', '■', '▲', '🎉', '✨', '⭐', '🎇', '🎆'];
-        const count = 48;
-        for (let i = 0; i < count; i++) {
-          const spark = document.createElement('div');
-          spark.className = 'fw-css-spark';
-          const angle = Math.random() * Math.PI * 2;
-          const dist = Math.random() * 240 + 60;
-          const tx = Math.cos(angle) * dist;
-          const ty = Math.sin(angle) * dist + 55; // Trọng lực kéo xuống nhẹ
-          const color = colors[Math.floor(Math.random() * colors.length)];
-          const isSymbol = Math.random() < 0.5;
-
-          spark.style.setProperty('--tx', \`\${tx}px\`);
-          spark.style.setProperty('--ty', \`\${ty}px\`);
-          spark.style.left = \`\${centerX}px\`;
-          spark.style.top = \`\${centerY}px\`;
-
-          if (isSymbol) {
-            spark.textContent = symbols[Math.floor(Math.random() * symbols.length)];
-            spark.style.color = color;
-            spark.style.fontSize = \`\${Math.random() * 14 + 16}px\`;
-            spark.style.background = 'transparent';
-          } else {
-            const sz = Math.random() * 10 + 8;
-            spark.style.width = \`\${sz}px\`;
-            spark.style.height = \`\${sz}px\`;
-            spark.style.backgroundColor = color;
-            spark.style.boxShadow = \`0 0 10px \${color}\`;
-            if (Math.random() > 0.5) spark.style.borderRadius = '3px';
-          }
-
-          document.body.appendChild(spark);
-
-          // Kích hoạt animation mượt mà qua Web Animations API nếu được hỗ trợ
-          if (typeof spark.animate === 'function') {
-            spark.animate([
-              { transform: 'translate(-50%, -50%) translate(0px, 0px) scale(1.3)', opacity: 1 },
-              { transform: \`translate(-50%, -50%) translate(\${tx * 0.75}px, \${ty * 0.75}px) scale(1)\`, opacity: 1, offset: 0.7 },
-              { transform: \`translate(-50%, -50%) translate(\${tx}px, \${ty + 45}px) scale(0.2)\`, opacity: 0 }
-            ], {
-              duration: 1350,
-              easing: 'cubic-bezier(0.15, 0.9, 0.35, 1)',
-              fill: 'forwards'
-            });
-          }
-
-          setTimeout(() => {
-            if (spark && spark.parentNode) spark.parentNode.removeChild(spark);
-          }, 1400);
-        }
-      } catch (err) {
-        console.warn('CSS Fireworks error:', err);
-      }
-    }
-
-    /**
-     * KÍCH HOẠT HIỆU ỨNG PHÁO HOA TUNG LÊN GIỮA MÀN HÌNH (0ms PHẢN HỒI TỨC THÌ)
+     * KÍCH HOẠT PHÁO GIẤY TỨC THÌ 0MS VÀ HIỂN THỊ THÔNG BÁO NHỎ GỌN TRUNG TÂM
      */
     function triggerFireworks(code) {
       try {
         const now = Date.now();
-        if (now - lastFwTriggerTime < 180) return;
+        if (now - lastFwTriggerTime < 200) return;
         lastFwTriggerTime = now;
 
         const w = window.innerWidth || document.documentElement.clientWidth || 360;
         const h = window.innerHeight || document.documentElement.clientHeight || 640;
-
         const centerX = w / 2;
-        const centerY = h * 0.50;
+        const centerY = h * 0.48; // Tâm nổ ở chính giữa màn hình
 
-        // 1. NỔ NGAY LẬP TỨC 48 HẠT PHÁO HOA CSS GIỮA MÀN HÌNH (0ms không cần chờ)
-        spawnCssFireworks(centerX, centerY);
-
-        // 2. HIỂN THỊ KHUNG NỔ BẬT BÙNG NỔ GIỮA MÀN HÌNH (Trung tâm màn hình)
+        // 1. HIỂN THỊ THÔNG BÁO NHỎ GỌN NGAY TÂM MÀN HÌNH (0ms)
         const burstEl = document.getElementById('celebrationBurst');
         const codeEl = document.getElementById('burstCode');
         if (burstEl) {
           if (codeEl) codeEl.textContent = code ? String(code) : '';
           burstEl.classList.add('show');
           if (burstPopupTimeout) clearTimeout(burstPopupTimeout);
+          // Hiển thị gọn gàng trong ~2.6 giây rồi mờ dần
           burstPopupTimeout = setTimeout(() => {
             burstEl.classList.remove('show');
-          }, 1600);
+          }, 2600);
         }
 
-        // 3. ĐỒNG THỜI KÍCH HOẠT CANVAS PHÁO HOA NỔ NGAY Ở TÂM VÀ PHÓNG 2 QUẢ TỪ ĐÁY LÊN
-        resizeFireworksCanvas();
-        // Nổ tức thì chùm pháo hoa đầu tiên ngay giữa màn hình
-        fwExplode(centerX, centerY, FW_PALETTES[0]);
-        startFwLoop();
+        // 2. TẠO 95 MẢNH PHÁO GIẤY RỰC RỠ RƠI CHAO LIỆNG 3 GIÂY (Chuẩn Hình 2)
+        const count = 95;
+        for (let i = 0; i < count; i++) {
+          confettiPieces.push(new ConfettiPiece(centerX, centerY));
+        }
 
-        // 2 quả pháo vút từ đáy màn hình lên bổ sung hiệu ứng
-        const burstConfigs = [
-          { delay: 80,  startX: centerX - 40, targetX: centerX - 55, targetY: centerY + 25, palette: FW_PALETTES[1] },
-          { delay: 180, startX: centerX + 45, targetX: centerX + 55, targetY: centerY - 30, palette: FW_PALETTES[3] }
-        ];
-
-        burstConfigs.forEach(cfg => {
-          setTimeout(() => {
-            fwRockets.push(new FwRocket(cfg.startX, h + 20, cfg.targetX, cfg.targetY, cfg.palette));
-            startFwLoop();
-          }, cfg.delay);
-        });
+        // 3. KHỞI CHẠY VÒNG LẶP RENDER CANVAS 60FPS KHÔNG TRỄ
+        if (!fwAnimating) {
+          fwAnimating = true;
+          fwAnimId = requestAnimationFrame(animateConfetti);
+        }
       } catch (err) {
-        console.warn('Fireworks trigger error:', err);
+        console.warn('Confetti trigger error:', err);
       }
     }
     window.triggerFireworks = triggerFireworks;
 
-    // BẮT SỰ KIỆN CLICK TOÀN TRANG Ở TẦNG CAPTURING (Đảm bảo 100% bắt được click Sao chép)
-    document.addEventListener('click', (e) => {
+    // BẮT SỰ KIỆN POINTERDOWN VÀ CLICK Ở TẦNG CAPTURING ĐẢM BẢO 0MS PHẢN HỒI NGAY KHI CHẠM
+    function handleCopyCaptureTrigger(e) {
       try {
         const target = e.target;
         if (!target) return;
@@ -4895,7 +4501,9 @@ CMA_HOA_7721_TC
           triggerFireworks(code);
         }
       } catch (err) {}
-    }, true);
+    }
+    document.addEventListener('pointerdown', handleCopyCaptureTrigger, { capture: true, passive: true });
+    document.addEventListener('click', handleCopyCaptureTrigger, { capture: true, passive: true });
 
     function fallbackCopyText(text) {
       const textarea = document.createElement('textarea');
@@ -6522,7 +6130,9 @@ CMA_HOA_7721_TC
 
       saveLocalStatus(code, true, timeStr, nowTs);
       updateCachedPayload();
-      renderVouchers();
+      requestAnimationFrame(() => {
+        renderVouchers();
+      });
 
       // 1. Đồng bộ thời gian thực siêu tốc đến các trình duyệt khác (50ms - 100ms)
       broadcastRealtimeState(item ? item.rowIndex : rowIndex, true, code, timeStr, nowTs);
