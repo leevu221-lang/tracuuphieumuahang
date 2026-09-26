@@ -2419,10 +2419,22 @@
       .vis-control-label {
         display: none !important;
       }
+    /* Canvas hiệu ứng pháo hoa tung lên khi bấm Sao Chép */
+    #fireworksCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 999999;
     }
   </style>
 </head>
 <body>
+
+  <!-- Canvas Pháo Hoa Tung Lên Giữa Màn Hình Khi Bấm Sao Chép -->
+  <canvas id="fireworksCanvas"></canvas>
 
   <div class="app-container mode-parallel" id="appContainer">
 
@@ -3347,11 +3359,342 @@ CMA_HOA_7721_TC
     }
 
     /**
+     * =========================================================================
+     * HIỆU ỨNG PHÁO HOA TUNG LÊN GIỮA MÀN HÌNH KHI BẤM "SAO CHÉP"
+     * =========================================================================
+     */
+    const fireworksCanvas = document.getElementById('fireworksCanvas');
+    const fwCtx = fireworksCanvas ? fireworksCanvas.getContext('2d') : null;
+    let fwDpr = window.devicePixelRatio || 1;
+    let fwRockets = [];
+    let fwParticles = [];
+    let fwTrailSparks = [];
+    let fwFlashes = [];
+    let fwAnimating = false;
+    let fwAnimId = null;
+    let lastFwTriggerTime = 0;
+
+    function resizeFireworksCanvas() {
+      if (!fireworksCanvas || !fwCtx) return;
+      fwDpr = window.devicePixelRatio || 1;
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      fireworksCanvas.width = Math.floor(w * fwDpr);
+      fireworksCanvas.height = Math.floor(h * fwDpr);
+      fireworksCanvas.style.width = w + 'px';
+      fireworksCanvas.style.height = h + 'px';
+      fwCtx.setTransform(fwDpr, 0, 0, fwDpr, 0, 0);
+    }
+    window.addEventListener('resize', resizeFireworksCanvas);
+    window.addEventListener('orientationchange', () => setTimeout(resizeFireworksCanvas, 150));
+
+    // Bảng màu pháo hoa lễ hội rực rỡ, lung linh
+    const FW_PALETTES = [
+      ['#FFD700', '#FFA500', '#FFF275', '#FFFFFF', '#FFE600'], // Hoàng kim rực rỡ
+      ['#FF007F', '#FF3366', '#FF758C', '#FFFFFF', '#FF2A6D'], // Đỏ ruby & hồng ngọc
+      ['#00F0FF', '#00B4D8', '#90E0EF', '#FFFFFF', '#05D9E8'], // Lam ngọc & neon cyber
+      ['#00FF87', '#39FF14', '#2EC4B6', '#E0AAFF', '#B5179E'], // Lục bảo & ánh tím
+      ['#FF5722', '#FF9800', '#FFEB3B', '#FF1744', '#FFFFFF']  // Pháo hoa ngũ sắc
+    ];
+
+    class FwRocket {
+      constructor(startX, startY, targetX, targetY, palette) {
+        this.x = startX;
+        this.y = startY;
+        this.targetX = targetX;
+        this.targetY = targetY;
+        this.palette = palette;
+        this.angle = Math.atan2(targetY - startY, targetX - startX);
+        const dist = Math.hypot(targetX - startX, targetY - startY);
+        this.speed = Math.max(15, dist / 26);
+        this.history = [];
+        this.exploded = false;
+      }
+
+      update() {
+        this.history.push({ x: this.x, y: this.y });
+        if (this.history.length > 5) this.history.shift();
+
+        // Tàn lửa xì khói rơi lại sau lưng quả pháo
+        if (Math.random() < 0.65) {
+          fwTrailSparks.push(new FwTrailSpark(this.x, this.y));
+        }
+
+        const vx = Math.cos(this.angle) * this.speed;
+        const vy = Math.sin(this.angle) * this.speed;
+        this.x += vx;
+        this.y += vy;
+        this.speed *= 0.985;
+
+        const currentDist = Math.hypot(this.targetX - this.x, this.targetY - this.y);
+        if (this.y <= this.targetY || currentDist <= Math.max(this.speed, 12)) {
+          this.exploded = true;
+        }
+      }
+
+      draw(ctx) {
+        ctx.save();
+        ctx.strokeStyle = '#FFF8DC';
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        if (this.history.length > 0) {
+          ctx.moveTo(this.history[0].x, this.history[0].y);
+          for (let i = 1; i < this.history.length; i++) {
+            ctx.lineTo(this.history[i].x, this.history[i].y);
+          }
+        } else {
+          ctx.moveTo(this.x, this.y);
+        }
+        ctx.lineTo(this.x, this.y);
+        ctx.stroke();
+
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    class FwTrailSpark {
+      constructor(x, y) {
+        this.x = x + (Math.random() - 0.5) * 4;
+        this.y = y;
+        this.vx = (Math.random() - 0.5) * 1.5;
+        this.vy = Math.random() * 2 + 1;
+        this.alpha = 0.85;
+        this.decay = Math.random() * 0.04 + 0.04;
+        this.size = Math.random() * 2 + 1;
+        this.color = Math.random() > 0.4 ? '#FFD700' : '#FFA500';
+      }
+
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.alpha -= this.decay;
+      }
+
+      draw(ctx) {
+        if (this.alpha <= 0) return;
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, this.alpha);
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    class FwFlashRing {
+      constructor(x, y, color) {
+        this.x = x;
+        this.y = y;
+        this.color = color;
+        this.radius = 4;
+        this.maxRadius = 60 + Math.random() * 25;
+        this.alpha = 0.9;
+      }
+
+      update() {
+        this.radius += (this.maxRadius - this.radius) * 0.28;
+        this.alpha -= 0.06;
+      }
+
+      draw(ctx) {
+        if (this.alpha <= 0) return;
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, this.alpha);
+        ctx.strokeStyle = this.color;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    class FwParticle {
+      constructor(x, y, color) {
+        this.x = x;
+        this.y = y;
+        this.color = color;
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 7 + 2.5;
+        this.vx = Math.cos(angle) * speed;
+        this.vy = Math.sin(angle) * speed;
+        this.friction = 0.958;
+        this.gravity = 0.12;
+        this.alpha = 1.0;
+        this.decay = Math.random() * 0.013 + 0.011;
+        this.history = [];
+        this.size = Math.random() * 2.2 + 1.8;
+        this.twinkle = Math.random() > 0.3;
+      }
+
+      update() {
+        this.history.push({ x: this.x, y: this.y });
+        if (this.history.length > 5) this.history.shift();
+
+        this.vx *= this.friction;
+        this.vy = this.vy * this.friction + this.gravity;
+        this.x += this.vx;
+        this.y += this.vy;
+        this.alpha -= this.decay;
+      }
+
+      draw(ctx) {
+        if (this.alpha <= 0) return;
+        ctx.save();
+        const displayAlpha = this.twinkle ? (this.alpha * (0.6 + Math.random() * 0.4)) : this.alpha;
+        ctx.globalAlpha = Math.max(0, displayAlpha);
+
+        ctx.strokeStyle = this.color;
+        ctx.lineWidth = this.size;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        const first = this.history[0] || { x: this.x, y: this.y };
+        ctx.moveTo(first.x, first.y);
+        for (let i = 1; i < this.history.length; i++) {
+          ctx.lineTo(this.history[i].x, this.history[i].y);
+        }
+        ctx.lineTo(this.x, this.y);
+        ctx.stroke();
+
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size * 0.7, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+      }
+    }
+
+    function fwExplode(x, y, palette) {
+      const flashColor = palette[0] || '#FFF';
+      fwFlashes.push(new FwFlashRing(x, y, flashColor));
+
+      const count = Math.floor(Math.random() * 25) + 65;
+      for (let i = 0; i < count; i++) {
+        const color = palette[Math.floor(Math.random() * palette.length)];
+        fwParticles.push(new FwParticle(x, y, color));
+      }
+    }
+
+    function animateFireworks() {
+      if (!fireworksCanvas || !fwCtx) return;
+
+      fwCtx.globalCompositeOperation = 'destination-out';
+      fwCtx.fillStyle = 'rgba(0, 0, 0, 0.22)';
+      fwCtx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+
+      fwCtx.globalCompositeOperation = 'lighter';
+
+      for (let i = fwTrailSparks.length - 1; i >= 0; i--) {
+        const s = fwTrailSparks[i];
+        s.update();
+        if (s.alpha <= 0) {
+          fwTrailSparks.splice(i, 1);
+        } else {
+          s.draw(fwCtx);
+        }
+      }
+
+      for (let i = fwRockets.length - 1; i >= 0; i--) {
+        const r = fwRockets[i];
+        r.update();
+        if (r.exploded) {
+          fwExplode(r.x, r.y, r.palette);
+          fwRockets.splice(i, 1);
+        } else {
+          r.draw(fwCtx);
+        }
+      }
+
+      for (let i = fwFlashes.length - 1; i >= 0; i--) {
+        const f = fwFlashes[i];
+        f.update();
+        if (f.alpha <= 0) {
+          fwFlashes.splice(i, 1);
+        } else {
+          f.draw(fwCtx);
+        }
+      }
+
+      for (let i = fwParticles.length - 1; i >= 0; i--) {
+        const p = fwParticles[i];
+        p.update();
+        if (p.alpha <= 0) {
+          fwParticles.splice(i, 1);
+        } else {
+          p.draw(fwCtx);
+        }
+      }
+
+      if (fwRockets.length === 0 && fwParticles.length === 0 && fwTrailSparks.length === 0 && fwFlashes.length === 0) {
+        fwCtx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+        fwAnimating = false;
+        if (fwAnimId) cancelAnimationFrame(fwAnimId);
+        fwAnimId = null;
+        return;
+      }
+
+      fwAnimId = requestAnimationFrame(animateFireworks);
+    }
+
+    function startFwLoop() {
+      if (!fwAnimating) {
+        resizeFireworksCanvas();
+        fwAnimating = true;
+        fwAnimId = requestAnimationFrame(animateFireworks);
+      }
+    }
+
+    /**
+     * KÍCH HOẠT HIỆU ỨNG PHÁO HOA TUNG LÊN GIỮA MÀN HÌNH
+     */
+    function triggerFireworks() {
+      try {
+        const now = Date.now();
+        if (now - lastFwTriggerTime < 280) return;
+        lastFwTriggerTime = now;
+
+        resizeFireworksCanvas();
+        const w = window.innerWidth || document.documentElement.clientWidth || 360;
+        const h = window.innerHeight || document.documentElement.clientHeight || 640;
+
+        const centerX = w / 2;
+        const centerY = h * 0.42;
+
+        const burstConfigs = [
+          { delay: 0,   startX: centerX - 35, targetX: centerX - 45, targetY: centerY + 25, palette: FW_PALETTES[0] },
+          { delay: 140, startX: centerX + 40, targetX: centerX + 50, targetY: centerY - 35, palette: FW_PALETTES[1] },
+          { delay: 280, startX: centerX,      targetX: centerX,      targetY: centerY - 5,  palette: FW_PALETTES[2] },
+          { delay: 420, startX: centerX - 15, targetX: centerX + 20, targetY: centerY - 55, palette: FW_PALETTES[3] }
+        ];
+
+        burstConfigs.forEach(cfg => {
+          setTimeout(() => {
+            fwRockets.push(new FwRocket(cfg.startX, h + 15, cfg.targetX, cfg.targetY, cfg.palette));
+            startFwLoop();
+          }, cfg.delay);
+        });
+      } catch (err) {
+        console.warn('Fireworks trigger error:', err);
+      }
+    }
+    window.triggerFireworks = triggerFireworks;
+
+    /**
      * COPY TO CLIPBOARD
      */
     function copyToClipboard(text) {
+      // Tung pháo hoa rực rỡ giữa màn hình mỗi khi sao chép
+      triggerFireworks();
       if (navigator.clipboard && window.isSecureContext) {
         return navigator.clipboard.writeText(text);
+
       } else {
         const textarea = document.createElement('textarea');
         textarea.value = text;
@@ -3718,6 +4061,7 @@ CMA_HOA_7721_TC
         if (btnCopy) {
           btnCopy.addEventListener('click', (e) => {
             e.stopPropagation();
+            triggerFireworks();
             copyToClipboard(item.pmhCode).then(() => {
               // BẢO MẬT: Giữ mã phiếu AUTO ẨN (*****), KHÔNG tự ý mở mã khi sao chép
               if (!state.pmh2RevealedCodes) state.pmh2RevealedCodes = {};
@@ -4934,6 +5278,7 @@ CMA_HOA_7721_TC
     };
 
     window.handleCopyAndMark = function(rowIndex, code) {
+      triggerFireworks();
       // BẢO MẬT: Sao chép mã thực vào clipboard nhưng giữ mã AUTO ẨN (*****)
       if (!state.sheet1RevealedCodes) state.sheet1RevealedCodes = {};
       const norm = String(code || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
@@ -4972,6 +5317,7 @@ CMA_HOA_7721_TC
     };
 
     window.handleCopyAgain = function(code) {
+      triggerFireworks();
       if (!state.sheet1RevealedCodes) state.sheet1RevealedCodes = {};
       const norm = String(code || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
       state.sheet1RevealedCodes[norm] = false;
