@@ -65,12 +65,260 @@
     }
 
     /* Khung thẻ chính: Bo tròn 26px giống hệt ảnh mẫu */
+    
+    /* Khung thẻ chính & Chế độ xem song song 2 bảng */
     .app-container {
       width: 100%;
-      max-width: 500px;
-      margin: 20px auto 40px auto;
+      max-width: 520px;
+      margin: 16px auto 40px auto;
       padding: 0 12px;
+      transition: max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
+
+    .app-container.mode-parallel {
+      max-width: 1200px;
+    }
+
+    /* Thanh chọn chế độ xem */
+    .view-mode-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #ffffff;
+      padding: 5px;
+      border-radius: 18px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+      margin-bottom: 18px;
+      gap: 6px;
+      overflow-x: auto;
+    }
+
+    .view-mode-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #64748b;
+      background: transparent;
+      border: 1px solid transparent;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+
+    .view-mode-btn:hover {
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+
+    .view-mode-btn.active {
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      color: #ffffff;
+      box-shadow: 0 3px 10px rgba(2, 132, 199, 0.3);
+    }
+
+    .parallel-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    @media (min-width: 880px) {
+      .app-container.mode-parallel .parallel-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    /* Style riêng cho Bảng 2 (Sheet PMH2 - Xanh Dương Pastel) */
+    .card-header.header-pmh2 {
+      background: linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 100%);
+      border-bottom: 1px solid #bae6fd;
+    }
+
+    .header-pmh2 .header-title {
+      color: #0369a1;
+    }
+
+    .header-pmh2 .header-info-sub {
+      color: #0284c7;
+    }
+
+    .user-pill-row, .type-pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .user-pill, .type-pill {
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 11.5px;
+      font-weight: 700;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      color: #475569;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .user-pill:hover, .type-pill:hover {
+      background: #e2e8f0;
+    }
+
+    .user-pill.active, .type-pill.active {
+      background: #0284c7;
+      color: #ffffff;
+      border-color: #0284c7;
+      box-shadow: 0 2px 8px rgba(2, 132, 199, 0.25);
+    }
+
+    .pmh2-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 14px;
+      max-height: 600px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .pmh2-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 13px 15px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+      transition: all 0.2s ease;
+    }
+
+    .pmh2-card:hover {
+      border-color: #7dd3fc;
+      box-shadow: 0 6px 16px rgba(2, 132, 199, 0.1);
+      transform: translateY(-1px);
+    }
+
+    .pmh2-card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .pmh2-user-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 8px;
+      background: #e0f2fe;
+      color: #0369a1;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .pmh2-user-badge.user-7721 {
+      background: #ede9fe;
+      color: #6d28d9;
+    }
+
+    .pmh2-type-tag {
+      font-size: 10.5px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+
+    .pmh2-type-tag.tag-ict {
+      background: #e0f2fe;
+      color: #0284c7;
+      border: 1px solid #bae6fd;
+    }
+
+    .pmh2-type-tag.tag-mm {
+      background: #d1fae5;
+      color: #059669;
+      border: 1px solid #a7f3d0;
+    }
+
+    .pmh2-code-box {
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      border-radius: 12px;
+      padding: 9px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 8px 0;
+    }
+
+    .pmh2-code-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 16px;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: 0.06em;
+    }
+
+    .btn-copy-pmh2 {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      color: #ffffff;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+      box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25);
+    }
+
+    .btn-copy-pmh2:hover {
+      filter: brightness(1.08);
+      transform: scale(1.02);
+    }
+
+    .btn-copy-pmh2:active {
+      transform: scale(0.97);
+    }
+
+    .pmh2-card-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 4px;
+    }
+
+    .pmh2-status {
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .pmh2-status.status-ok {
+      color: #059669;
+    }
+
+    .pmh2-status.status-err {
+      color: #dc2626;
+    }
+
 
     .main-card {
       background: #ffffff;
@@ -899,8 +1147,26 @@
 </head>
 <body>
 
-  <div class="app-container">
-    <div class="main-card">
+  <div class="app-container mode-parallel" id="appContainer">
+
+    <!-- Thanh chuyển đổi chế độ xem -->
+    <div class="view-mode-bar">
+      <button class="view-mode-btn active" id="btnModeParallel" data-mode="parallel">
+        <span>⚡</span> <span>Song Song 2 Bảng</span>
+      </button>
+      <button class="view-mode-btn" id="btnModeSheet1" data-mode="sheet1">
+        <span>🏷️</span> <span>PMH Siêu Thị (Sheet 1)</span>
+      </button>
+      <button class="view-mode-btn" id="btnModePmh2" data-mode="pmh2">
+        <span>👤</span> <span>PMH User 43751 & 7721 (PMH2)</span>
+      </button>
+    </div>
+
+    <!-- Khung lưới song song 2 bảng -->
+    <div class="parallel-grid" id="parallelGrid">
+
+      <!-- ================= BẢNG 1: PMH SIÊU THỊ 1841 (SHEET 1) ================= -->
+      <div class="main-card col-sheet1" id="cardSheet1">
 
       <!-- Header: Màu kem pastel ấm áp chuẩn ảnh mẫu -->
       <div class="card-header">
@@ -1029,7 +1295,101 @@
         </div>
 
       </div> <!-- .card-body -->
-    </div> <!-- .main-card -->
+      </div> <!-- #cardSheet1 -->
+
+      <!-- ================= BẢNG 2: PMH CẤP THEO USER 43751 & 7721 (SHEET PMH2) ================= -->
+      <div class="main-card col-pmh2" id="cardPmh2">
+        <!-- Header: Xanh pastel thanh lịch -->
+        <div class="card-header header-pmh2">
+          <h1 class="header-title">
+            <span>⚡</span>
+            <span>PMH THEO USER (43751 & 7721)</span>
+          </h1>
+
+          <div class="header-live-badge" style="border-color: #bae6fd;">
+            <span class="live-dot" style="background: #0284c7;"></span>
+            <span id="pmh2ClockDisplay" style="color: #0369a1;">Trang tính PMH2</span>
+          </div>
+
+          <div class="header-info-sub">
+            <span>Sheet: PMH2</span> • <span id="pmh2CountBadge">Đang tải phiếu...</span>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <!-- Bộ lọc User: Tất cả | 43751 (Linh) | 7721 (Hoa) -->
+          <div class="form-group-item">
+            <label class="form-field-label">
+              <span>Lọc Theo Nhân Viên</span>
+            </label>
+            <div class="user-pill-row" id="pmh2UserFilterRow">
+              <button class="user-pill active" data-user="all">Tất cả (43751 & 7721)</button>
+              <button class="user-pill" data-user="43751">👤 43751 (Linh)</button>
+              <button class="user-pill" data-user="7721">👤 7721 (Hoa)</button>
+            </div>
+          </div>
+
+          <!-- Bộ lọc Loại: Tất cả | PMH ICT | PMH MM -->
+          <div class="form-group-item">
+            <label class="form-field-label">
+              <span>Loại Phiếu Mua Hàng</span>
+            </label>
+            <div class="type-pill-row" id="pmh2TypeFilterRow">
+              <button class="type-pill active" data-type="all">Tất cả loại</button>
+              <button class="type-pill" data-type="ICT">📱 PMH ICT</button>
+              <button class="type-pill" data-type="MM">🧺 PMH MM</button>
+            </div>
+          </div>
+
+          <!-- Ô tìm kiếm mã phiếu -->
+          <div class="form-group-item">
+            <label class="form-field-label">
+              <span>Tìm Kiếm Mã PMH / Cú Pháp</span>
+            </label>
+            <div class="search-wrap">
+              <span class="search-icon">🔍</span>
+              <input 
+                type="text" 
+                class="search-input" 
+                id="searchPmh2Input" 
+                placeholder="VD: OXIL5VY5SA, MM200, Linh..."
+                autocomplete="off"
+              >
+              <button class="btn-clear-search" id="btnClearSearchPmh2" title="Xóa tìm kiếm">✕</button>
+            </div>
+          </div>
+
+          <!-- Thống kê nhanh PMH2 -->
+          <div class="filter-stats-row">
+            <div class="filter-tabs">
+              <span style="font-size:12px;font-weight:700;color:#0284c7;" id="pmh2StatsText">0 phiếu</span>
+            </div>
+            <div class="stats-summary" style="display:flex;">
+              <span class="stat-item"><span class="stat-dot dot-avail"></span> Thành công: <strong id="pmh2CountOk" style="color:var(--success-dark)">0</strong></span>
+              <span class="stat-item"><span class="stat-dot dot-used"></span> Hết / Lỗi: <strong id="pmh2CountErr" style="color:var(--danger)">0</strong></span>
+            </div>
+          </div>
+
+          <!-- Loading Box PMH2 -->
+          <div class="loading-wrap" id="loadingBoxPmh2" style="display: flex;">
+            <div class="spinner"></div>
+            <p style="font-weight: 700; color: #0369a1; font-size: 13px;">Đang đồng bộ sheet PMH2...</p>
+          </div>
+
+          <!-- Danh sách thẻ PMH2 -->
+          <div class="pmh2-list" id="pmh2List" style="display: none;"></div>
+
+          <!-- Empty state PMH2 -->
+          <div class="empty-state" id="emptyStatePmh2" style="display: none;">
+            <div class="empty-icon">🔎</div>
+            <h3 class="empty-title">Không tìm thấy phiếu nào</h3>
+            <p class="empty-desc" id="emptyDescPmh2">Không có phiếu PMH khớp với bộ lọc.</p>
+          </div>
+
+        </div>
+      </div> <!-- #cardPmh2 -->
+
+    </div> <!-- .parallel-grid -->
 
     <!-- Element ẩn lưu giữ link footer cho JS -->
     <a id="footerSheetLink" href="https://docs.google.com/spreadsheets/d/17rloLx_U9GhO_QNdpfhsMNEzKnMzCVli9sieVRlmKDU/edit?usp=sharing" style="display: none;"></a>
@@ -1105,7 +1465,12 @@
       searchQuery: '',
       statusFilter: 'all',
       isLoading: false,
-      clientId: 'c_' + Math.random().toString(36).substr(2, 9)
+      clientId: 'c_' + Math.random().toString(36).substr(2, 9),
+      viewMode: 'parallel',
+      pmh2Items: [],
+      pmh2FilterUser: 'all',
+      pmh2FilterType: 'all',
+      pmh2Search: ''
     };
 
     /**
@@ -1252,6 +1617,278 @@
      * 2. GViz CDN: Đồng bộ Google Sheet trong 0.2 - 0.4s (nhanh gấp 10 lần Apps Script)
      * 3. Tuyệt đối không che khuất màn hình nếu đã có dữ liệu
      */
+    
+    /**
+     * TẢI VÀ XỬ LÝ DỮ LIỆU SHEET PMH2 (THEO USER 43751 & 7721)
+     */
+    function loadSheetPmh2GViz() {
+      const sheetId = CONFIG.sheetId || CONFIG.defaultSheetId;
+      const callbackName = 'onGvizResponsePmh2_' + Math.floor(Math.random() * 1000000);
+
+      const loadingBox = document.getElementById('loadingBoxPmh2');
+      if (loadingBox && (!state.pmh2Items || state.pmh2Items.length === 0)) {
+        loadingBox.style.display = 'flex';
+      }
+
+      window[callbackName] = function(res) {
+        delete window[callbackName];
+        const scriptEl = document.getElementById('gviz-script-pmh2');
+        if (scriptEl) scriptEl.remove();
+        parsePmh2GvizData(res);
+      };
+
+      const gvizUrl = 'https://docs.google.com/spreadsheets/d/' + sheetId + '/gviz/tq?sheet=PMH2&tqx=responseHandler:' + callbackName + '&_=' + Date.now();
+      const oldScript = document.getElementById('gviz-script-pmh2');
+      if (oldScript) oldScript.remove();
+
+      const script = document.createElement('script');
+      script.id = 'gviz-script-pmh2';
+      script.src = gvizUrl;
+      script.onerror = function() {
+        delete window[callbackName];
+        if (script.parentNode) script.remove();
+        console.warn('Lỗi tải GViz PMH2');
+        const loadingBox = document.getElementById('loadingBoxPmh2');
+        if (loadingBox) loadingBox.style.display = 'none';
+      };
+      document.head.appendChild(script);
+    }
+
+    function parsePmh2GvizData(res) {
+      const loadingBox = document.getElementById('loadingBoxPmh2');
+      if (loadingBox) loadingBox.style.display = 'none';
+
+      if (!res || !res.table || !res.table.rows) return;
+      const rawRows = res.table.rows;
+      const rawLines = rawRows.map(r => (r && r.c && r.c[0] && r.c[0].v != null) ? String(r.c[0].v).trim() : '');
+      
+      const targetUsers = ['43751', '7721'];
+      const items = [];
+
+      for (let i = 0; i < rawLines.length; i++) {
+        const currentLine = rawLines[i];
+        const matchedUser = targetUsers.find(u => currentLine.includes(u));
+        if (matchedUser) {
+          let pmhLine = '';
+          for (let j = 1; j <= 2 && (i + j) < rawLines.length; j++) {
+            const next = rawLines[i + j];
+            if (next.includes('PMH') || next.includes('➜') || next.includes('❌')) {
+              pmhLine = next;
+              break;
+            }
+          }
+
+          const isError = pmhLine.includes('❌') || 
+                          pmhLine.toLowerCase().includes('đã hết') || 
+                          pmhLine.toLowerCase().includes('không tồn tại') || 
+                          pmhLine.toLowerCase().includes('sai');
+
+          let pmhType = '';
+          let pmhCode = '';
+          let statusText = isError ? 'Thất bại' : 'Thành công';
+
+          const match = pmhLine.match(/(?:➜\s*)?(PMH\s*[^:]+)\s*:\s*([A-Za-z0-9]+)/i);
+          if (match) {
+            pmhType = match[1].trim();
+            pmhCode = match[2].trim();
+          } else if (isError) {
+            statusText = pmhLine.replace(/^➜\s*/, '').trim();
+          } else if (pmhLine.includes('ICT')) {
+            pmhType = 'PMH ICT';
+          } else if (pmhLine.includes('MM')) {
+            pmhType = 'PMH MM';
+          }
+
+          const isICT = pmhType.toUpperCase().includes('ICT') || pmhLine.toUpperCase().includes('ICT');
+
+          items.push({
+            id: 'pmh2_' + matchedUser + '_' + i,
+            userId: matchedUser,
+            userRaw: currentLine,
+            pmhType: pmhType || (isICT ? 'PMH ICT' : 'PMH MM'),
+            pmhCode: pmhCode || 'N/A',
+            isICT: isICT,
+            isError: isError,
+            statusText: statusText,
+            rawText: pmhLine
+          });
+        }
+      }
+
+      state.pmh2Items = items;
+      renderPmh2List();
+    }
+
+    function renderPmh2List() {
+      const listEl = document.getElementById('pmh2List');
+      const emptyEl = document.getElementById('emptyStatePmh2');
+      const badgeEl = document.getElementById('pmh2CountBadge');
+      const statsTextEl = document.getElementById('pmh2StatsText');
+      const countOkEl = document.getElementById('pmh2CountOk');
+      const countErrEl = document.getElementById('pmh2CountErr');
+
+      if (!listEl) return;
+
+      const total = state.pmh2Items.length;
+      const count43751 = state.pmh2Items.filter(i => i.userId === '43751').length;
+      const count7721 = state.pmh2Items.filter(i => i.userId === '7721').length;
+
+      if (badgeEl) {
+        badgeEl.textContent = total + ' phiếu (Linh: ' + count43751 + ' • Hoa: ' + count7721 + ')';
+      }
+
+      const q = boDauTiengViet(state.pmh2Search || '');
+      const filtered = state.pmh2Items.filter(item => {
+        if (state.pmh2FilterUser !== 'all' && item.userId !== state.pmh2FilterUser) return false;
+        if (state.pmh2FilterType === 'ICT' && !item.isICT) return false;
+        if (state.pmh2FilterType === 'MM' && item.isICT) return false;
+
+        if (q) {
+          const userClean = boDauTiengViet(item.userRaw);
+          const codeClean = boDauTiengViet(item.pmhCode);
+          const typeClean = boDauTiengViet(item.pmhType);
+          if (userClean.indexOf(q) === -1 && codeClean.indexOf(q) === -1 && typeClean.indexOf(q) === -1) {
+            return false;
+          }
+        }
+        return true;
+      });
+
+      const okCount = filtered.filter(i => !i.isError).length;
+      const errCount = filtered.filter(i => i.isError).length;
+      if (statsTextEl) statsTextEl.textContent = filtered.length + ' phiếu hiển thị';
+      if (countOkEl) countOkEl.textContent = okCount;
+      if (countErrEl) countErrEl.textContent = errCount;
+
+      if (filtered.length === 0) {
+        listEl.style.display = 'none';
+        if (emptyEl) emptyEl.style.display = 'block';
+        return;
+      }
+
+      if (emptyEl) emptyEl.style.display = 'none';
+      listEl.style.display = 'flex';
+      listEl.innerHTML = '';
+
+      filtered.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'pmh2-card';
+
+        const userTagClass = item.userId === '7721' ? 'pmh2-user-badge user-7721' : 'pmh2-user-badge';
+        const typeClass = item.isICT ? 'pmh2-type-tag tag-ict' : 'pmh2-type-tag tag-mm';
+
+        card.innerHTML = `
+          <div class="pmh2-card-top">
+            <span class="${userTagClass}">
+              <span>👤</span> <span>${escapeHtml(item.userRaw)}</span>
+            </span>
+            <span class="${typeClass}">${escapeHtml(item.pmhType)}</span>
+          </div>
+
+          <div class="pmh2-code-box">
+            <div>
+              <div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;">Mã Phiếu Mua Hàng:</div>
+              <div class="pmh2-code-val">${escapeHtml(item.pmhCode)}</div>
+            </div>
+            ${!item.isError && item.pmhCode && item.pmhCode !== 'N/A' ? `
+              <button class="btn-copy-pmh2" data-code="${escapeHtml(item.pmhCode)}">
+                <span>📋</span> <span>Sao chép</span>
+              </button>
+            ` : ''}
+          </div>
+
+          <div class="pmh2-card-bottom">
+            <span class="pmh2-status ${item.isError ? 'status-err' : 'status-ok'}">
+              ${item.isError ? '❌ ' + escapeHtml(item.statusText) : '✅ Khả dụng'}
+            </span>
+            <span style="font-size:10.5px;color:#94a3b8;">User: ${item.userId}</span>
+          </div>
+        `;
+
+        const btnCopy = card.querySelector('.btn-copy-pmh2');
+        if (btnCopy) {
+          btnCopy.addEventListener('click', (e) => {
+            e.stopPropagation();
+            copyToClipboard(item.pmhCode).then(() => {
+              showToast(item.pmhCode);
+            });
+          });
+        }
+
+        listEl.appendChild(card);
+      });
+    }
+
+    function initPmh2Controls() {
+      // 1. Chế độ xem: Song song / Sheet 1 / PMH2
+      const appContainer = document.getElementById('appContainer');
+      const cardSheet1 = document.getElementById('cardSheet1');
+      const cardPmh2 = document.getElementById('cardPmh2');
+      const modeBtns = document.querySelectorAll('.view-mode-btn');
+
+      modeBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const mode = btn.dataset.mode;
+          state.viewMode = mode;
+          modeBtns.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+
+          if (mode === 'parallel') {
+            appContainer.className = 'app-container mode-parallel';
+            cardSheet1.style.display = 'block';
+            cardPmh2.style.display = 'block';
+          } else if (mode === 'sheet1') {
+            appContainer.className = 'app-container';
+            cardSheet1.style.display = 'block';
+            cardPmh2.style.display = 'none';
+          } else if (mode === 'pmh2') {
+            appContainer.className = 'app-container';
+            cardSheet1.style.display = 'none';
+            cardPmh2.style.display = 'block';
+          }
+        });
+      });
+
+      // 2. Lọc User PMH2
+      const userPills = document.querySelectorAll('#pmh2UserFilterRow .user-pill');
+      userPills.forEach(pill => {
+        pill.addEventListener('click', () => {
+          userPills.forEach(p => p.classList.remove('active'));
+          pill.classList.add('active');
+          state.pmh2FilterUser = pill.dataset.user;
+          renderPmh2List();
+        });
+      });
+
+      // 3. Lọc Loại PMH2 (ICT vs MM)
+      const typePills = document.querySelectorAll('#pmh2TypeFilterRow .type-pill');
+      typePills.forEach(pill => {
+        pill.addEventListener('click', () => {
+          typePills.forEach(p => p.classList.remove('active'));
+          pill.classList.add('active');
+          state.pmh2FilterType = pill.dataset.type;
+          renderPmh2List();
+        });
+      });
+
+      // 4. Ô tìm kiếm PMH2
+      const searchInput = document.getElementById('searchPmh2Input');
+      const btnClear = document.getElementById('btnClearSearchPmh2');
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          state.pmh2Search = e.target.value;
+          renderPmh2List();
+        });
+      }
+      if (btnClear && searchInput) {
+        btnClear.addEventListener('click', () => {
+          searchInput.value = '';
+          state.pmh2Search = '';
+          renderPmh2List();
+        });
+      }
+    }
+
     function loadData(forceSpinner = false) {
       state.isLoading = true;
       els.syncDot.className = 'sync-dot updating';
@@ -1279,6 +1916,7 @@
     }
 
     function loadDirectFromGoogleSheet() {
+      loadSheetPmh2GViz();
       const sheetId = CONFIG.sheetId || CONFIG.defaultSheetId;
       const callbackName = 'onGvizResponse_' + Math.floor(Math.random() * 1000000);
 
@@ -2173,6 +2811,7 @@
       setInterval(updateClock, 1000);
       updateClock();
 
+      initPmh2Controls();
       // Bước 1: Nạp cache tức thì (0.01s người dùng thấy danh sách ngay lập tức)
       loadCachedData();
 
