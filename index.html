@@ -2225,7 +2225,28 @@ CMA_HOA_7721_TC
         }
       }
 
-      state.pmh2Items = items;
+      // Tự động lọc mã trùng: nếu cùng 1 mã phiếu hợp lệ xuất hiện nhiều lần, chỉ hiển thị 1 mã duy nhất
+      const codeMap = new Map();
+      const uniqueItems = [];
+
+      for (const item of items) {
+        if (!item.isError && item.pmhCode && item.pmhCode !== 'N/A') {
+          const normCode = item.pmhCode.trim().toUpperCase();
+          if (codeMap.has(normCode)) {
+            const existing = codeMap.get(normCode);
+            // Hợp nhất trạng thái đã sử dụng nếu có bản ghi đã dùng
+            if (item.isUsed && !existing.isUsed) {
+              existing.isUsed = true;
+              existing.usedTime = item.usedTime;
+            }
+            continue; // Bỏ qua mã trùng, chỉ giữ lại 1 mã duy nhất
+          }
+          codeMap.set(normCode, item);
+        }
+        uniqueItems.push(item);
+      }
+
+      state.pmh2Items = uniqueItems;
       renderPmh2List();
     }
 
@@ -2885,7 +2906,26 @@ CMA_HOA_7721_TC
         return;
       }
 
-      state.items = res.items || [];
+      // Tự động lọc mã trùng cho Bảng 1: mỗi mã phiếu chỉ hiển thị 1 lần
+      const seenCodeSheet1 = new Map();
+      const uniqueSheet1Items = [];
+      (res.items || []).forEach(item => {
+        if (item.code) {
+          const norm = item.code.trim().toUpperCase();
+          if (seenCodeSheet1.has(norm)) {
+            const ex = seenCodeSheet1.get(norm);
+            if (item.isUsed && !ex.isUsed) {
+              ex.isUsed = true;
+              ex.usedTime = item.usedTime;
+            }
+            return;
+          }
+          seenCodeSheet1.set(norm, item);
+        }
+        uniqueSheet1Items.push(item);
+      });
+
+      state.items = uniqueSheet1Items;
       state.dates = res.dates || [];
       state.products = res.products || [];
 

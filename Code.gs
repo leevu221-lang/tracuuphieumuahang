@@ -233,19 +233,39 @@ function getSheetData() {
 
   const products = Object.keys(productsSet).sort();
 
+  // Tự động lọc mã trùng: nếu cùng 1 mã phiếu xuất hiện nhiều lần, chỉ giữ lại 1 mã
+  const seenCodes = {};
+  const uniqueItems = [];
+  for (let k = 0; k < items.length; k++) {
+    const codeKey = items[k].code ? String(items[k].code).trim().toUpperCase() : "";
+    if (codeKey) {
+      if (seenCodes[codeKey]) {
+        const existing = seenCodes[codeKey];
+        if (items[k].isUsed && !existing.isUsed) {
+          existing.isUsed = true;
+          existing.usedTime = items[k].usedTime;
+        }
+        continue; // Bỏ qua bản ghi trùng
+      }
+      seenCodes[codeKey] = items[k];
+    }
+    uniqueItems.push(items[k]);
+  }
+
   return {
     success: true,
     sheetName: sheet.getName(),
-    totalItems: items.length,
+    totalItems: uniqueItems.length,
     dates: dates,
     products: products,
-    items: items
+    items: uniqueItems
   };
 }
 
 /**
  * 7. Cập nhật trạng thái phiếu mua hàng (Đã dùng / Chưa dùng)
  * Đồng bộ ngay vào Google Sheet (Hỗ trợ cả Sheet 1 và sheet PMH2):
+ * - Tự động cập nhật tất cả các dòng chứa mã phiếu trùng lặp
  * - Cột B: Checkbox TRUE / FALSE
  * - Cột C: Thời gian sử dụng (dd/MM/yyyy HH:mm:ss)
  * - Cột D: User thao tác
@@ -257,65 +277,59 @@ function markVoucher(rowIndex, isUsed, targetCode, sheetName, user) {
     let targetRow = parseInt(rowIndex, 10);
     const lastRow = sheet.getLastRow();
 
-    // Nếu có targetCode, kiểm tra xem targetRow có chứa targetCode không.
-    // Nếu không khớp (do thêm/xóa dòng), quét toàn bộ cột A để tìm chính xác dòng chứa mã
+    // Nếu có targetCode, tìm tất cả các dòng chứa targetCode để cập nhật đồng loạt
+    const matchedRows = [];
     if (targetCode && lastRow > 0) {
-      let matched = false;
-      if (!isNaN(targetRow) && targetRow >= 1 && targetRow <= lastRow) {
-        const val = String(sheet.getRange(targetRow, 1).getValue());
-        if (val.indexOf(targetCode) !== -1) {
-          matched = true;
-        }
-      }
-
-      if (!matched) {
-        const colA = sheet.getRange(1, 1, lastRow, 1).getValues();
-        for (let i = 0; i < colA.length; i++) {
-          if (String(colA[i][0]).indexOf(targetCode) !== -1) {
-            targetRow = i + 1;
-            matched = true;
-            break;
-          }
+      const colA = sheet.getRange(1, 1, lastRow, 1).getValues();
+      for (let i = 0; i < colA.length; i++) {
+        if (String(colA[i][0]).indexOf(targetCode) !== -1) {
+          matchedRows.push(i + 1);
         }
       }
     }
 
-    if (isNaN(targetRow) || targetRow < 1 || targetRow > sheet.getMaxRows()) {
-      return { success: false, message: "Dòng không hợp lệ: " + rowIndex };
+    if (matchedRows.length === 0 && !isNaN(targetRow) && targetRow >= 1 && targetRow <= lastRow) {
+      matchedRows.push(targetRow);
     }
 
-    const cellA = sheet.getRange(targetRow, 1);
-    const cellB = sheet.getRange(targetRow, 2);
-    const cellC = sheet.getRange(targetRow, 3);
-    const cellD = sheet.getRange(targetRow, 4);
+    if (matchedRows.length === 0) {
+      return { success: false, message: "Không tìm thấy dòng phù hợp: " + rowIndex };
+    }
 
     let timeStr = "";
-
     if (isUsed) {
-      // Đánh dấu đã sử dụng
-      cellB.setValue(true);
       const now = new Date();
       timeStr = Utilities.formatDate(now, Session.getScriptTimeZone() || "GMT+7", "dd/MM/yyyy HH:mm:ss");
-      cellC.setValue(timeStr);
-      if (user) {
-        cellD.setValue(user);
-      }
+    }
 
-      // Định dạng Cột A: Nếu là Sheet chính thì gạch ngang
-      if (!sheetName || sheetName === "PMH") {
-        cellA.setFontLine("line-through");
-        cellA.setFontColor("#718096");
-      }
-    } else {
-      // Hủy đánh dấu (Hoàn tác)
-      cellB.setValue(false);
-      cellC.setValue("");
-      cellD.setValue("");
+    // Cập nhật tất cả các dòng trùng mã
+    for (let m = 0; m < matchedRows.length; m++) {
+      const r = matchedRows[m];
+      const cellA = sheet.getRange(r, 1);
+      const cellB = sheet.getRange(r, 2);
+      const cellC = sheet.getRange(r, 3);
+      const cellD = sheet.getRange(r, 4);
 
-      // Định dạng Cột A: Khôi phục chữ bình thường
-      if (!sheetName || sheetName === "PMH") {
-        cellA.setFontLine("none");
-        cellA.setFontColor("#000000");
+      if (isUsed) {
+        cellB.setValue(true);
+        cellC.setValue(timeStr);
+        if (user) {
+          cellD.setValue(user);
+        }
+
+        if (!sheetName || sheetName === "PMH") {
+          cellA.setFontLine("line-through");
+          cellA.setFontColor("#718096");
+        }
+      } else {
+        cellB.setValue(false);
+        cellC.setValue("");
+        cellD.setValue("");
+
+        if (!sheetName || sheetName === "PMH") {
+          cellA.setFontLine("none");
+          cellA.setFontColor("#000000");
+        }
       }
     }
 
@@ -324,7 +338,8 @@ function markVoucher(rowIndex, isUsed, targetCode, sheetName, user) {
 
     return {
       success: true,
-      rowIndex: targetRow,
+      rowIndex: matchedRows[0],
+      matchedRowsCount: matchedRows.length,
       code: targetCode,
       isUsed: isUsed,
       usedTime: timeStr,
