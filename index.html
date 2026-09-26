@@ -2547,9 +2547,6 @@
 
       <!-- Header: Màu kem pastel ấm áp chuẩn ảnh mẫu -->
       <div class="card-header">
-        <button type="button" class="btn-hide-panel" id="btnHidePanelSheet1" title="Ẩn Bảng Sheet 1 trên tất cả trình duyệt">
-          <span>👁️</span> <span>Ẩn Bảng</span>
-        </button>
         <div class="header-top-actions" style="display: none;">
           <button class="btn-header-action" id="btnRefresh" title="Tải lại dữ liệu">
             <span>🔄</span>
@@ -2681,9 +2678,6 @@
       <div class="main-card col-pmh2" id="cardPmh2">
         <!-- Header: Xanh pastel thanh lịch -->
         <div class="card-header header-pmh2">
-          <button type="button" class="btn-hide-panel" id="btnHidePanelPmh2" title="Ẩn Bảng PMH2 trên tất cả trình duyệt">
-            <span>👁️</span> <span>Ẩn Bảng</span>
-          </button>
           <h1 class="header-title">
             <span>⚡</span>
             <span>PMH THEO USER (43751 & 7721)</span>
@@ -4131,20 +4125,6 @@ CMA_HOA_7721_TC
           } else {
             setTabVisibility(false, false);
           }
-        });
-      }
-
-      if (btnHidePanelSheet1) {
-        btnHidePanelSheet1.addEventListener('click', (e) => {
-          e.stopPropagation();
-          setTabVisibility(false, state.tabVisibility.pmh2);
-        });
-      }
-
-      if (btnHidePanelPmh2) {
-        btnHidePanelPmh2.addEventListener('click', (e) => {
-          e.stopPropagation();
-          setTabVisibility(state.tabVisibility.sheet1, false);
         });
       }
 
