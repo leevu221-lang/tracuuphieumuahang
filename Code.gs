@@ -98,6 +98,22 @@ function handleApiOrHtml(e) {
       .setMimeType(ContentService.MimeType.JSON);
   }
 
+  // API 4: Lấy trạng thái ẩn/hiện 2 tab (Sheet 1 và PMH2)
+  if (params && params.action === "getTabVisibility") {
+    const vis = getTabVisibility();
+    return ContentService.createTextOutput(JSON.stringify({ success: true, visibility: vis }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // API 5: Lưu trạng thái ẩn/hiện 2 tab (Sheet 1 và PMH2)
+  if (params && params.action === "setTabVisibility") {
+    const sheet1 = params.sheet1 === undefined ? true : (params.sheet1 === "true" || params.sheet1 === true || params.sheet1 === "1");
+    const pmh2 = params.pmh2 === undefined ? true : (params.pmh2 === "true" || params.pmh2 === true || params.pmh2 === "1");
+    const res = setTabVisibility(sheet1, pmh2);
+    return ContentService.createTextOutput(JSON.stringify(res))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
   return getAppHtmlOutput()
     .setTitle("Hệ Thống Tra Cứu Phiếu Mua Hàng")
     .addMetaTag("viewport", "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no")
@@ -542,6 +558,35 @@ function cleanPmh2SheetData() {
     );
   } catch (err) {
     SpreadsheetApp.getUi().alert("Lỗi", "Không thể dọn dẹp sheet PMH2: " + err.toString(), SpreadsheetApp.getUi().ButtonSet.OK);
+  }
+}
+
+/**
+ * 9. Quản lý trạng thái Ẩn / Hiện 2 Tab (Đồng bộ mọi trình duyệt)
+ */
+function getTabVisibility() {
+  try {
+    const props = PropertiesService.getScriptProperties();
+    const raw = props.getProperty("TAB_VISIBILITY");
+    if (!raw) return { sheet1: true, pmh2: true };
+    return JSON.parse(raw);
+  } catch (e) {
+    return { sheet1: true, pmh2: true };
+  }
+}
+
+function setTabVisibility(sheet1, pmh2) {
+  try {
+    const props = PropertiesService.getScriptProperties();
+    const val = {
+      sheet1: sheet1 === true || sheet1 === "true",
+      pmh2: pmh2 === true || pmh2 === "true",
+      updatedAt: new Date().toISOString()
+    };
+    props.setProperty("TAB_VISIBILITY", JSON.stringify(val));
+    return { success: true, visibility: val };
+  } catch (err) {
+    return { success: false, message: err.toString() };
   }
 }
 

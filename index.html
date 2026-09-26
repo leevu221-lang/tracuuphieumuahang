@@ -137,6 +137,236 @@
       }
     }
 
+    .parallel-grid.single-col,
+    .app-container.mode-parallel .parallel-grid.single-col {
+      grid-template-columns: 1fr !important;
+      max-width: 650px;
+      margin: 0 auto;
+    }
+
+    /* Wrapper bao quanh thanh chọn chế độ xem & điều khiển ẩn/hiện 2 tab */
+    .view-mode-bar-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    @media (min-width: 992px) {
+      .view-mode-bar-wrapper {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+      }
+    }
+
+    .view-mode-bar {
+      margin-bottom: 0 !important;
+    }
+
+    .tab-hide-badge {
+      display: inline-block;
+      background: #ef4444;
+      color: #ffffff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 8px;
+      margin-left: 4px;
+      vertical-align: middle;
+      box-shadow: 0 1px 3px rgba(239, 68, 68, 0.4);
+    }
+
+    /* Thanh điều khiển Ẩn / Hiện 2 Tab (Đồng bộ tức thì mọi máy) */
+    .tab-visibility-control-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #ffffff;
+      padding: 6px 12px;
+      border-radius: 16px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .vis-control-label {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #0369a1;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .vis-control-buttons {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .btn-tab-vis {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 12px;
+      border-radius: 10px;
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      color: #334155;
+      transition: all 0.2s ease;
+    }
+
+    .btn-tab-vis:hover {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+      transform: translateY(-1px);
+    }
+
+    .btn-tab-vis.is-visible {
+      border-color: #86efac;
+      background: #f0fdf4;
+      color: #166534;
+    }
+
+    .btn-tab-vis.is-visible .vis-status {
+      color: #15803d;
+      font-weight: 700;
+    }
+
+    .btn-tab-vis.is-hidden {
+      border-color: #fca5a5;
+      background: #fef2f2;
+      color: #991b1b;
+      box-shadow: 0 1px 4px rgba(239, 68, 68, 0.15);
+    }
+
+    .btn-tab-vis.is-hidden .vis-status {
+      color: #b91c1c;
+      font-weight: 700;
+    }
+
+    .btn-tab-vis.btn-vis-all {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+      color: #475569;
+    }
+
+    .btn-tab-vis.btn-vis-all:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+
+    /* Nút ẩn bảng đặt trên Card Header */
+    .btn-hide-panel {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      z-index: 5;
+    }
+
+    .btn-hide-panel:hover {
+      background: #fee2e2;
+      border-color: #fca5a5;
+      color: #b91c1c;
+      transform: scale(1.03);
+    }
+
+    .card-header {
+      position: relative;
+    }
+
+    /* Khung thông báo khi CẢ 2 BẢNG ĐỀU BỊ ẨN */
+    .all-tabs-hidden-card {
+      background: #ffffff;
+      border-radius: 26px;
+      border: 1px solid #fed7aa;
+      box-shadow: 0 10px 30px rgba(249, 115, 22, 0.08);
+      padding: 45px 25px;
+      text-align: center;
+      max-width: 600px;
+      margin: 30px auto;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .hidden-card-icon {
+      font-size: 50px;
+      margin-bottom: 12px;
+    }
+
+    .hidden-card-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: #c2410c;
+      margin-bottom: 8px;
+    }
+
+    .hidden-card-desc {
+      font-size: 13.5px;
+      color: #64748b;
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+
+    .hidden-card-buttons {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn-restore-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 18px;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #334155;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-restore-tab:hover {
+      background: #e0f2fe;
+      border-color: #7dd3fc;
+      color: #0369a1;
+      transform: translateY(-2px);
+    }
+
+    .btn-restore-tab.btn-restore-all {
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      color: #ffffff;
+      border-color: transparent;
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+    }
+
+    .btn-restore-tab.btn-restore-all:hover {
+      box-shadow: 0 6px 16px rgba(2, 132, 199, 0.45);
+    }
+
     /* Style riêng cho Bảng 2 (Sheet PMH2 - Xanh Dương Pastel) */
     .card-header.header-pmh2 {
       background: linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 100%);
@@ -1521,17 +1751,42 @@
 
   <div class="app-container mode-parallel" id="appContainer">
 
-    <!-- Thanh chuyển đổi chế độ xem -->
-    <div class="view-mode-bar">
-      <button class="view-mode-btn active" id="btnModeParallel" data-mode="parallel">
-        <span>⚡</span> <span>Song Song 2 Bảng</span>
-      </button>
-      <button class="view-mode-btn" id="btnModeSheet1" data-mode="sheet1">
-        <span>🏷️</span> <span>PMH Siêu Thị (Sheet 1)</span>
-      </button>
-      <button class="view-mode-btn" id="btnModePmh2" data-mode="pmh2">
-        <span>👤</span> <span>PMH User 43751 & 7721 (PMH2)</span>
-      </button>
+    <!-- Thanh chuyển đổi chế độ xem & Điều khiển Ẩn/Hiện 2 Tab -->
+    <div class="view-mode-bar-wrapper">
+      <div class="view-mode-bar">
+        <button class="view-mode-btn active" id="btnModeParallel" data-mode="parallel">
+          <span>⚡</span> <span>Song Song 2 Bảng</span>
+        </button>
+        <button class="view-mode-btn" id="btnModeSheet1" data-mode="sheet1">
+          <span>🏷️</span> <span>PMH Siêu Thị (Sheet 1)</span>
+          <span class="tab-hide-badge" id="badgeHiddenSheet1" style="display: none;">Đã ẩn</span>
+        </button>
+        <button class="view-mode-btn" id="btnModePmh2" data-mode="pmh2">
+          <span>👤</span> <span>PMH User 43751 & 7721 (PMH2)</span>
+          <span class="tab-hide-badge" id="badgeHiddenPmh2" style="display: none;">Đã ẩn</span>
+        </button>
+      </div>
+
+      <!-- Khung điều khiển Ẩn / Hiện 2 Tab (Đồng bộ tức thì mọi trình duyệt) -->
+      <div class="tab-visibility-control-bar">
+        <div class="vis-control-label">
+          <span>🔄 Đồng bộ mọi máy:</span>
+        </div>
+        <div class="vis-control-buttons">
+          <button type="button" class="btn-tab-vis is-visible" id="btnToggleVisSheet1" title="Bấm để Ẩn/Hiện Bảng Sheet 1 trên tất cả trình duyệt">
+            <span class="vis-icon">👁️</span>
+            <span>Sheet 1: <strong class="vis-status">Hiện</strong></span>
+          </button>
+          <button type="button" class="btn-tab-vis is-visible" id="btnToggleVisPmh2" title="Bấm để Ẩn/Hiện Bảng PMH2 trên tất cả trình duyệt">
+            <span class="vis-icon">👁️</span>
+            <span>PMH2: <strong class="vis-status">Hiện</strong></span>
+          </button>
+          <button type="button" class="btn-tab-vis btn-vis-all" id="btnToggleVisBoth" title="Ẩn hoặc hiện lại cả 2 bảng trên tất cả trình duyệt">
+            <span class="vis-icon">🔒</span>
+            <span id="textToggleVisBoth">Ẩn Cả 2 Tab</span>
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Khung lưới song song 2 bảng -->
@@ -1542,6 +1797,9 @@
 
       <!-- Header: Màu kem pastel ấm áp chuẩn ảnh mẫu -->
       <div class="card-header">
+        <button type="button" class="btn-hide-panel" id="btnHidePanelSheet1" title="Ẩn Bảng Sheet 1 trên tất cả trình duyệt">
+          <span>👁️</span> <span>Ẩn Bảng</span>
+        </button>
         <div class="header-top-actions" style="display: none;">
           <button class="btn-header-action" id="btnRefresh" title="Tải lại dữ liệu">
             <span>🔄</span>
@@ -1673,6 +1931,9 @@
       <div class="main-card col-pmh2" id="cardPmh2">
         <!-- Header: Xanh pastel thanh lịch -->
         <div class="card-header header-pmh2">
+          <button type="button" class="btn-hide-panel" id="btnHidePanelPmh2" title="Ẩn Bảng PMH2 trên tất cả trình duyệt">
+            <span>👁️</span> <span>Ẩn Bảng</span>
+          </button>
           <h1 class="header-title">
             <span>⚡</span>
             <span>PMH THEO USER (43751 & 7721)</span>
@@ -1847,6 +2108,24 @@ CMA_HOA_7721_TC
 
     </div> <!-- .parallel-grid -->
 
+    <!-- Khung thông báo khi CẢ 2 BẢNG ĐỀU BỊ ẨN TRÊN TOÀN HỆ THỐNG -->
+    <div class="all-tabs-hidden-card" id="allTabsHiddenCard" style="display: none;">
+      <div class="hidden-card-icon">🙈</div>
+      <h2 class="hidden-card-title">Cả 2 Bảng Phiếu Mua Hàng Đang Tạm Ẩn</h2>
+      <p class="hidden-card-desc">Cả 2 bảng (Sheet 1 & PMH2) đã được ẩn trên tất cả các trình duyệt. Bấm nút bên dưới để mở lại bảng bạn muốn xem.</p>
+      <div class="hidden-card-buttons">
+        <button type="button" class="btn-restore-tab" id="btnRestoreSheet1">
+          <span>🏷️</span> <span>Hiện Lại Bảng Sheet 1</span>
+        </button>
+        <button type="button" class="btn-restore-tab" id="btnRestorePmh2">
+          <span>👤</span> <span>Hiện Lại Bảng PMH2</span>
+        </button>
+        <button type="button" class="btn-restore-tab btn-restore-all" id="btnRestoreBoth">
+          <span>⚡</span> <span>Hiện Lại Cả 2 Bảng</span>
+        </button>
+      </div>
+    </div>
+
     <!-- Element ẩn lưu giữ link footer cho JS -->
     <a id="footerSheetLink" href="https://docs.google.com/spreadsheets/d/17rloLx_U9GhO_QNdpfhsMNEzKnMzCVli9sieVRlmKDU/edit?usp=sharing" style="display: none;"></a>
 
@@ -1909,6 +2188,22 @@ CMA_HOA_7721_TC
      * THÔNG TIN KÊNH ĐỒNG BỘ THỜI GIAN THỰC (REALTIME PUB/SUB)
      */
     const REALTIME_TOPIC = 'pmh_sync_17rloLx_' + (CONFIG.sheetId ? CONFIG.sheetId.slice(-6) : 'lmKDU');
+    const VISIBILITY_TOPIC = REALTIME_TOPIC + '_vis';
+
+    // Đọc trạng thái ẩn/hiện 2 tab từ bộ nhớ cục bộ
+    function getStoredTabVisibility() {
+      try {
+        const stored = localStorage.getItem('pmh_tab_visibility');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          return {
+            sheet1: parsed.sheet1 !== false,
+            pmh2: parsed.pmh2 !== false
+          };
+        }
+      } catch (e) {}
+      return { sheet1: true, pmh2: true };
+    }
 
     /**
      * STATE MANAGEMENT
@@ -1930,7 +2225,8 @@ CMA_HOA_7721_TC
       pmh2Search: '',
       pmh2RevealedCodes: {},
       sheet1RevealedCodes: {},
-      pmh2DrawerOpen: false
+      pmh2DrawerOpen: false,
+      tabVisibility: getStoredTabVisibility()
     };
 
     /**
@@ -2603,28 +2899,301 @@ CMA_HOA_7721_TC
       const cardPmh2 = document.getElementById('cardPmh2');
       const modeBtns = document.querySelectorAll('.view-mode-btn');
 
+      function updateViewModeButtons() {
+        modeBtns.forEach(btn => {
+          if (btn.dataset.mode === state.viewMode) {
+            btn.classList.add('active');
+          } else {
+            btn.classList.remove('active');
+          }
+        });
+      }
+
+      /**
+       * CẬP NHẬT GIAO DIỆN ẨN / HIỆN 2 TAB VÀ ĐIỀU PHỐI KHUNG LƯỚI
+       */
+      function updateTabVisibilityUI() {
+        const isSheet1Visible = state.tabVisibility.sheet1 !== false;
+        const isPmh2Visible = state.tabVisibility.pmh2 !== false;
+
+        const parallelGrid = document.getElementById('parallelGrid');
+        const allHiddenCard = document.getElementById('allTabsHiddenCard');
+        const badgeHiddenSheet1 = document.getElementById('badgeHiddenSheet1');
+        const badgeHiddenPmh2 = document.getElementById('badgeHiddenPmh2');
+        const btnToggleVisSheet1 = document.getElementById('btnToggleVisSheet1');
+        const btnToggleVisPmh2 = document.getElementById('btnToggleVisPmh2');
+        const btnToggleVisBoth = document.getElementById('btnToggleVisBoth');
+        const textToggleVisBoth = document.getElementById('textToggleVisBoth');
+
+        // Cập nhật nhãn Đã ẩn trên nút mode
+        if (badgeHiddenSheet1) badgeHiddenSheet1.style.display = isSheet1Visible ? 'none' : 'inline-block';
+        if (badgeHiddenPmh2) badgeHiddenPmh2.style.display = isPmh2Visible ? 'none' : 'inline-block';
+
+        // Cập nhật trạng thái nút toggle Tab 1 (Sheet 1)
+        if (btnToggleVisSheet1) {
+          btnToggleVisSheet1.className = 'btn-tab-vis ' + (isSheet1Visible ? 'is-visible' : 'is-hidden');
+          btnToggleVisSheet1.innerHTML = isSheet1Visible 
+            ? '<span class="vis-icon">👁️</span> <span>Sheet 1: <strong class="vis-status">Hiện</strong></span>'
+            : '<span class="vis-icon">🙈</span> <span>Sheet 1: <strong class="vis-status">Đã ẩn</strong></span>';
+        }
+
+        // Cập nhật trạng thái nút toggle Tab 2 (PMH2)
+        if (btnToggleVisPmh2) {
+          btnToggleVisPmh2.className = 'btn-tab-vis ' + (isPmh2Visible ? 'is-visible' : 'is-hidden');
+          btnToggleVisPmh2.innerHTML = isPmh2Visible 
+            ? '<span class="vis-icon">👁️</span> <span>PMH2: <strong class="vis-status">Hiện</strong></span>'
+            : '<span class="vis-icon">🙈</span> <span>PMH2: <strong class="vis-status">Đã ẩn</strong></span>';
+        }
+
+        // Cập nhật nút Ẩn/Hiện Cả 2
+        const bothHidden = !isSheet1Visible && !isPmh2Visible;
+        if (btnToggleVisBoth) {
+          btnToggleVisBoth.className = 'btn-tab-vis btn-vis-all ' + (bothHidden ? 'is-hidden' : '');
+          btnToggleVisBoth.innerHTML = bothHidden
+            ? '<span class="vis-icon">⚡</span> <span>Hiện Cả 2 Tab</span>'
+            : '<span class="vis-icon">🔒</span> <span>Ẩn Cả 2 Tab</span>';
+        }
+
+        // Trường hợp cả 2 bảng đều bị ẩn trên toàn hệ thống
+        if (bothHidden) {
+          if (cardSheet1) cardSheet1.style.display = 'none';
+          if (cardPmh2) cardPmh2.style.display = 'none';
+          if (parallelGrid) parallelGrid.style.display = 'none';
+          if (allHiddenCard) allHiddenCard.style.display = 'block';
+          return;
+        }
+
+        if (allHiddenCard) allHiddenCard.style.display = 'none';
+        if (parallelGrid) parallelGrid.style.display = 'grid';
+
+        // Điều phối hiển thị theo viewMode và trạng thái ẩn/hiện
+        if (state.viewMode === 'parallel') {
+          if (appContainer) appContainer.className = 'app-container mode-parallel';
+          if (cardSheet1) cardSheet1.style.display = isSheet1Visible ? 'block' : 'none';
+          if (cardPmh2) cardPmh2.style.display = isPmh2Visible ? 'block' : 'none';
+
+          if (isSheet1Visible && isPmh2Visible) {
+            if (parallelGrid) parallelGrid.classList.remove('single-col');
+          } else {
+            if (parallelGrid) parallelGrid.classList.add('single-col');
+          }
+        } else if (state.viewMode === 'sheet1') {
+          if (appContainer) appContainer.className = 'app-container';
+          if (isSheet1Visible) {
+            if (cardSheet1) cardSheet1.style.display = 'block';
+            if (cardPmh2) cardPmh2.style.display = 'none';
+            if (parallelGrid) parallelGrid.classList.add('single-col');
+          } else {
+            if (isPmh2Visible) {
+              state.viewMode = 'pmh2';
+              updateViewModeButtons();
+              if (cardSheet1) cardSheet1.style.display = 'none';
+              if (cardPmh2) cardPmh2.style.display = 'block';
+              if (parallelGrid) parallelGrid.classList.add('single-col');
+            }
+          }
+        } else if (state.viewMode === 'pmh2') {
+          if (appContainer) appContainer.className = 'app-container';
+          if (isPmh2Visible) {
+            if (cardSheet1) cardSheet1.style.display = 'none';
+            if (cardPmh2) cardPmh2.style.display = 'block';
+            if (parallelGrid) parallelGrid.classList.add('single-col');
+          } else {
+            if (isSheet1Visible) {
+              state.viewMode = 'sheet1';
+              updateViewModeButtons();
+              if (cardSheet1) cardSheet1.style.display = 'block';
+              if (cardPmh2) cardPmh2.style.display = 'none';
+              if (parallelGrid) parallelGrid.classList.add('single-col');
+            }
+          }
+        }
+      }
+
+      /**
+       * PHÁT TÍN HIỆU ĐỒNG BỘ ẨN/HIỆN ĐẾN MỌI TRÌNH DUYỆT (REALTIME & PERSISTENT)
+       */
+      function broadcastTabVisibility(sheet1, pmh2) {
+        const payload = {
+          action: 'setTabVisibility',
+          sheet1: !!sheet1,
+          pmh2: !!pmh2,
+          senderId: state.clientId,
+          timestamp: Date.now()
+        };
+        const payloadStr = JSON.stringify(payload);
+
+        // 1. Kênh MQTT (Realtime giữa các máy khác nhau) với retain: true
+        try {
+          if (window.mqttClient && window.mqttClient.connected) {
+            window.mqttClient.publish(VISIBILITY_TOPIC, payloadStr, { retain: true, qos: 0 });
+            window.mqttClient.publish(REALTIME_TOPIC, payloadStr);
+          }
+        } catch (e) {}
+
+        // 2. Kênh BroadcastChannel (Cùng trình duyệt giữa các tab)
+        try {
+          if (window.broadcastChannel) {
+            window.broadcastChannel.postMessage(payload);
+          }
+        } catch (e) {}
+
+        // 3. Kênh LocalStorage storage event
+        try {
+          localStorage.setItem('pmh_sync_cross_tab', JSON.stringify({ ...payload, _t: Date.now() }));
+        } catch (e) {}
+      }
+
+      function saveTabVisibilityToGoogleSheet(sheet1, pmh2) {
+        if (!CONFIG.webAppUrl) return;
+        try {
+          const url = `${CONFIG.webAppUrl}?action=setTabVisibility&sheet1=${!!sheet1}&pmh2=${!!pmh2}&_=${Date.now()}`;
+          fetch(url, { mode: 'no-cors' }).catch(() => {});
+        } catch (e) {}
+      }
+
+      /**
+       * ĐẶT TRẠNG THÁI ẨN/HIỆN VÀ GỬI LỆNH ĐỒNG BỘ
+       */
+      function setTabVisibility(sheet1, pmh2, isRemote = false) {
+        const s1 = (sheet1 !== undefined) ? !!sheet1 : state.tabVisibility.sheet1;
+        const p2 = (pmh2 !== undefined) ? !!pmh2 : state.tabVisibility.pmh2;
+
+        state.tabVisibility.sheet1 = s1;
+        state.tabVisibility.pmh2 = p2;
+
+        try {
+          localStorage.setItem('pmh_tab_visibility', JSON.stringify({
+            sheet1: s1,
+            pmh2: p2,
+            _t: Date.now()
+          }));
+        } catch (e) {}
+
+        updateTabVisibilityUI();
+
+        if (!isRemote) {
+          broadcastTabVisibility(s1, p2);
+          saveTabVisibilityToGoogleSheet(s1, p2);
+
+          let toastMsg = '';
+          if (!s1 && !p2) {
+            toastMsg = '🔒 Đã ẨN CẢ 2 BẢNG trên tất cả trình duyệt!';
+          } else if (!s1) {
+            toastMsg = '🙈 Đã ẨN Bảng Sheet 1 trên tất cả trình duyệt!';
+          } else if (!p2) {
+            toastMsg = '🙈 Đã ẨN Bảng PMH2 trên tất cả trình duyệt!';
+          } else {
+            toastMsg = '👁️ Đã HIỆN LẠI bảng trên tất cả trình duyệt!';
+          }
+          showToast(toastMsg, false, true);
+        }
+      }
+
+      window.setTabVisibility = setTabVisibility;
+      window.updateTabVisibilityUI = updateTabVisibilityUI;
+
+      // Xử lý chuyển đổi chế độ xem
       modeBtns.forEach(btn => {
         btn.addEventListener('click', () => {
           const mode = btn.dataset.mode;
-          state.viewMode = mode;
-          modeBtns.forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-
-          if (mode === 'parallel') {
-            appContainer.className = 'app-container mode-parallel';
-            cardSheet1.style.display = 'block';
-            cardPmh2.style.display = 'block';
-          } else if (mode === 'sheet1') {
-            appContainer.className = 'app-container';
-            cardSheet1.style.display = 'block';
-            cardPmh2.style.display = 'none';
-          } else if (mode === 'pmh2') {
-            appContainer.className = 'app-container';
-            cardSheet1.style.display = 'none';
-            cardPmh2.style.display = 'block';
+          if (mode === 'sheet1' && state.tabVisibility.sheet1 === false) {
+            showToast('⚠️ Bảng Sheet 1 hiện đang bị ẩn trên tất cả trình duyệt!', true);
+            return;
           }
+          if (mode === 'pmh2' && state.tabVisibility.pmh2 === false) {
+            showToast('⚠️ Bảng PMH2 hiện đang bị ẩn trên tất cả trình duyệt!', true);
+            return;
+          }
+          state.viewMode = mode;
+          updateViewModeButtons();
+          updateTabVisibilityUI();
         });
       });
+
+      // Lắng nghe sự kiện click các nút điều khiển Ẩn/Hiện Tab
+      const btnToggleVisSheet1 = document.getElementById('btnToggleVisSheet1');
+      const btnToggleVisPmh2 = document.getElementById('btnToggleVisPmh2');
+      const btnToggleVisBoth = document.getElementById('btnToggleVisBoth');
+      const btnHidePanelSheet1 = document.getElementById('btnHidePanelSheet1');
+      const btnHidePanelPmh2 = document.getElementById('btnHidePanelPmh2');
+      const btnRestoreSheet1 = document.getElementById('btnRestoreSheet1');
+      const btnRestorePmh2 = document.getElementById('btnRestorePmh2');
+      const btnRestoreBoth = document.getElementById('btnRestoreBoth');
+
+      if (btnToggleVisSheet1) {
+        btnToggleVisSheet1.addEventListener('click', () => {
+          setTabVisibility(!state.tabVisibility.sheet1, state.tabVisibility.pmh2);
+        });
+      }
+
+      if (btnToggleVisPmh2) {
+        btnToggleVisPmh2.addEventListener('click', () => {
+          setTabVisibility(state.tabVisibility.sheet1, !state.tabVisibility.pmh2);
+        });
+      }
+
+      if (btnToggleVisBoth) {
+        btnToggleVisBoth.addEventListener('click', () => {
+          const bothHidden = !state.tabVisibility.sheet1 && !state.tabVisibility.pmh2;
+          if (bothHidden) {
+            setTabVisibility(true, true);
+          } else {
+            setTabVisibility(false, false);
+          }
+        });
+      }
+
+      if (btnHidePanelSheet1) {
+        btnHidePanelSheet1.addEventListener('click', (e) => {
+          e.stopPropagation();
+          setTabVisibility(false, state.tabVisibility.pmh2);
+        });
+      }
+
+      if (btnHidePanelPmh2) {
+        btnHidePanelPmh2.addEventListener('click', (e) => {
+          e.stopPropagation();
+          setTabVisibility(state.tabVisibility.sheet1, false);
+        });
+      }
+
+      if (btnRestoreSheet1) {
+        btnRestoreSheet1.addEventListener('click', () => {
+          setTabVisibility(true, state.tabVisibility.pmh2);
+        });
+      }
+
+      if (btnRestorePmh2) {
+        btnRestorePmh2.addEventListener('click', () => {
+          setTabVisibility(state.tabVisibility.sheet1, true);
+        });
+      }
+
+      if (btnRestoreBoth) {
+        btnRestoreBoth.addEventListener('click', () => {
+          setTabVisibility(true, true);
+        });
+      }
+
+      // Khởi chạy cập nhật giao diện ẩn/hiện ban đầu
+      updateTabVisibilityUI();
+
+      // Truy vấn trạng thái ẩn/hiện từ Google Sheet Web App (Server Backup)
+      if (CONFIG.webAppUrl) {
+        fetch(`${CONFIG.webAppUrl}?action=getTabVisibility&_=${Date.now()}`)
+          .then(r => r.json())
+          .then(res => {
+            if (res && res.success && res.visibility) {
+              const s1 = res.visibility.sheet1 !== false;
+              const p2 = res.visibility.pmh2 !== false;
+              if (state.tabVisibility.sheet1 !== s1 || state.tabVisibility.pmh2 !== p2) {
+                setTabVisibility(s1, p2, true);
+              }
+            }
+          })
+          .catch(() => {});
+      }
 
       // 2. Nút Ẩn/Hiện Ô Dán Dữ Liệu PMH2 (Collapsible Drawer)
       const btnToggleDrawer = document.getElementById('btnToggleDrawerPmh2');
@@ -3636,6 +4205,28 @@ CMA_HOA_7721_TC
               if (els.syncText) els.syncText.textContent = 'Đã kết nối trực tiếp (Realtime)';
             }, 3000);
           }
+        } else if (data.action === 'setTabVisibility') {
+          const s1 = data.sheet1 !== false;
+          const p2 = data.pmh2 !== false;
+          if (state.tabVisibility.sheet1 !== s1 || state.tabVisibility.pmh2 !== p2) {
+            if (typeof window.setTabVisibility === 'function') {
+              window.setTabVisibility(s1, p2, true);
+            } else {
+              state.tabVisibility.sheet1 = s1;
+              state.tabVisibility.pmh2 = p2;
+            }
+            let msg = '';
+            if (!s1 && !p2) {
+              msg = '🔒 Một trình duyệt vừa ẨN CẢ 2 BẢNG phiếu!';
+            } else if (!s1) {
+              msg = '⚡ Một trình duyệt vừa ẨN Bảng "PMH Siêu Thị (Sheet 1)"!';
+            } else if (!p2) {
+              msg = '⚡ Một trình duyệt vừa ẨN Bảng "PMH User 43751 & 7721 (PMH2)"!';
+            } else {
+              msg = '👁️ Một trình duyệt vừa HIỂN THỊ LẠI bảng phiếu!';
+            }
+            showToast(msg, false, true);
+          }
         }
       } catch (err) {}
     }
@@ -3705,6 +4296,7 @@ CMA_HOA_7721_TC
             client.on('connect', () => {
               window.mqttClient = client;
               client.subscribe(REALTIME_TOPIC, { qos: 0 });
+              client.subscribe(VISIBILITY_TOPIC, { qos: 0 });
               if (els.syncText) {
                 els.syncText.textContent = 'Đã kết nối trực tiếp (Realtime)';
               }
