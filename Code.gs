@@ -29,7 +29,7 @@ function onOpen() {
  */
 function showSidebar() {
   const html = getAppHtmlOutput()
-    .setTitle("Phiếu Mua Hàng Gia Dụng Giá Sốc")
+    .setTitle("Tra Cứu Mã Phiếu Mua Hàng")
     .setWidth(400);
   SpreadsheetApp.getUi().showSidebar(html);
 }
@@ -41,7 +41,7 @@ function showDialog() {
   const html = getAppHtmlOutput()
     .setWidth(980)
     .setHeight(720);
-  SpreadsheetApp.getUi().showModalDialog(html, "Phiếu Mua Hàng Gia Dụng Giá Sốc");
+  SpreadsheetApp.getUi().showModalDialog(html, "Tra Cứu & Quản Lý Phiếu Mua Hàng");
 }
 
 /**
@@ -83,7 +83,17 @@ function handleApiOrHtml(e) {
       .setMimeType(ContentService.MimeType.JSON);
   }
 
-  // API 2: Dán và lưu ngược dữ liệu vào sheet PMH2
+  // API 2: Dán và lưu ngược dữ liệu vào sheet PMH (Sheet 1)
+  if (params && (params.action === "savePmh" || params.action === "appendPmh")) {
+    const rawData = params.data || (postBody && postBody.data) || "";
+    const mode = params.mode || "append"; // 'append' hoặc 'overwrite'
+    const targetSheetId = params.sheetId || (postBody && postBody.sheetId) || "";
+    const res = savePmhData(rawData, mode, targetSheetId);
+    return ContentService.createTextOutput(JSON.stringify(res))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // API 2b: Dán và lưu ngược dữ liệu vào sheet PMH2
   if (params && (params.action === "savePmh2" || params.action === "appendPmh2")) {
     const rawData = params.data || (postBody && postBody.data) || "";
     const mode = params.mode || "append"; // 'append' hoặc 'overwrite'
@@ -145,7 +155,7 @@ function handleApiOrHtml(e) {
   }
 
   return getAppHtmlOutput()
-    .setTitle("Phiếu Mua Hàng Gia Dụng Giá Sốc")
+    .setTitle("Hệ Thống Tra Cứu Phiếu Mua Hàng")
     .addMetaTag("viewport", "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no")
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
@@ -561,6 +571,120 @@ function savePmh2Data(rawData, mode, targetSheetId) {
 }
 
 /**
+ * 8b. Dán dữ liệu thô và lưu ngược vào Sheet "PMH" (Sheet 1)
+ * - Hỗ trợ mode = 'append' (mặc định: thêm tiếp vào cuối) hoặc 'overwrite' (ghi đè toàn bộ)
+ * - Tự động thiết lập cấu trúc: Cột A (Nội dung phiếu), Cột B (Đã sử dụng - Checkbox), Cột C (Thời gian sử dụng)
+ */
+function savePmhData(rawData, mode, targetSheetId) {
+  try {
+    let ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (targetSheetId && String(targetSheetId).trim()) {
+      try {
+        ss = SpreadsheetApp.openById(String(targetSheetId).trim());
+      } catch (e) {
+        console.warn("Không mở được sheetById:", targetSheetId, e);
+      }
+    }
+    let sheet = null;
+    if (SHEET_NAME) {
+      sheet = ss.getSheetByName(SHEET_NAME);
+    }
+    if (!sheet) {
+      sheet = ss.getSheetByName("PMH");
+    }
+    if (!sheet) {
+      sheet = ss.insertSheet("PMH");
+    }
+
+    if (!rawData || typeof rawData !== "string") {
+      return { success: false, message: "Dữ liệu trống hoặc không hợp lệ" };
+    }
+
+    const lines = rawData.split(/\r?\n/).map(function(l) { return l.trim(); });
+    const formattedLines = [];
+
+    for (let i = 0; i < lines.length; i++) {
+      let line = lines[i];
+      if (!line) continue;
+      // Bỏ qua dòng kẻ phân cách
+      if (/^[━\-=─_~*#]{3,}$/.test(line)) continue;
+
+      // Xử lý nếu copy từ Excel/Sheets có dấu Tab (\t)
+      if (line.indexOf("\t") !== -1) {
+        const parts = line.split("\t").map(function(p) { return p.trim(); }).filter(Boolean);
+        if (parts.length >= 3) {
+          let d = parts[0];
+          if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(d)) d = "Ngày " + d;
+          line = d + " : " + parts[1] + " : " + parts[2];
+        } else if (parts.length === 2) {
+          line = parts[0] + " : " + parts[1];
+        }
+      }
+
+      // Tự động thêm chữ "Ngày " nếu bắt đầu bằng ngày DD/MM/YYYY
+      if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(line)) {
+        line = "Ngày " + line;
+      }
+
+      formattedLines.push(line);
+    }
+
+    if (formattedLines.length === 0) {
+      return { success: false, message: "Không có dòng dữ liệu hợp lệ để lưu" };
+    }
+
+    const rowData = formattedLines.map(function(l) {
+      return [l, false, ""];
+    });
+
+    if (mode === "overwrite") {
+      sheet.clearContents();
+      const headerRange = sheet.getRange(1, 1, 1, 3);
+      headerRange.setValues([["NỘI DUNG PHIẾU MUA HÀNG", "ĐÃ SỬ DỤNG", "THỜI GIAN SỬ DỤNG"]]);
+      headerRange.setFontWeight("bold").setBackground("#2D3748").setFontColor("#FFFFFF").setHorizontalAlignment("center");
+      
+      const startRow = 2;
+      sheet.getRange(startRow, 1, rowData.length, 3).setValues(rowData);
+      try {
+        const checkboxRange = sheet.getRange(startRow, 2, rowData.length, 1);
+        checkboxRange.insertCheckboxes();
+        checkboxRange.setHorizontalAlignment("center");
+      } catch (cbErr) {}
+    } else {
+      let lastRow = sheet.getLastRow();
+      if (lastRow === 0) {
+        sheet.getRange(1, 1, 1, 3).setValues([["NỘI DUNG PHIẾU MUA HÀNG", "ĐÃ SỬ DỤNG", "THỜI GIAN SỬ DỤNG"]]);
+        sheet.getRange(1, 1, 1, 3).setFontWeight("bold").setBackground("#2D3748").setFontColor("#FFFFFF").setHorizontalAlignment("center");
+        lastRow = 1;
+      }
+      const startRow = lastRow + 1;
+      sheet.getRange(startRow, 1, rowData.length, 3).setValues(rowData);
+      try {
+        const checkboxRange = sheet.getRange(startRow, 2, rowData.length, 1);
+        checkboxRange.insertCheckboxes();
+        checkboxRange.setHorizontalAlignment("center");
+      } catch (cbErr) {}
+    }
+
+    SpreadsheetApp.flush();
+
+    return {
+      success: true,
+      mode: mode || "append",
+      totalLines: formattedLines.length,
+      lastRow: sheet.getLastRow(),
+      sheetName: sheet.getName(),
+      message: "Đã lưu thành công " + formattedLines.length + " dòng vào sheet " + sheet.getName()
+    };
+  } catch (err) {
+    return {
+      success: false,
+      message: err.toString()
+    };
+  }
+}
+
+/**
  * Tự động quét và dọn dẹp sheet "PMH2", loại bỏ các user khác, chỉ giữ lại User 43751 & 7721
  */
 function cleanPmh2SheetData() {
@@ -863,7 +987,7 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Phiếu Mua Hàng Gia Dụng Giá Sốc - Siêu Thị 1841</title>
+  <title>Tra Cứu Mã Phiếu Mua Hàng - Siêu Thị 1841</title>
   
   <!-- SEO & Social Meta -->
   <meta name="description" content="Hệ thống tra cứu mã phiếu mua hàng 10 ký tự kết nối trực tiếp Google Sheet cho Siêu thị 1841">
@@ -1578,6 +1702,58 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
       background: #f0f9ff;
       border-color: #7dd3fc;
       transform: rotate(45deg);
+    }
+
+    /* Style riêng cho Toolbar & Drawer Bảng 1 (Sheet PMH) tone Cam Pastel ấm áp */
+    .btn-toggle-drawer-pmh1 {
+      background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+      border-color: #fb923c;
+      color: #c2410c;
+    }
+
+    .btn-toggle-drawer-pmh1:hover {
+      background: #fed7aa;
+      color: #9a3412;
+      border-style: solid;
+      transform: translateY(-1px);
+    }
+
+    .btn-toggle-drawer-pmh1.active {
+      background: #ea580c;
+      color: #ffffff;
+      border-style: solid;
+      border-color: #ea580c;
+      box-shadow: 0 3px 8px rgba(234, 88, 12, 0.25);
+    }
+
+    .btn-refresh-icon-pmh1 {
+      color: #ea580c;
+    }
+
+    .btn-refresh-icon-pmh1:hover {
+      background: #fff7ed;
+      border-color: #fdba74;
+      transform: rotate(45deg);
+    }
+
+    .pmh1-paste-drawer {
+      background: #fffdf5;
+      border: 1.5px solid #fed7aa;
+      box-shadow: 0 4px 12px rgba(217, 119, 6, 0.08);
+    }
+
+    .pmh1-paste-drawer .drawer-title {
+      color: #b45309;
+    }
+
+    .pmh1-paste-drawer .drawer-textarea:focus {
+      border-color: #ea580c;
+      box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.15);
+    }
+
+    .btn-save-to-sheet-pmh1 {
+      background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+      box-shadow: 0 2px 6px rgba(234, 88, 12, 0.25);
     }
 
     /* Khung Dán Dữ Liệu PMH2 (Collapsible Drawer Ẩn/Hiện) */
@@ -3434,7 +3610,7 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
 
         <h1 class="header-title">
           <span>🏷️</span>
-          <span>PHIẾU MUA HÀNG GIA DỤNG GIÁ SỐC</span>
+          <span>TRA CỨU PHIẾU MUA HÀNG</span>
         </h1>
 
         <!-- Badge hình viên thuốc trắng có chấm xanh và thời gian thực y hệt hình mẫu -->
@@ -3451,6 +3627,73 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
 
       <!-- Thân thẻ chứa form nhập liệu: Nền trắng tinh khôi -->
       <div class="card-body">
+
+        <!-- Nút Ẩn/Hiện Ô Dán Dữ Liệu PMH & Nút Tải lại (Giống Tab PMH Admin) -->
+        <div class="pmh2-toolbar pmh1-toolbar">
+          <button type="button" class="btn-toggle-drawer btn-toggle-drawer-pmh1" id="btnToggleDrawerPmh1" aria-expanded="false">
+            <span style="display:flex;align-items:center;gap:6px;">
+              <span>📝</span>
+              <span>Dán Dữ Liệu PMH (Auto Lưu & Đóng)</span>
+            </span>
+            <span class="drawer-caret" id="drawerCaretPmh1">▾</span>
+          </button>
+          <button type="button" class="btn-refresh-icon btn-refresh-icon-pmh1" id="btnRefreshPmh1" title="Tải lại dữ liệu sheet PMH">
+            <span>🔄</span>
+          </button>
+        </div>
+
+        <!-- Khung Dán Dữ Liệu PMH (Collapsible Drawer Ẩn/Hiện) -->
+        <div class="pmh2-paste-drawer pmh1-paste-drawer" id="drawerPastePmh1" style="display: none;">
+          <div class="drawer-inner-header">
+            <div class="drawer-title">
+              <span>📥</span>
+              <span>Dán Dữ Liệu & Tự Động Lưu Về Sheet "PMH"</span>
+            </div>
+            <button type="button" class="btn-close-drawer" id="btnCloseDrawerPmh1" title="Đóng khung">✕</button>
+          </div>
+          <div style="margin: 0 0 10px 0; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+            <span style="display:inline-flex;align-items:center;gap:5px;background:#fff7ed;color:#c2410c;padding:4px 10px;border-radius:12px;font-size:11.5px;font-weight:700;border:1px solid #fed7aa;">
+              ⚡ Tự động nhận diện dữ liệu • Tự lưu & đóng ngay
+            </span>
+          </div>
+          <p class="drawer-subtext">
+            Chỉ cần <strong>dán (Paste / Ctrl+V)</strong> nội dung danh sách phiếu mua hàng vào ô bên dưới. Hệ thống sẽ <strong>tự động lưu vào Sheet "PMH"</strong> và <strong>tự đóng khung ngay</strong>.
+          </p>
+          <textarea 
+            id="txtPastePmh1" 
+            class="drawer-textarea" 
+            rows="6" 
+            placeholder="⚡ Dán nội dung phiếu mua hàng vào đây (Tự động lưu & đóng lại)...
+Ví dụ:
+Ngày 27/09/2026 : Bếp gas đôi Sunhouse SHB3105MD : OXIL5VY5SA
+Ngày 27/09/2026 : Nồi chiên không dầu Philips HD9252 : PMH9827361
+━━━━━━"
+          ></textarea>
+
+          <div class="drawer-mode-select">
+            <span style="font-weight:700;color:#c2410c;">Chế độ lưu:</span>
+            <label class="mode-radio-label">
+              <input type="radio" name="pmh1SaveMode" value="append" checked>
+              <span>Thêm tiếp vào cuối (Append)</span>
+            </label>
+            <label class="mode-radio-label">
+              <input type="radio" name="pmh1SaveMode" value="overwrite">
+              <span>Ghi đè toàn bộ Sheet PMH</span>
+            </label>
+          </div>
+
+          <div class="drawer-actions">
+            <button type="button" class="btn-save-to-sheet btn-save-to-sheet-pmh1" id="btnSaveToSheetPmh1">
+              <span>💾</span>
+              <span id="saveBtnTextPmh1">Lưu Ngược Về Sheet "PMH"</span>
+            </button>
+            <button type="button" class="btn-clear-text" id="btnClearTextPmh1">
+              <span>🗑️ Xoá</span>
+            </button>
+          </div>
+
+          <div class="drawer-status-msg" id="drawerStatusMsgPmh1" style="display: none;"></div>
+        </div>
 
         <!-- Form Group 1: Chọn ngày -->
         <div class="form-group-item">
@@ -4059,6 +4302,7 @@ CMA_HOA_7721_TC
       pmh2Search: '',
       pmh2RevealedCodes: {},
       sheet1RevealedCodes: {},
+      pmh1DrawerOpen: false,
       pmh2DrawerOpen: false,
       tabVisibility: getStoredTabVisibility()
     };
@@ -4910,6 +5154,60 @@ CMA_HOA_7721_TC
     }
 
     /**
+     * DÁN DỮ LIỆU THÔ VÀ LƯU NGƯỢC VỀ GOOGLE SHEET (SHEET PMH)
+     */
+    function savePmhDataToGoogleSheet(rawData, mode) {
+      return new Promise((resolve, reject) => {
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          google.script.run
+            .withSuccessHandler((res) => {
+              resolve(res || { success: true });
+            })
+            .withFailureHandler((err) => {
+              reject(err || new Error('Lỗi Google Apps Script'));
+            })
+            .savePmhData(rawData, mode);
+          return;
+        }
+
+        if (!CONFIG.webAppUrl) {
+          reject(new Error('Chưa cấu hình URL Web App Google Apps Script'));
+          return;
+        }
+
+        const formData = new URLSearchParams();
+        formData.append('action', 'savePmh');
+        formData.append('mode', mode || 'append');
+        formData.append('data', rawData);
+        if (CONFIG.sheetId) {
+          formData.append('sheetId', CONFIG.sheetId);
+        }
+
+        fetch(CONFIG.webAppUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: formData.toString()
+        })
+        .then(() => {
+          resolve({ success: true });
+        })
+        .catch((err) => {
+          try {
+            const url = \`\${CONFIG.webAppUrl}?action=savePmh&mode=\${mode || 'append'}&sheetId=\${encodeURIComponent(CONFIG.sheetId || '')}&data=\${encodeURIComponent(rawData)}&_=\${Date.now()}\`;
+            const ping = new Image();
+            ping.src = url;
+            resolve({ success: true });
+          } catch (e2) {
+            reject(err);
+          }
+        });
+      });
+    }
+
+    /**
      * DÁN DỮ LIỆU THÔ VÀ LƯU NGƯỢC VỀ GOOGLE SHEET (SHEET PMH2)
      */
     function savePmh2DataToGoogleSheet(rawData, mode) {
@@ -5575,6 +5873,188 @@ CMA_HOA_7721_TC
       }
     }
 
+    /**
+     * KHỞI TẠO BỘ ĐIỀU KHIỂN DRAWER DÁN DỮ LIỆU BẢNG 1 (SHEET PMH)
+     */
+    function initPmh1Controls() {
+      const btnToggleDrawer = document.getElementById('btnToggleDrawerPmh1');
+      const drawerPaste = document.getElementById('drawerPastePmh1');
+      const btnCloseDrawer = document.getElementById('btnCloseDrawerPmh1');
+      const btnClearText = document.getElementById('btnClearTextPmh1');
+      const txtPaste = document.getElementById('txtPastePmh1');
+      const btnSaveToSheet = document.getElementById('btnSaveToSheetPmh1');
+      const saveBtnText = document.getElementById('saveBtnTextPmh1');
+      const drawerStatusMsg = document.getElementById('drawerStatusMsgPmh1');
+      const btnRefreshPmh1 = document.getElementById('btnRefreshPmh1');
+
+      let isSavingPmh1 = false;
+
+      function closePmh1Drawer() {
+        state.pmh1DrawerOpen = false;
+        if (drawerPaste) drawerPaste.style.display = 'none';
+        if (btnToggleDrawer) {
+          btnToggleDrawer.classList.remove('active');
+          btnToggleDrawer.setAttribute('aria-expanded', 'false');
+        }
+      }
+
+      function openPmh1Drawer() {
+        state.pmh1DrawerOpen = true;
+        if (drawerPaste) drawerPaste.style.display = 'block';
+        if (btnToggleDrawer) {
+          btnToggleDrawer.classList.add('active');
+          btnToggleDrawer.setAttribute('aria-expanded', 'true');
+        }
+        if (txtPaste) {
+          setTimeout(() => txtPaste.focus(), 60);
+        }
+      }
+
+      if (btnToggleDrawer && drawerPaste) {
+        btnToggleDrawer.addEventListener('click', () => {
+          if (state.pmh1DrawerOpen) {
+            closePmh1Drawer();
+          } else {
+            openPmh1Drawer();
+          }
+        });
+      }
+
+      if (btnCloseDrawer) {
+        btnCloseDrawer.addEventListener('click', () => {
+          closePmh1Drawer();
+        });
+      }
+
+      if (btnClearText && txtPaste) {
+        btnClearText.addEventListener('click', () => {
+          txtPaste.value = '';
+          if (drawerStatusMsg) drawerStatusMsg.style.display = 'none';
+          txtPaste.focus();
+        });
+      }
+
+      if (btnRefreshPmh1) {
+        btnRefreshPmh1.addEventListener('click', () => {
+          loadData(true);
+        });
+      }
+
+      function executeSavePmh1(rawText, isAuto = false) {
+        if (isSavingPmh1) return;
+        const text = (rawText || '').trim();
+        if (!text) {
+          if (!isAuto && drawerStatusMsg) {
+            drawerStatusMsg.className = 'drawer-status-msg error';
+            drawerStatusMsg.textContent = '⚠️ Vui lòng dán nội dung phiếu trước khi lưu!';
+            drawerStatusMsg.style.display = 'block';
+            if (txtPaste) txtPaste.focus();
+          }
+          return;
+        }
+
+        const modeRadio = document.querySelector('input[name="pmh1SaveMode"]:checked');
+        const saveMode = modeRadio ? modeRadio.value : 'append';
+
+        isSavingPmh1 = true;
+        if (btnSaveToSheet) btnSaveToSheet.disabled = true;
+        if (saveBtnText) saveBtnText.textContent = 'Đang lưu lên Sheet "PMH"...';
+
+        const linesCount = text.split('\\n').filter(l => l.trim()).length;
+
+        if (isAuto) {
+          closePmh1Drawer();
+          if (txtPaste) txtPaste.value = '';
+          showToast(\`⚡ Đang lưu \${linesCount} dòng vào Sheet "PMH"...\`, false, true);
+        } else {
+          if (drawerStatusMsg) {
+            drawerStatusMsg.className = 'drawer-status-msg';
+            drawerStatusMsg.style.background = '#fff7ed';
+            drawerStatusMsg.style.color = '#c2410c';
+            drawerStatusMsg.style.border = '1px solid #fed7aa';
+            drawerStatusMsg.textContent = \`⏳ Đang truyền \${linesCount} dòng vào Sheet "PMH"...\`;
+            drawerStatusMsg.style.display = 'block';
+          }
+        }
+
+        savePmhDataToGoogleSheet(text, saveMode)
+          .then(() => {
+            isSavingPmh1 = false;
+            if (btnSaveToSheet) btnSaveToSheet.disabled = false;
+            if (saveBtnText) saveBtnText.textContent = 'Lưu Ngược Về Sheet "PMH"';
+
+            // Phát tín hiệu đồng bộ reload Sheet PMH đến mọi trình duyệt khác
+            if (typeof broadcastPmh1Reload === 'function') {
+              broadcastPmh1Reload();
+            }
+
+            if (isAuto) {
+              showToast(\`✅ Đã lưu thành công \${linesCount} dòng vào Sheet "PMH"!\`, false, true);
+            } else {
+              if (drawerStatusMsg) {
+                drawerStatusMsg.className = 'drawer-status-msg success';
+                drawerStatusMsg.style.display = 'block';
+                drawerStatusMsg.textContent = \`✅ Đã lưu thành công \${linesCount} dòng vào Sheet "PMH"! Tự động đóng khung...\`;
+              }
+              if (txtPaste) txtPaste.value = '';
+              setTimeout(() => {
+                closePmh1Drawer();
+              }, 1200);
+            }
+
+            // Tự động tải lại danh sách phiếu từ Google Sheet
+            setTimeout(() => {
+              loadData(true);
+            }, 800);
+          })
+          .catch((err) => {
+            isSavingPmh1 = false;
+            if (btnSaveToSheet) btnSaveToSheet.disabled = false;
+            if (saveBtnText) saveBtnText.textContent = 'Lưu Ngược Về Sheet "PMH"';
+            showToast('❌ Lỗi khi lưu: ' + (err.message || err), false, true);
+            if (!isAuto && drawerStatusMsg) {
+              drawerStatusMsg.className = 'drawer-status-msg error';
+              drawerStatusMsg.style.display = 'block';
+              drawerStatusMsg.textContent = '❌ Lỗi khi lưu: ' + (err.message || err);
+            }
+          });
+      }
+
+      if (btnSaveToSheet && txtPaste) {
+        btnSaveToSheet.addEventListener('click', () => {
+          const rawText = txtPaste.value.trim();
+          executeSavePmh1(rawText, false);
+        });
+      }
+
+      // LẮNG NGHE SỰ KIỆN DÁN (PASTE) VÀO Ô DỮ LIỆU
+      if (txtPaste) {
+        txtPaste.addEventListener('paste', (e) => {
+          let pastedData = '';
+          if (e.clipboardData && e.clipboardData.getData) {
+            pastedData = e.clipboardData.getData('text/plain') || e.clipboardData.getData('text');
+          }
+          setTimeout(() => {
+            const textToSave = (pastedData && pastedData.trim()) ? pastedData.trim() : (txtPaste.value ? txtPaste.value.trim() : '');
+            if (textToSave) {
+              executeSavePmh1(textToSave, true);
+            }
+          }, 60);
+        });
+
+        // Bổ sung hỗ trợ dán trên thiết bị di động
+        txtPaste.addEventListener('input', (e) => {
+          if (isSavingPmh1) return;
+          if (e.inputType === 'insertFromPaste' || (txtPaste.value && txtPaste.value.length > 20 && (txtPaste.value.includes('\\n') || txtPaste.value.includes('Ngày') || txtPaste.value.includes(':')))) {
+            const textToSave = txtPaste.value.trim();
+            if (textToSave) {
+              executeSavePmh1(textToSave, true);
+            }
+          }
+        });
+      }
+    }
+
     function loadData(forceSpinner = false) {
       state.isLoading = true;
       els.syncDot.className = 'sync-dot updating';
@@ -6151,6 +6631,31 @@ CMA_HOA_7721_TC
     }
 
     /**
+     * PHÁT TÍN HIỆU TẢI LẠI SHEET PMH KHI CÓ DỮ LIỆU MỚI ĐƯỢC DÁN VÀO
+     */
+    function broadcastPmh1Reload() {
+      const payload = {
+        action: 'reloadPmh1',
+        senderId: state.clientId,
+        timestamp: Date.now()
+      };
+      const payloadStr = JSON.stringify(payload);
+      try {
+        if (window.mqttClient && window.mqttClient.connected) {
+          window.mqttClient.publish(REALTIME_TOPIC, payloadStr);
+        }
+      } catch (e) {}
+      try {
+        if (window.broadcastChannel) {
+          window.broadcastChannel.postMessage(payload);
+        }
+      } catch (e) {}
+      try {
+        localStorage.setItem('pmh_sync_cross_tab', JSON.stringify({ ...payload, _t: Date.now() }));
+      } catch (e) {}
+    }
+
+    /**
      * PHÁT TÍN HIỆU TẢI LẠI SHEET PMH2 KHI CÓ DỮ LIỆU MỚI ĐƯỢC DÁN VÀO
      */
     function broadcastPmh2Reload() {
@@ -6258,6 +6763,14 @@ CMA_HOA_7721_TC
 
         if (data.action === 'markUsed') {
           applyVoucherStateFromRemote(data.code, data.isUsed, data.time, data.rowIndex, data.sheet, data.user, data.timestamp);
+        } else if (data.action === 'reloadPmh1' || data.action === 'reloadPmh') {
+          loadData(true);
+          if (els.syncText) {
+            els.syncText.textContent = '⚡ Trình duyệt khác vừa lưu dữ liệu PMH!';
+            setTimeout(() => {
+              if (els.syncText) els.syncText.textContent = 'Đã kết nối trực tiếp (Realtime)';
+            }, 3000);
+          }
         } else if (data.action === 'reloadPmh2') {
           loadSheetPmh2GViz();
           if (els.syncText) {
@@ -6648,14 +7161,14 @@ CMA_HOA_7721_TC
         if (els.linkOpenSheet) els.linkOpenSheet.href = sheetUrl;
         if (els.footerSheetLink) els.footerSheetLink.href = sheetUrl;
         if (els.sheetInfo) els.sheetInfo.textContent = (CONFIG.branchName || CONFIG.cloneSlug) + ' ⚡';
-        document.title = \`Phiếu Mua Hàng Gia Dụng Giá Sốc - \${CONFIG.branchName || CONFIG.cloneSlug}\`;
+        document.title = \`Tra Cứu Phiếu Mua Hàng - \${CONFIG.branchName || CONFIG.cloneSlug}\`;
       } else {
         if (els.cloneTopBanner) els.cloneTopBanner.style.display = 'none';
         const clones = getStoredClones();
         if (els.adminCloneCountBadge) els.adminCloneCountBadge.textContent = clones.length;
         if (els.adminToggleCountBadge) els.adminToggleCountBadge.textContent = clones.length;
         setAdminBannerVisibility(adminBannerVisible); // Mặc định = false
-        document.title = 'Phiếu Mua Hàng Gia Dụng Giá Sốc (Link Gốc Admin Quản Trị)';
+        document.title = 'Tra Cứu Phiếu Mua Hàng Siêu Tốc (Link Gốc Admin Quản Trị)';
       }
     }
 
@@ -7006,6 +7519,7 @@ CMA_HOA_7721_TC
       // Bước 0.5: Khởi tạo hệ thống bản sao & thanh nhận diện Admin / Bản sao
       initCloneSystem();
 
+      initPmh1Controls();
       initPmh2Controls();
       // Bước 1: Nạp cache tức thì (0.01s người dùng thấy danh sách ngay lập tức)
       loadCachedData();
