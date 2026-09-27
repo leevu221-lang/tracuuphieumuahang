@@ -29,7 +29,7 @@ function onOpen() {
  */
 function showSidebar() {
   const html = getAppHtmlOutput()
-    .setTitle("Tra Cứu Mã Phiếu Mua Hàng")
+    .setTitle("Phiếu Mua Hàng Gia Dụng Giá Sốc")
     .setWidth(400);
   SpreadsheetApp.getUi().showSidebar(html);
 }
@@ -41,7 +41,7 @@ function showDialog() {
   const html = getAppHtmlOutput()
     .setWidth(980)
     .setHeight(720);
-  SpreadsheetApp.getUi().showModalDialog(html, "Tra Cứu & Quản Lý Phiếu Mua Hàng");
+  SpreadsheetApp.getUi().showModalDialog(html, "Phiếu Mua Hàng Gia Dụng Giá Sốc");
 }
 
 /**
@@ -145,7 +145,7 @@ function handleApiOrHtml(e) {
   }
 
   return getAppHtmlOutput()
-    .setTitle("Hệ Thống Tra Cứu Phiếu Mua Hàng")
+    .setTitle("Phiếu Mua Hàng Gia Dụng Giá Sốc")
     .addMetaTag("viewport", "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no")
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
@@ -863,7 +863,7 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Tra Cứu Mã Phiếu Mua Hàng - Siêu Thị 1841</title>
+  <title>Phiếu Mua Hàng Gia Dụng Giá Sốc - Siêu Thị 1841</title>
   
   <!-- SEO & Social Meta -->
   <meta name="description" content="Hệ thống tra cứu mã phiếu mua hàng 10 ký tự kết nối trực tiếp Google Sheet cho Siêu thị 1841">
@@ -3434,7 +3434,7 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
 
         <h1 class="header-title">
           <span>🏷️</span>
-          <span>TRA CỨU PHIẾU MUA HÀNG</span>
+          <span>PHIẾU MUA HÀNG GIA DỤNG GIÁ SỐC</span>
         </h1>
 
         <!-- Badge hình viên thuốc trắng có chấm xanh và thời gian thực y hệt hình mẫu -->
@@ -6648,14 +6648,14 @@ CMA_HOA_7721_TC
         if (els.linkOpenSheet) els.linkOpenSheet.href = sheetUrl;
         if (els.footerSheetLink) els.footerSheetLink.href = sheetUrl;
         if (els.sheetInfo) els.sheetInfo.textContent = (CONFIG.branchName || CONFIG.cloneSlug) + ' ⚡';
-        document.title = \`Tra Cứu Phiếu Mua Hàng - \${CONFIG.branchName || CONFIG.cloneSlug}\`;
+        document.title = \`Phiếu Mua Hàng Gia Dụng Giá Sốc - \${CONFIG.branchName || CONFIG.cloneSlug}\`;
       } else {
         if (els.cloneTopBanner) els.cloneTopBanner.style.display = 'none';
         const clones = getStoredClones();
         if (els.adminCloneCountBadge) els.adminCloneCountBadge.textContent = clones.length;
         if (els.adminToggleCountBadge) els.adminToggleCountBadge.textContent = clones.length;
         setAdminBannerVisibility(adminBannerVisible); // Mặc định = false
-        document.title = 'Tra Cứu Phiếu Mua Hàng Siêu Tốc (Link Gốc Admin Quản Trị)';
+        document.title = 'Phiếu Mua Hàng Gia Dụng Giá Sốc (Link Gốc Admin Quản Trị)';
       }
     }
 
