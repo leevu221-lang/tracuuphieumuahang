@@ -1410,6 +1410,13 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
       box-shadow: 0 2px 8px rgba(2, 132, 199, 0.25);
     }
 
+    .pill-count-badge {
+      font-size: 11px;
+      font-weight: 700;
+      margin-left: 3px;
+      opacity: 0.9;
+    }
+
     .pmh2-list {
       display: flex;
       flex-direction: column;
@@ -3916,9 +3923,18 @@ CMA_HOA_7721_TC
               <span>Loại Phiếu Mua Hàng</span>
             </label>
             <div class="type-pill-row" id="pmh2TypeFilterRow">
-              <button class="type-pill active" data-type="all">Tất cả loại</button>
-              <button class="type-pill" data-type="ICT">📱 PMH ICT</button>
-              <button class="type-pill" data-type="MM">🧺 PMH MM</button>
+              <button class="type-pill active" data-type="all">
+                <span>Tất cả loại</span>
+                <span class="pill-count-badge" id="pmh2TypeAllBadge"></span>
+              </button>
+              <button class="type-pill" data-type="ICT">
+                <span>📱 PMH ICT</span>
+                <span class="pill-count-badge" id="pmh2TypeIctBadge"></span>
+              </button>
+              <button class="type-pill" data-type="MM">
+                <span>🧺 PMH MM</span>
+                <span class="pill-count-badge" id="pmh2TypeMmBadge"></span>
+              </button>
             </div>
           </div>
 
@@ -4924,6 +4940,31 @@ CMA_HOA_7721_TC
       if (badgeEl) {
         badgeEl.textContent = total + ' phiếu (Linh: ' + count43751 + ' • Hoa: ' + count7721 + ')';
       }
+
+      // Tính số lượng còn lại trên số lượng tổng cho từng Loại Phiếu Mua Hàng (theo User đang chọn)
+      const userFilteredForTypes = state.pmh2Items.filter(item => {
+        if (state.pmh2FilterUser !== 'all' && item.userId !== state.pmh2FilterUser) return false;
+        return true;
+      });
+
+      const allTotal = userFilteredForTypes.length;
+      const allAvail = userFilteredForTypes.filter(i => !i.isError && !i.isUsed).length;
+
+      const ictList = userFilteredForTypes.filter(i => i.isICT);
+      const ictTotal = ictList.length;
+      const ictAvail = ictList.filter(i => !i.isError && !i.isUsed).length;
+
+      const mmList = userFilteredForTypes.filter(i => !i.isICT);
+      const mmTotal = mmList.length;
+      const mmAvail = mmList.filter(i => !i.isError && !i.isUsed).length;
+
+      const typeAllBadge = document.getElementById('pmh2TypeAllBadge');
+      const typeIctBadge = document.getElementById('pmh2TypeIctBadge');
+      const typeMmBadge = document.getElementById('pmh2TypeMmBadge');
+
+      if (typeAllBadge) typeAllBadge.textContent = \`(\${allAvail}/\${allTotal})\`;
+      if (typeIctBadge) typeIctBadge.textContent = \`(\${ictAvail}/\${ictTotal})\`;
+      if (typeMmBadge) typeMmBadge.textContent = \`(\${mmAvail}/\${mmTotal})\`;
 
       const q = boDauTiengViet(state.pmh2Search || '');
       const filtered = state.pmh2Items.filter(item => {
