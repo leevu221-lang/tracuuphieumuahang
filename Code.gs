@@ -976,10 +976,25 @@ function showHelp() {
 
 
 /**
- * Trả về giao diện HTML (Tích hợp All-in-One, không sợ lỗi thiếu file Index.html)
+ * Trả về giao diện HTML:
+ * 1. Ưu tiên nạp từ tệp "Index.html" chuẩn trong Apps Script (Tối ưu nhất, tải nhanh, không lỗi cú pháp)
+ * 2. Tự động fallback về chuỗi INDEX_HTML_CONTENT nếu người dùng chỉ dùng 1 tệp Mã.gs All-in-One
  */
 function getAppHtmlOutput() {
-  return HtmlService.createHtmlOutput(INDEX_HTML_CONTENT);
+  try {
+    return HtmlService.createHtmlOutputFromFile("Index")
+      .setTitle("Tra Cứu Mã Phiếu Mua Hàng")
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+      .addMetaTag("viewport", "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no");
+  } catch (e) {
+    if (typeof INDEX_HTML_CONTENT !== "undefined" && INDEX_HTML_CONTENT) {
+      return HtmlService.createHtmlOutput(INDEX_HTML_CONTENT)
+        .setTitle("Tra Cứu Mã Phiếu Mua Hàng")
+        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+        .addMetaTag("viewport", "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no");
+    }
+    return HtmlService.createHtmlOutput("<h2>Không tìm thấy tệp Index.html. Vui lòng tạo tệp Index.html trong Apps Script!</h2>");
+  }
 }
 
 const INDEX_HTML_CONTENT = `<!DOCTYPE html>
