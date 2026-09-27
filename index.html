@@ -2433,85 +2433,12 @@
       pointer-events: none !important;
       z-index: 99999999 !important;
     }
-
-    /* Thông báo Đã sao chép nhỏ gọn, thanh lịch ngay tâm màn hình (Chuẩn Hình 2) */
-    .celebration-center-burst {
-      position: fixed !important;
-      top: 50% !important;
-      left: 50% !important;
-      transform: translate(-50%, -50%) scale(0.85) !important;
-      background: rgba(15, 23, 42, 0.92) !important;
-      backdrop-filter: blur(10px) !important;
-      -webkit-backdrop-filter: blur(10px) !important;
-      color: #ffffff !important;
-      padding: 7px 16px !important;
-      border-radius: 999px !important;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 0 14px rgba(245, 158, 11, 0.25) !important;
-      border: 1.5px solid rgba(245, 158, 11, 0.7) !important;
-      display: flex !important;
-      align-items: center !important;
-      gap: 8px !important;
-      pointer-events: none !important;
-      z-index: 100000000 !important;
-      opacity: 0 !important;
-      visibility: hidden !important;
-      transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.25s ease !important;
-      max-width: 90vw !important;
-      white-space: nowrap !important;
-    }
-    .celebration-center-burst.show {
-      opacity: 1 !important;
-      visibility: visible !important;
-      transform: translate(-50%, -50%) scale(1.0) !important;
-    }
-    .burst-icon {
-      font-size: 16px !important;
-      line-height: 1 !important;
-      animation: burstIconBounce 0.5s infinite alternate !important;
-    }
-    @keyframes burstIconBounce {
-      from { transform: scale(0.95) rotate(-6deg); }
-      to { transform: scale(1.15) rotate(6deg); }
-    }
-    .burst-content {
-      display: flex !important;
-      flex-direction: row !important;
-      align-items: center !important;
-      gap: 6px !important;
-      line-height: 1.2 !important;
-    }
-    .burst-title {
-      font-size: 12.5px !important;
-      font-weight: 700 !important;
-      color: #fde047 !important;
-      letter-spacing: 0.3px !important;
-    }
-    .burst-code {
-      font-size: 13px !important;
-      font-weight: 800 !important;
-      color: #38bdf8 !important;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
-      letter-spacing: 0.8px !important;
-    }
-    .burst-code:empty {
-      display: none !important;
-    }
   </style>
 </head>
 <body>
 
-  <!-- Canvas Pháo Hoa / Pháo Giấy Tung Lên Giữa Màn Hình Khi Bấm Sao Chép -->
+  <!-- Canvas Pháo Giấy Tung Lên Giữa Màn Hình Khi Bấm Sao Chép (Chuẩn Hình 2) -->
   <canvas id="fireworksCanvas"></canvas>
-
-  <!-- Khung Bùng Nổ Giữa Màn Hình Khi Bấm Sao Chép (Nhỏ gọn, thanh lịch) -->
-  <div class="celebration-center-burst" id="celebrationBurst" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.85); opacity: 0; visibility: hidden; pointer-events: none; z-index: 100000000;">
-    <div class="burst-icon" id="burstIcon">🎉</div>
-    <div class="burst-content">
-      <div class="burst-title">ĐÃ SAO CHÉP MÃ!</div>
-      <div class="burst-code" id="burstCode"></div>
-    </div>
-  </div>
-
 
   <div class="app-container mode-parallel" id="appContainer">
 
@@ -3449,7 +3376,6 @@ CMA_HOA_7721_TC
     let fwAnimating = false;
     let fwAnimId = null;
     let lastFwTriggerTime = 0;
-    let burstPopupTimeout = null;
 
     // Bảng màu rực rỡ, tươi vui chuẩn pháo giấy lễ hội (như Hình 2)
     const CONFETTI_PALETTE = [
@@ -3586,9 +3512,9 @@ CMA_HOA_7721_TC
     }
 
     /**
-     * KÍCH HOẠT PHÁO GIẤY TỨC THÌ 0MS VÀ HIỂN THỊ THÔNG BÁO NHỎ GỌN TRUNG TÂM
+     * KÍCH HOẠT PHÁO GIẤY TỨC THÌ 0MS KHI BẤM "SAO CHÉP" (CHỈ HIỂN THỊ PHÁO GIẤY, KHÔNG HIỆN CHỮ)
      */
-    function triggerFireworks(code) {
+    function triggerFireworks() {
       try {
         const now = Date.now();
         if (now - lastFwTriggerTime < 200) return;
@@ -3599,26 +3525,13 @@ CMA_HOA_7721_TC
         const centerX = w / 2;
         const centerY = h * 0.48; // Tâm nổ ở chính giữa màn hình
 
-        // 1. HIỂN THỊ THÔNG BÁO NHỎ GỌN NGAY TÂM MÀN HÌNH (0ms)
-        const burstEl = document.getElementById('celebrationBurst');
-        const codeEl = document.getElementById('burstCode');
-        if (burstEl) {
-          if (codeEl) codeEl.textContent = code ? String(code) : '';
-          burstEl.classList.add('show');
-          if (burstPopupTimeout) clearTimeout(burstPopupTimeout);
-          // Hiển thị gọn gàng trong ~2.6 giây rồi mờ dần
-          burstPopupTimeout = setTimeout(() => {
-            burstEl.classList.remove('show');
-          }, 2600);
-        }
-
-        // 2. TẠO 95 MẢNH PHÁO GIẤY RỰC RỠ RƠI CHAO LIỆNG 3 GIÂY (Chuẩn Hình 2)
+        // TẠO 95 MẢNH PHÁO GIẤY RỰC RỠ RƠI CHAO LIỆNG 3 GIÂY (Chuẩn Hình 2)
         const count = 95;
         for (let i = 0; i < count; i++) {
           confettiPieces.push(new ConfettiPiece(centerX, centerY));
         }
 
-        // 3. KHỞI CHẠY VÒNG LẶP RENDER CANVAS 60FPS KHÔNG TRỄ
+        // KHỞI CHẠY VÒNG LẶP RENDER CANVAS 60FPS KHÔNG TRỄ
         if (!fwAnimating) {
           fwAnimating = true;
           fwAnimId = requestAnimationFrame(animateConfetti);
@@ -3629,16 +3542,24 @@ CMA_HOA_7721_TC
     }
     window.triggerFireworks = triggerFireworks;
 
-    // BẮT SỰ KIỆN POINTERDOWN VÀ CLICK Ở TẦNG CAPTURING ĐẢM BẢO 0MS PHẢN HỒI NGAY KHI CHẠM
+    // BẮT SỰ KIỆN POINTERDOWN VÀ CLICK Ở TẦNG CAPTURING:
+    // - Chỉ hiển thị trên trình duyệt người bấm "Sao chép"
+    // - TUYỆT ĐỐI KHÔNG nổ pháo giấy khi bấm mũi tên Hoàn tác / Phục hồi phiếu
     function handleCopyCaptureTrigger(e) {
       try {
         const target = e.target;
         if (!target) return;
-        const btn = target.closest && target.closest('.btn-copy-pmh2, .btn-copy, .btn-copy-again, [data-code]');
-        const isCopyBtn = btn || (target.textContent && target.textContent.includes('Sao chép'));
+
+        // 1. Nếu click vào nút hoàn tác/phục hồi hoặc nút con bên trong: Dừng ngay lập tức!
+        if (target.closest && target.closest('.btn-undo, .btn-undo-pmh2, .btn-undo-all, .btn-eye-toggle-sheet1, .btn-eye-toggle, [title*="Hoàn tác"], [title*="Bỏ đánh dấu"]')) {
+          return;
+        }
+
+        // 2. Chỉ kích hoạt khi click chính xác vào nút Sao chép
+        const btn = target.closest && target.closest('.btn-copy-pmh2, .btn-copy, .btn-copy-again');
+        const isCopyBtn = !!btn || (target.textContent && target.textContent.trim().startsWith('Sao chép'));
         if (isCopyBtn) {
-          const code = (btn && btn.getAttribute('data-code')) || '';
-          triggerFireworks(code);
+          triggerFireworks();
         }
       } catch (err) {}
     }
@@ -3668,7 +3589,6 @@ CMA_HOA_7721_TC
      * COPY TO CLIPBOARD
      */
     function copyToClipboard(text) {
-      triggerFireworks(text);
       if (navigator.clipboard && window.isSecureContext) {
         return navigator.clipboard.writeText(text).catch(() => {
           return fallbackCopyText(text);
