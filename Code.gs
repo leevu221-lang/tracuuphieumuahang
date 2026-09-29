@@ -3664,7 +3664,7 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
             </span>
             <span class="drawer-caret" id="drawerCaretPmh1">▾</span>
           </button>
-          <button type="button" class="btn-refresh-icon btn-refresh-icon-pmh1" id="btnRefreshPmh1" title="Tải lại dữ liệu sheet PMH">
+          <button type="button" class="btn-refresh-icon btn-refresh-icon-pmh1" id="btnRefreshPmh1" title="Làm mới trang hiện tại">
             <span>🔄</span>
           </button>
         </div>
@@ -3849,7 +3849,7 @@ Ngày 27/09/2026 : Nồi chiên không dầu Philips HD9252 : PMH9827361
               </span>
               <span class="drawer-caret" id="drawerCaretPmh2">▾</span>
             </button>
-            <button type="button" class="btn-refresh-icon" id="btnRefreshPmh2" title="Tải lại dữ liệu sheet PMH2">
+            <button type="button" class="btn-refresh-icon" id="btnRefreshPmh2" title="Làm mới trang hiện tại">
               <span>🔄</span>
             </button>
           </div>
@@ -5669,7 +5669,11 @@ CMA_HOA_7721_TC
 
       if (btnRefreshPmh2) {
         btnRefreshPmh2.addEventListener('click', () => {
-          loadSheetPmh2GViz();
+          btnRefreshPmh2.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+          btnRefreshPmh2.style.transform = 'rotate(360deg)';
+          setTimeout(() => {
+            window.location.reload();
+          }, 150);
         });
       }
 
@@ -5997,7 +6001,11 @@ CMA_HOA_7721_TC
 
       if (btnRefreshPmh1) {
         btnRefreshPmh1.addEventListener('click', () => {
-          loadData(true);
+          btnRefreshPmh1.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+          btnRefreshPmh1.style.transform = 'rotate(360deg)';
+          setTimeout(() => {
+            window.location.reload();
+          }, 150);
         });
       }
 
@@ -7129,15 +7137,12 @@ CMA_HOA_7721_TC
     });
 
     els.btnRefresh.addEventListener('click', () => {
-      // Hiệu ứng xoay icon mượt mà
+      // Hiệu ứng xoay icon mượt mà và làm mới trang hiện tại
       els.btnRefresh.style.transform = 'rotate(360deg)';
-      els.btnRefresh.style.transition = 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
+      els.btnRefresh.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
       setTimeout(() => {
-        els.btnRefresh.style.transform = 'none';
-        els.btnRefresh.style.transition = 'none';
-      }, 500);
-
-      loadData(false);
+        window.location.reload();
+      }, 150);
     });
 
     els.btnSettings.addEventListener('click', () => {
