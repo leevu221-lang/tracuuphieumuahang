@@ -4346,38 +4346,183 @@ CMA_HOA_7721_TC
 
     const STORE_DOC_PREFIX = CONFIG.cloneSlug ? ('store_' + CONFIG.cloneSlug) : 'store_1841';
 
+    // ====== FIREBASE: TIỆN ÍCH CHUNG ======
+    const normCode = (c) => String(c || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+
+    function parseDocItems(data) {
+      if (!data) return [];
+      try {
+        if (data.itemsJson) return JSON.parse(data.itemsJson) || [];
+      } catch (e) {
+        console.warn('Lỗi phân tích itemsJson:', e);
+      }
+      return Array.isArray(data.items) ? data.items : [];
+    }
+
+    function sortDateStrings(arr) {
+      return arr.sort((a, b) => {
+        const pA = a.split('/').map(Number);
+        const pB = b.split('/').map(Number);
+        return new Date(pA[2], pA[1] - 1, pA[0]) - new Date(pB[2], pB[1] - 1, pB[0]);
+      });
+    }
+
+    function sheet1DocRef() { return firebaseDb.collection('pmh_system').doc(STORE_DOC_PREFIX + '_sheet1'); }
+    function pmh2DocRef() { return firebaseDb.collection('pmh_system').doc(STORE_DOC_PREFIX + '_pmh2'); }
+
+    // Các thao tác đánh dấu đang chờ server xác nhận (transaction không có latency compensation).
+    // Dùng để snapshot đến từ máy khác không làm "nháy ngược" trạng thái vừa bấm trên máy này.
+    const pendingSheet1Writes = {};
+    const pendingPmh2Writes = {};
+
+    function overlayPending(items, pendingMap, codeField) {
+      const keys = Object.keys(pendingMap);
+      if (!keys.length) return items;
+      items.forEach(it => {
+        const p = pendingMap[normCode(it[codeField])];
+        if (p) {
+          it.isUsed = p.isUsed;
+          it.usedTime = p.usedTime;
+        }
+      });
+      return items;
+    }
+
+    /**
+     * Ghi đè toàn bộ Sheet 1 lên Firebase (chỉ dùng khi nạp lại từ Google Sheet).
+     */
     function saveSheet1ToFirebase() {
       if (!firebaseDb) return Promise.resolve();
-      const docRef = firebaseDb.collection('pmh_system').doc(STORE_DOC_PREFIX + '_sheet1');
-      return docRef.set({
+      return sheet1DocRef().set({
         sheetName: '1841 - PHIẾU MUA HÀNG EVENT',
         datesJson: JSON.stringify(state.dates),
         productsJson: JSON.stringify(state.products),
         itemsJson: JSON.stringify(state.items),
         updatedAt: Date.now()
-      }, { merge: true }).then(() => {
-        if (els && els.syncDot) els.syncDot.className = 'sync-dot';
-        if (els && els.syncText) els.syncText.textContent = '🔥 Firebase Realtime';
-      }).catch(err => {
+      }, { merge: true }).catch(err => {
         console.error('Lỗi lưu Firebase Sheet 1:', err);
-      });
-    }
-
-    function savePmh2ToFirebase() {
-      if (!firebaseDb) return Promise.resolve();
-      const docRef = firebaseDb.collection('pmh_system').doc(STORE_DOC_PREFIX + '_pmh2');
-      return docRef.set({
-        itemsJson: JSON.stringify(state.pmh2Items),
-        updatedAt: Date.now()
-      }, { merge: true }).then(() => {
-        console.log('Đã lưu PMH2 lên Firebase');
-      }).catch(err => {
-        console.error('Lỗi lưu Firebase PMH2:', err);
+        throw err;
       });
     }
 
     /**
-     * KHỞI TẠO ĐỒNG BỘ THỜI GIAN THỰC TỪ FIREBASE CLOUD FIRESTORE (0ms - 50ms)
+     * Ghi đè toàn bộ PMH2 lên Firebase (chỉ dùng khi nạp lại từ Google Sheet).
+     */
+    function savePmh2ToFirebase() {
+      if (!firebaseDb) return Promise.resolve();
+      return pmh2DocRef().set({
+        itemsJson: JSON.stringify(state.pmh2Items),
+        updatedAt: Date.now()
+      }, { merge: true }).catch(err => {
+        console.error('Lỗi lưu Firebase PMH2:', err);
+        throw err;
+      });
+    }
+
+    /**
+     * Đánh dấu / hoàn tác 1 phiếu bằng TRANSACTION:
+     * đọc bản mới nhất trên server -> chỉ sửa đúng phiếu đó -> ghi lại.
+     * Nhờ vậy 2 người bấm 2 phiếu khác nhau cùng lúc sẽ KHÔNG ghi đè mất thao tác của nhau.
+     */
+    function updateVoucherInFirebase(which, code, isUsed, usedTime) {
+      if (!firebaseDb || !code) return Promise.resolve();
+      const isSheet1 = which === 'sheet1';
+      const ref = isSheet1 ? sheet1DocRef() : pmh2DocRef();
+      const codeField = isSheet1 ? 'code' : 'pmhCode';
+      const pendingMap = isSheet1 ? pendingSheet1Writes : pendingPmh2Writes;
+      const target = normCode(code);
+      const entry = { isUsed: !!isUsed, usedTime: isUsed ? (usedTime || '') : '' };
+      pendingMap[target] = entry;
+
+      if (els && els.syncDot) els.syncDot.className = 'sync-dot updating';
+      if (els && els.syncText) els.syncText.textContent = 'Đang lưu Firebase...';
+
+      return firebaseDb.runTransaction(tx => tx.get(ref).then(doc => {
+        if (!doc.exists) return false;
+        const items = parseDocItems(doc.data());
+        let changed = false;
+        items.forEach(it => {
+          if (normCode(it[codeField]) === target) {
+            it.isUsed = entry.isUsed;
+            it.usedTime = entry.usedTime;
+            changed = true;
+          }
+        });
+        if (changed) {
+          tx.update(ref, { itemsJson: JSON.stringify(items), updatedAt: Date.now() });
+        }
+        return changed;
+      })).then((changed) => {
+        if (els && els.syncDot) els.syncDot.className = 'sync-dot';
+        if (els && els.syncText) els.syncText.textContent = '🔥 Firebase Realtime';
+        return changed;
+      }).catch(err => {
+        console.error('Lỗi lưu phiếu lên Firebase:', err);
+        if (els && els.syncDot) els.syncDot.className = 'sync-dot updating';
+        if (els && els.syncText) els.syncText.textContent = '⚠️ Lỗi lưu Firebase';
+        showToast('⚠️ Chưa lưu được lên Firebase. Kiểm tra mạng rồi thao tác lại!', false, true);
+      }).finally(() => {
+        if (pendingMap[target] === entry) delete pendingMap[target];
+      });
+    }
+
+    /**
+     * Áp dụng dữ liệu document Sheet 1 từ Firebase lên giao diện.
+     * Trả về false nếu document chưa có dữ liệu.
+     */
+    function applySheet1Doc(doc) {
+      if (!doc || !doc.exists) return false;
+      const data = doc.data();
+      const items = overlayPending(parseDocItems(data), pendingSheet1Writes, 'code');
+      if (!items.length) return false;
+      let dates = [];
+      let products = [];
+      try { if (data.datesJson) dates = JSON.parse(data.datesJson); } catch (e) {}
+      try { if (data.productsJson) products = JSON.parse(data.productsJson); } catch (e) {}
+      if (!dates.length) dates = sortDateStrings(Array.from(new Set(items.map(i => i.date))));
+      if (!products.length) products = Array.from(new Set(items.map(i => i.product))).sort();
+      onDataLoaded({
+        success: true,
+        sheetName: data.sheetName || '1841 - PHIẾU MUA HÀNG EVENT',
+        dates: dates,
+        products: products,
+        items: items
+      });
+      return true;
+    }
+
+    /**
+     * Áp dụng dữ liệu document PMH2 từ Firebase lên giao diện.
+     */
+    function applyPmh2Doc(doc) {
+      const loadingBox = document.getElementById('loadingBoxPmh2');
+      if (loadingBox) loadingBox.style.display = 'none';
+      if (!doc || !doc.exists) return false;
+      const items = overlayPending(parseDocItems(doc.data()), pendingPmh2Writes, 'pmhCode');
+      state.pmh2Items = items;
+      renderPmh2List();
+      return true;
+    }
+
+    /**
+     * Tải 1 lần bản mới nhất từ Firebase (dùng cho nút 🔄, quay lại tab...).
+     * Thay thế việc tải từ Google Sheet khi Firebase đang hoạt động.
+     */
+    function refreshFromFirebase() {
+      if (!firebaseDb) return Promise.resolve();
+      return Promise.all([
+        sheet1DocRef().get().then(doc => {
+          if (!applySheet1Doc(doc)) onDataLoaded({ success: true, dates: [], products: [], items: [] });
+        }),
+        pmh2DocRef().get().then(doc => { applyPmh2Doc(doc); })
+      ]).catch(err => {
+        console.warn('Lỗi tải Firebase:', err);
+        onDataError(err);
+      });
+    }
+
+    /**
+     * KHỞI TẠO ĐỒNG BỘ THỜI GIAN THỰC TỪ FIREBASE CLOUD FIRESTORE
      */
     let unsubscribeSheet1 = null;
     let unsubscribePmh2 = null;
@@ -4392,106 +4537,42 @@ CMA_HOA_7721_TC
 
       console.log('🔥 Đang kết nối Firebase Firestore Realtime cho chi nhánh:', STORE_DOC_PREFIX);
 
-      // 1. Lắng nghe thay đổi Sheet 1 theo thời gian thực (0ms - 50ms)
-      try {
-        const sheet1DocRef = firebaseDb.collection('pmh_system').doc(STORE_DOC_PREFIX + '_sheet1');
-        unsubscribeSheet1 = sheet1DocRef.onSnapshot((doc) => {
-          if (doc.exists) {
-            const data = doc.data();
-            let items = [];
-            let dates = [];
-            let products = [];
-            try {
-              if (data.itemsJson) items = JSON.parse(data.itemsJson);
-              else if (Array.isArray(data.items)) items = data.items;
-
-              if (data.datesJson) dates = JSON.parse(data.datesJson);
-              else if (Array.isArray(data.dates)) dates = data.dates;
-
-              if (data.productsJson) products = JSON.parse(data.productsJson);
-              else if (Array.isArray(data.products)) products = data.products;
-            } catch (err) {
-              console.warn('Lỗi phân tích JSON Firestore Sheet 1:', err);
-            }
-
-            if (items && items.length > 0) {
-              onDataLoaded({
-                success: true,
-                sheetName: data.sheetName || '1841 - PHIẾU MUA HÀNG EVENT',
-                dates: dates && dates.length ? dates : Array.from(new Set(items.map(i => i.date))),
-                products: products && products.length ? products : Array.from(new Set(items.map(i => i.product))),
-                items: items
-              });
-              updateCachedPayload();
-              if (els.syncDot) els.syncDot.className = 'sync-dot';
-              if (els.syncText) els.syncText.textContent = '🔥 Firebase Realtime';
-              return;
-            }
-          }
-          // Nếu Firestore chưa có dữ liệu, tự động fallback tải từ Google Sheet để nạp vào Firebase
-          console.log('Firebase Sheet 1 chưa có dữ liệu, đang lấy từ Google Sheet...');
+      // 1. Sheet 1: mọi thay đổi trên server được đẩy xuống tất cả trình duyệt ngay lập tức
+      unsubscribeSheet1 = sheet1DocRef().onSnapshot((doc) => {
+        if (!applySheet1Doc(doc)) {
+          // Firebase chưa có dữ liệu cho chi nhánh này -> hiển thị tạm từ Google Sheet
+          console.log('Firebase Sheet 1 chưa có dữ liệu, hiển thị tạm từ Google Sheet...');
           loadDirectFromGoogleSheet();
-        }, (err) => {
-          console.warn('Firebase Sheet 1 onSnapshot error:', err);
-          loadDirectFromGoogleSheet();
-        });
-      } catch (err) {
-        console.error('Lỗi thiết lập onSnapshot Sheet 1:', err);
-        loadDirectFromGoogleSheet();
-      }
+        }
+      }, (err) => {
+        console.warn('Firebase Sheet 1 onSnapshot error:', err);
+        if (els.syncText) els.syncText.textContent = '⚠️ Mất kết nối Firebase';
+      });
 
-      // 2. Lắng nghe thay đổi PMH2 theo thời gian thực (0ms - 50ms)
-      try {
-        const pmh2DocRef = firebaseDb.collection('pmh_system').doc(STORE_DOC_PREFIX + '_pmh2');
-        unsubscribePmh2 = pmh2DocRef.onSnapshot((doc) => {
-          if (doc.exists) {
-            const data = doc.data();
-            let items = [];
-            try {
-              if (data.itemsJson) items = JSON.parse(data.itemsJson);
-              else if (Array.isArray(data.items)) items = data.items;
-            } catch (err) {
-              console.warn('Lỗi phân tích JSON Firestore PMH2:', err);
-            }
+      // 2. PMH2
+      unsubscribePmh2 = pmh2DocRef().onSnapshot((doc) => {
+        if (!applyPmh2Doc(doc)) {
+          console.log('Firebase PMH2 chưa có dữ liệu, hiển thị tạm từ Google Sheet...');
+          loadSheetPmh2GViz();
+        }
+      }, (err) => {
+        console.warn('Firebase PMH2 onSnapshot error:', err);
+      });
 
-            if (items && items.length > 0) {
-              state.pmh2Items = items;
-              try {
-                localStorage.setItem('pmh2_cached_items_v1', JSON.stringify(items));
-              } catch (e) {}
-              renderPmh2List();
-              return;
+      // 3. Cấu hình ẩn/hiện bảng
+      unsubscribeConfig = firebaseDb.collection('pmh_system').doc(STORE_DOC_PREFIX + '_config').onSnapshot((doc) => {
+        if (!doc.exists) return;
+        const data = doc.data();
+        if (data && data.tabVisibility) {
+          const s1 = data.tabVisibility.sheet1 !== false;
+          const p2 = data.tabVisibility.pmh2 !== false;
+          if (state.tabVisibility.sheet1 !== s1 || state.tabVisibility.pmh2 !== p2) {
+            if (typeof window.setTabVisibility === 'function') {
+              window.setTabVisibility(s1, p2, true);
             }
           }
-          console.log('Firebase PMH2 chưa có dữ liệu, đang lấy từ Google Sheet...');
-          loadSheetPmh2GViz();
-        }, (err) => {
-          console.warn('Firebase PMH2 onSnapshot error:', err);
-          loadSheetPmh2GViz();
-        });
-      } catch (err) {
-        console.error('Lỗi thiết lập onSnapshot PMH2:', err);
-        loadSheetPmh2GViz();
-      }
-
-      // 3. Lắng nghe cấu hình ẩn/hiện Tab theo thời gian thực
-      try {
-        const configDocRef = firebaseDb.collection('pmh_system').doc(STORE_DOC_PREFIX + '_config');
-        unsubscribeConfig = configDocRef.onSnapshot((doc) => {
-          if (doc.exists) {
-            const data = doc.data();
-            if (data && data.tabVisibility) {
-              const s1 = data.tabVisibility.sheet1 !== false;
-              const p2 = data.tabVisibility.pmh2 !== false;
-              if (state.tabVisibility.sheet1 !== s1 || state.tabVisibility.pmh2 !== p2) {
-                if (typeof setTabVisibility === 'function') {
-                  setTabVisibility(s1, p2, true);
-                }
-              }
-            }
-          }
-        }, (err) => {});
-      } catch (err) {}
+        }
+      }, () => {});
     }
 
     /**
@@ -5378,8 +5459,13 @@ CMA_HOA_7721_TC
      * ĐỒNG BỘ TRẠNG THÁI PHIẾU SHEET PMH2 LÊN FIREBASE & GOOGLE SHEETS
      */
     function syncPmh2ToGoogleSheet(rowIndex, isUsed, code, user) {
-      // 1. Cập nhật trực tiếp lên Firebase Cloud Firestore (0ms - 50ms)
-      savePmh2ToFirebase();
+      // 1. Cập nhật đúng phiếu này trên Firebase (transaction, không ghi đè thao tác của máy khác)
+      const pmh2Item = (state.pmh2Items || []).find(i => normCode(i.pmhCode) === normCode(code));
+      updateVoucherInFirebase('pmh2', code, isUsed, pmh2Item ? pmh2Item.usedTime : '');
+      // Nếu cùng mã cũng có ở Bảng 1 thì cập nhật luôn để 2 bảng khớp nhau
+      if ((state.items || []).some(i => normCode(i.code) === normCode(code))) {
+        updateVoucherInFirebase('sheet1', code, isUsed, pmh2Item ? pmh2Item.usedTime : '');
+      }
 
       // 2. Dự phòng Google Apps Script nếu có chạy trong Sheet
       if (typeof google !== 'undefined' && google.script && google.script.run) {
@@ -5483,39 +5569,53 @@ CMA_HOA_7721_TC
         }
       });
 
-      let finalItems = [];
-      if (mode === 'overwrite') {
-        finalItems = parsedNewItems;
-      } else {
-        const existingMap = new Map();
-        (state.items || []).forEach(it => existingMap.set(String(it.code).toUpperCase(), it));
-        parsedNewItems.forEach(it => {
-          const upper = String(it.code).toUpperCase();
-          if (!existingMap.has(upper)) {
-            existingMap.set(upper, it);
-          }
-        });
-        finalItems = Array.from(existingMap.values());
-      }
+      const buildFinal = (baseItems) => {
+        let finalItems = [];
+        if (mode === 'overwrite') {
+          finalItems = parsedNewItems.map(it => Object.assign({}, it));
+        } else {
+          const existingMap = new Map();
+          (baseItems || []).forEach(it => existingMap.set(normCode(it.code), it));
+          parsedNewItems.forEach(it => {
+            const key = normCode(it.code);
+            if (!existingMap.has(key)) existingMap.set(key, Object.assign({}, it));
+          });
+          finalItems = Array.from(existingMap.values());
+        }
+        finalItems.forEach((it, idx) => { it.rowIndex = idx + 2; });
+        const finalDates = sortDateStrings(Array.from(new Set(finalItems.map(i => i.date))));
+        const finalProducts = Array.from(new Set(finalItems.map(i => i.product))).sort();
+        return { finalItems, finalDates, finalProducts };
+      };
 
-      finalItems.forEach((it, idx) => { it.rowIndex = idx + 2; });
+      const applyLocal = (r) => {
+        state.items = r.finalItems;
+        state.dates = r.finalDates;
+        state.products = r.finalProducts;
+      };
 
-      const finalDates = Array.from(new Set(finalItems.map(i => i.date))).sort((a, b) => {
-        const pA = a.split('/').map(Number);
-        const pB = b.split('/').map(Number);
-        return new Date(pA[2], pA[1] - 1, pA[0]) - new Date(pB[2], pB[1] - 1, pB[0]);
-      });
-      const finalProducts = Array.from(new Set(finalItems.map(i => i.product))).sort();
-
-      state.items = finalItems;
-      state.dates = finalDates;
-      state.products = finalProducts;
-
-      // Lưu trực tiếp lên Firebase
-      const p1 = saveSheet1ToFirebase();
       // Chạy ngầm dự phòng Google Sheet
       savePmhDataToGoogleSheet(rawData, mode).catch(() => {});
-      return p1;
+
+      if (!firebaseDb) {
+        applyLocal(buildFinal(state.items));
+        return Promise.resolve();
+      }
+
+      // Gộp với bản MỚI NHẤT trên server trong transaction (không làm mất phiếu máy khác vừa đánh dấu)
+      const ref = sheet1DocRef();
+      return firebaseDb.runTransaction(tx => tx.get(ref).then(doc => {
+        const serverItems = doc.exists ? parseDocItems(doc.data()) : [];
+        const r = buildFinal(serverItems);
+        tx.set(ref, {
+          sheetName: '1841 - PHIẾU MUA HÀNG EVENT',
+          datesJson: JSON.stringify(r.finalDates),
+          productsJson: JSON.stringify(r.finalProducts),
+          itemsJson: JSON.stringify(r.finalItems),
+          updatedAt: Date.now()
+        }, { merge: true });
+        return r;
+      })).then(applyLocal);
     }
 
     /**
@@ -5577,29 +5677,35 @@ CMA_HOA_7721_TC
         }
       }
 
-      let finalItems = [];
-      if (mode === 'overwrite') {
-        finalItems = parsedNewItems;
-      } else {
+      const keyOf = (it) => it.pmhCode ? normCode(it.pmhCode) : ('row_' + it.sheetRowIndex);
+      const buildFinal = (baseItems) => {
+        if (mode === 'overwrite') return parsedNewItems.map(it => Object.assign({}, it));
         const existingMap = new Map();
-        (state.pmh2Items || []).forEach(it => existingMap.set(String(it.pmhCode || it.sheetRowIndex), it));
+        (baseItems || []).forEach(it => existingMap.set(keyOf(it), it));
         parsedNewItems.forEach(it => {
-          const key = String(it.pmhCode || it.sheetRowIndex);
-          if (!existingMap.has(key)) {
-            existingMap.set(key, it);
-          }
+          if (!existingMap.has(keyOf(it))) existingMap.set(keyOf(it), Object.assign({}, it));
         });
-        finalItems = Array.from(existingMap.values());
-      }
+        return Array.from(existingMap.values());
+      };
 
-      state.pmh2Items = finalItems;
-      renderPmh2List();
-
-      // Lưu trực tiếp lên Firebase
-      const p1 = savePmh2ToFirebase();
       // Chạy ngầm dự phòng Google Sheet
       savePmh2DataToGoogleSheet(rawData, mode).catch(() => {});
-      return p1;
+
+      if (!firebaseDb) {
+        state.pmh2Items = buildFinal(state.pmh2Items);
+        renderPmh2List();
+        return Promise.resolve();
+      }
+
+      const ref = pmh2DocRef();
+      return firebaseDb.runTransaction(tx => tx.get(ref).then(doc => {
+        const finalItems = buildFinal(doc.exists ? parseDocItems(doc.data()) : []);
+        tx.set(ref, { itemsJson: JSON.stringify(finalItems), updatedAt: Date.now() }, { merge: true });
+        return finalItems;
+      })).then(finalItems => {
+        state.pmh2Items = finalItems;
+        renderPmh2List();
+      });
     }
 
     /**
@@ -6521,6 +6627,12 @@ CMA_HOA_7721_TC
         els.emptyState.style.display = 'none';
       }
 
+      // 0. Firebase là nguồn dữ liệu chính: luôn tải từ Firebase, KHÔNG tải từ Google Sheet
+      if (firebaseDb) {
+        refreshFromFirebase();
+        return;
+      }
+
       // 1. Chạy trong Google Apps Script (khi nhúng trong Google Sheet)
       if (typeof google !== 'undefined' && google.script && google.script.run) {
         google.script.run
@@ -7221,7 +7333,8 @@ CMA_HOA_7721_TC
         if (data.action === 'markUsed') {
           applyVoucherStateFromRemote(data.code, data.isUsed, data.time, data.rowIndex, data.sheet, data.user, data.timestamp);
         } else if (data.action === 'reloadPmh1' || data.action === 'reloadPmh') {
-          loadData(true);
+          // Khi dùng Firebase, onSnapshot đã tự cập nhật -> không tải lại từ Google Sheet
+          if (!firebaseDb) loadData(true);
           if (els.syncText) {
             els.syncText.textContent = '⚡ Trình duyệt khác vừa lưu dữ liệu PMH!';
             setTimeout(() => {
@@ -7229,7 +7342,7 @@ CMA_HOA_7721_TC
             }, 3000);
           }
         } else if (data.action === 'reloadPmh2') {
-          loadSheetPmh2GViz();
+          if (!firebaseDb) loadSheetPmh2GViz();
           if (els.syncText) {
             els.syncText.textContent = '⚡ Trình duyệt khác vừa lưu dữ liệu PMH2!';
             setTimeout(() => {
@@ -7353,7 +7466,8 @@ CMA_HOA_7721_TC
       connectMqttBroker();
 
       // 4. Engine B: Polling dự phòng từ Google Sheets GViz mỗi 2.5 giây cho CẢ 2 BẢNG (Chống rớt mạng)
-      if (!window.gvizPollInterval) {
+      // Chỉ bật khi KHÔNG có Firebase. Khi có Firebase, polling Google Sheet sẽ ghi đè dữ liệu mới bằng dữ liệu cũ.
+      if (!firebaseDb && !window.gvizPollInterval) {
         window.gvizPollInterval = setInterval(() => {
           if (document.visibilityState === 'visible') {
             if (!state.isLoading) {
@@ -7383,7 +7497,11 @@ CMA_HOA_7721_TC
       els.syncText.textContent = 'Đang đồng bộ...';
 
       // 1. Cập nhật trực tiếp lên Firebase Cloud Firestore (0ms - 50ms)
-      saveSheet1ToFirebase();
+      const s1Item = (state.items || []).find(i => normCode(i.code) === normCode(code));
+      updateVoucherInFirebase('sheet1', code, isUsed, s1Item ? s1Item.usedTime : '');
+      if ((state.pmh2Items || []).some(i => normCode(i.pmhCode) === normCode(code))) {
+        updateVoucherInFirebase('pmh2', code, isUsed, s1Item ? s1Item.usedTime : '');
+      }
 
       // 2. Dự phòng Google Apps Script
       if (typeof google !== 'undefined' && google.script && google.script.run) {
