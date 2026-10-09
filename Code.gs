@@ -214,86 +214,82 @@ function getSheetData() {
   const datesSet = {};
   const productsSet = {};
 
-  // Regex chuẩn nhận diện dòng phiếu mua hàng
-  // Nhóm 1: Ngày (DD/MM/YYYY)
-  // Nhóm 2: Số phiếu (nếu có, vd: 1, 2, 3...)
-  // Nhóm 3: Tên sản phẩm
-  // Nhóm 4: Mã phiếu (chuỗi ký tự ở cuối cùng sau dấu :)
-  const lineRegex = /^Ngày\s+(\d{1,2}\/\d{1,2}\/\d{4})\s*:\s*(?:Mã\s*Phiếu\s*mua\s*hàng\s*(\d+)\s*-\s*dùng\s*cho\s*)?([^:]+?)\s*:\s*([A-Za-z0-9]+)\s*$/i;
+  const now = new Date();
+  const pad = function(n) { return n < 10 ? '0' + n : n; };
+  const defDate = pad(now.getDate()) + '/' + pad(now.getMonth() + 1) + '/' + now.getFullYear();
 
   for (let r = 0; r < dataRange.length; r++) {
     const rawText = String(dataRange[r][0] || "").trim();
-    if (!rawText || !rawText.startsWith("Ngày")) continue;
+    if (!rawText || /^[━\-=─_~*#]{3,}$/.test(rawText)) continue;
 
-    const match = rawText.match(lineRegex);
-    if (match) {
-      const dateStr = match[1].trim();
-      const voucherNum = match[2] ? match[2].trim() : "";
-      const product = match[3].trim();
-      const code = match[4].trim();
-
-      // Kiểm tra trạng thái cột B
-      const colBVal = dataRange[r][1];
-      const isUsed = (colBVal === true || String(colBVal).toUpperCase() === "TRUE" || String(colBVal).toLowerCase() === "đã sử dụng" || String(colBVal).toLowerCase() === "x");
-      const usedTime = dataRange[r][2] ? String(dataRange[r][2]) : "";
-
-      datesSet[dateStr] = true;
-      productsSet[product] = true;
-
-      items.push({
-        rowIndex: r + 1, // Dòng 1-indexed trong Google Sheet
-        date: dateStr,
-        voucherNum: voucherNum ? ("Mã " + voucherNum) : "",
-        product: product,
-        code: code,
-        isUsed: isUsed,
-        usedTime: usedTime,
-        rawText: rawText
-      });
+    let dateStr = "";
+    let rest = rawText;
+    const dateMatch = rawText.match(/^(?:Ngày\s+)?(\d{1,2}\/\d{1,2}\/\d{4})\s*[:\-]\s*(.*)$/i);
+    if (dateMatch) {
+      dateStr = dateMatch[1].trim();
+      rest = dateMatch[2].trim();
     } else {
-      // Trường hợp định dạng có chút khác biệt nhưng vẫn có Ngày và dấu : ở cuối
-      const parts = rawText.split(":");
+      // Dữ liệu không có ngày: lấy ngày mặc định hệ thống
+      dateStr = defDate;
+    }
+
+    let voucherNum = "";
+    let product = "";
+    let code = "";
+
+    const prodCodeMatch = rest.match(/^(?:Mã\s*Phiếu\s*mua\s*hàng\s*(\d+)\s*-\s*dùng\s*cho\s*)?([^:]+?)\s*:\s*([A-Za-z0-9]+)\s*$/i);
+    if (prodCodeMatch) {
+      voucherNum = prodCodeMatch[1] ? prodCodeMatch[1].trim() : "";
+      product = prodCodeMatch[2].trim();
+      code = prodCodeMatch[3].trim();
+    } else {
+      const parts = rest.split(":");
       if (parts.length >= 2) {
         const potentialCode = parts[parts.length - 1].trim();
-        const dateMatch = rawText.match(/(\d{1,2}\/\d{1,2}\/\d{4})/);
-        if (potentialCode && potentialCode.length >= 6 && dateMatch) {
-          const dateStr = dateMatch[1];
-          let product = rawText;
-          if (product.indexOf("dùng cho") !== -1) {
-            product = product.split("dùng cho")[1];
+        if (potentialCode && potentialCode.length >= 4) {
+          code = potentialCode;
+          let p = parts.slice(0, parts.length - 1).join(":");
+          if (p.indexOf("dùng cho") !== -1) {
+            p = p.split("dùng cho")[1];
           }
-          product = product.replace(":" + potentialCode, "").trim();
-
-          const colBVal = dataRange[r][1];
-          const isUsed = (colBVal === true || String(colBVal).toUpperCase() === "TRUE");
-          const usedTime = dataRange[r][2] ? String(dataRange[r][2]) : "";
-
-          datesSet[dateStr] = true;
-          productsSet[product] = true;
-
-          items.push({
-            rowIndex: r + 1,
-            date: dateStr,
-            voucherNum: "",
-            product: product,
-            code: potentialCode,
-            isUsed: isUsed,
-            usedTime: usedTime,
-            rawText: rawText
-          });
+          product = p.trim();
         }
       }
     }
+
+    if (!product || !code) continue;
+
+    // Kiểm tra trạng thái cột B
+    const colBVal = dataRange[r][1];
+    const isUsed = (colBVal === true || String(colBVal).toUpperCase() === "TRUE" || String(colBVal).toLowerCase() === "đã sử dụng" || String(colBVal).toLowerCase() === "x");
+    const usedTime = dataRange[r][2] ? String(dataRange[r][2]) : "";
+
+    datesSet[dateStr] = true;
+    productsSet[product] = true;
+
+    items.push({
+      rowIndex: r + 1, // Dòng 1-indexed trong Google Sheet
+      date: dateStr,
+      voucherNum: voucherNum ? ("Mã " + voucherNum) : "",
+      product: product,
+      code: code,
+      isUsed: isUsed,
+      usedTime: usedTime,
+      rawText: rawText
+    });
   }
 
   // Sắp xếp ngày tăng dần
-  const dates = Object.keys(datesSet).sort(function(a, b) {
+  let dates = Object.keys(datesSet).sort(function(a, b) {
     const pA = a.split("/").map(Number);
     const pB = b.split("/").map(Number);
     const dateA = new Date(pA[2], pA[1] - 1, pA[0]);
     const dateB = new Date(pB[2], pB[1] - 1, pB[0]);
     return dateA - dateB;
   });
+  if (!dates.length && items.length) {
+    dates = [defDate];
+  }
 
   const products = Object.keys(productsSet).sort();
 
@@ -935,7 +931,7 @@ function setupSheetFormatting() {
 
   for (let i = 0; i < colAValues.length; i++) {
     const text = String(colAValues[i][0] || "").trim();
-    if (text.startsWith("Ngày")) {
+    if (text.indexOf(":") !== -1 && !/^[━\-=─_~*#]{3,}$/.test(text)) {
       const rowNum = i + 1;
       const cellB = sheet.getRange(rowNum, 2);
       cellB.insertCheckboxes();
@@ -4349,6 +4345,13 @@ CMA_HOA_7721_TC
     // ====== FIREBASE: TIỆN ÍCH CHUNG ======
     const normCode = (c) => String(c || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
 
+    // Lấy ngày mặc định của hệ thống theo định dạng DD/MM/YYYY (ví dụ: 09/10/2026)
+    function getDefaultSystemDate() {
+      const now = new Date();
+      const pad = (n) => (n < 10 ? '0' + n : String(n));
+      return pad(now.getDate()) + '/' + pad(now.getMonth() + 1) + '/' + now.getFullYear();
+    }
+
     function parseDocItems(data) {
       if (!data) return [];
       try {
@@ -4360,9 +4363,11 @@ CMA_HOA_7721_TC
     }
 
     function sortDateStrings(arr) {
-      return arr.sort((a, b) => {
-        const pA = a.split('/').map(Number);
-        const pB = b.split('/').map(Number);
+      if (!Array.isArray(arr)) return [];
+      const valid = arr.filter(d => d && typeof d === 'string' && /^\\d{1,2}\\/\\d{1,2}\\/\\d{4}$/.test(d.trim()));
+      return valid.sort((a, b) => {
+        const pA = a.trim().split('/').map(Number);
+        const pB = b.trim().split('/').map(Number);
         return new Date(pA[2], pA[1] - 1, pA[0]) - new Date(pB[2], pB[1] - 1, pB[0]);
       });
     }
@@ -4473,13 +4478,23 @@ CMA_HOA_7721_TC
     function applySheet1Doc(doc) {
       if (!doc || !doc.exists) return false;
       const data = doc.data();
-      const items = overlayPending(parseDocItems(data), pendingSheet1Writes, 'code');
+      const rawItems = overlayPending(parseDocItems(data), pendingSheet1Writes, 'code');
+      const defDate = getDefaultSystemDate();
+      const items = rawItems.map(i => {
+        const itemDate = (i.date && String(i.date).trim()) ? String(i.date).trim() : defDate;
+        return Object.assign({}, i, { date: itemDate });
+      });
       let dates = [];
       let products = [];
       try { if (data.datesJson) dates = JSON.parse(data.datesJson); } catch (e) {}
       try { if (data.productsJson) products = JSON.parse(data.productsJson); } catch (e) {}
-      if (!dates.length && items.length) dates = sortDateStrings(Array.from(new Set(items.map(i => i.date))));
+
+      const itemDates = new Set((dates || []).filter(d => d && typeof d === 'string' && /^\\d{1,2}\\/\\d{1,2}\\/\\d{4}$/.test(d.trim())));
+      items.forEach(i => { if (i.date) itemDates.add(i.date); });
+      dates = sortDateStrings(Array.from(itemDates));
+      if (!dates.length && items.length) dates = [defDate];
       if (!products.length && items.length) products = Array.from(new Set(items.map(i => i.product))).sort();
+
       onDataLoaded({
         success: true,
         sheetName: data.sheetName || '1841 - PHIẾU MUA HÀNG EVENT',
@@ -5509,27 +5524,49 @@ CMA_HOA_7721_TC
         return Promise.reject(new Error('Không có dòng dữ liệu hợp lệ để lưu'));
       }
 
-      const lineRegex = /^Ngày\\s+(\\d{1,2}\\/\\d{1,2}\\/\\d{4})\\s*:\\s*(?:Mã\\s*Phiếu\\s*mua\\s*hàng\\s*(\\d+)\\s*-\\s*dùng\\s*cho\\s*)?([^:]+?)\\s*:\\s*([A-Za-z0-9]+)\\s*$/i;
-
+      const defDate = getDefaultSystemDate();
       const parsedNewItems = [];
       const datesSet = {};
       const productsSet = {};
 
       formattedLines.forEach((l, idx) => {
-        const match = l.match(lineRegex);
-        if (match) {
-          const dateStr = match[1].trim();
-          const voucherNum = match[2] ? match[2].trim() : '';
-          const product = match[3].trim();
-          const code = match[4].trim();
+        let dateStr = '';
+        let rest = l;
+        // Kiểm tra xem dòng có ngày ở đầu hay không (vd: "Ngày 27/09/2026 : ..." hoặc "27/09/2026 : ...")
+        const dateMatch = l.match(/^(?:Ngày\\s+)?(\\d{1,2}\\/\\d{1,2}\\/\\d{4})\\s*[:\\-]\\s*(.*)$/i);
+        if (dateMatch) {
+          dateStr = dateMatch[1].trim();
+          rest = dateMatch[2].trim();
+        } else {
+          // Linh hoạt: Nếu dòng không có ngày thì lấy ngày mặc định hệ thống
+          dateStr = defDate;
+        }
 
+        let voucherNum = '';
+        let product = '';
+        let code = '';
+
+        const prodCodeMatch = rest.match(/^(?:Mã\\s*Phiếu\\s*mua\\s*hàng\\s*(\\d+)\\s*-\\s*dùng\\s*cho\\s*)?([^:]+?)\\s*:\\s*([A-Za-z0-9]+)\\s*$/i);
+        if (prodCodeMatch) {
+          voucherNum = prodCodeMatch[1] ? prodCodeMatch[1].trim() : '';
+          product = prodCodeMatch[2].trim();
+          code = prodCodeMatch[3].trim();
+        } else {
+          const lastColon = rest.lastIndexOf(':');
+          if (lastColon !== -1) {
+            product = rest.substring(0, lastColon).replace(/^(?:Mã\\s*Phiếu\\s*mua\\s*hàng\\s*\\d+\\s*-\\s*dùng\\s*cho\\s*)/i, '').trim();
+            code = rest.substring(lastColon + 1).trim();
+          }
+        }
+
+        if (product && code) {
           datesSet[dateStr] = true;
           productsSet[product] = true;
 
           parsedNewItems.push({
             rowIndex: idx + 2,
             date: dateStr,
-            voucherNum: voucherNum,
+            voucherNum: voucherNum ? ('Mã ' + voucherNum) : '',
             product: product,
             code: code,
             rawText: l,
@@ -5552,8 +5589,16 @@ CMA_HOA_7721_TC
           });
           finalItems = Array.from(existingMap.values());
         }
-        finalItems.forEach((it, idx) => { it.rowIndex = idx + 2; });
-        const finalDates = sortDateStrings(Array.from(new Set(finalItems.map(i => i.date))));
+        finalItems.forEach((it, idx) => {
+          it.rowIndex = idx + 2;
+          if (!it.date || !String(it.date).trim()) {
+            it.date = defDate;
+          }
+        });
+        let finalDates = sortDateStrings(Array.from(new Set(finalItems.map(i => i.date))));
+        if (!finalDates.length && finalItems.length) {
+          finalDates = [defDate];
+        }
         const finalProducts = Array.from(new Set(finalItems.map(i => i.product))).sort();
         return { finalItems, finalDates, finalProducts };
       };
@@ -6590,79 +6635,100 @@ CMA_HOA_7721_TC
       const datesSet = {};
       const productsSet = {};
       const localStatusMap = getLocalStatusMap();
-
-      const lineRegex = /^Ngày\\s+(\\d{1,2}\\/\\d{1,2}\\/\\d{4})\\s*:\\s*(?:Mã\\s*Phiếu\\s*mua\\s*hàng\\s*(\\d+)\\s*-\\s*dùng\\s*cho\\s*)?([^:]+?)\\s*:\\s*([A-Za-z0-9]+)\\s*$/i;
+      const defDate = getDefaultSystemDate();
 
       for (let r = 0; r < rows.length; r++) {
         const row = rows[r];
         if (!row || !row.c || !row.c[0]) continue;
         const rawText = String(row.c[0].v || "").trim();
-        if (!rawText.startsWith("Ngày")) continue;
+        if (!rawText || /^[━\\-=─_~*#]{3,}$/.test(rawText)) continue;
 
-        const match = rawText.match(lineRegex);
-        if (match) {
-          const dateStr = match[1].trim();
-          const voucherNum = match[2] ? match[2].trim() : "";
-          const product = match[3].trim();
-          const code = match[4].trim();
-
-          const colBVal = row.c[1] ? row.c[1].v : false;
-          let isUsed = (colBVal === true || String(colBVal).toUpperCase() === "TRUE");
-
-          let usedTime = "";
-          if (row.c[2]) {
-            if (row.c[2].f) {
-              usedTime = String(row.c[2].f);
-            } else if (typeof row.c[2].v === 'string' && row.c[2].v.startsWith('Date(')) {
-              const m = row.c[2].v.match(/Date\\((\\d+),(\\d+),(\\d+)(?:,(\\d+),(\\d+),(\\d+))?\\)/);
-              if (m) {
-                const pad = n => (n < 10 ? '0' + n : n);
-                usedTime = \`\${pad(m[3])}/\${pad(Number(m[2]) + 1)}/\${m[1]} \${pad(m[4] || 0)}:\${pad(m[5] || 0)}\`;
-              }
-            } else if (row.c[2].v) {
-              usedTime = String(row.c[2].v);
-            }
-          }
-
-          // QUY TẮC ĐỒNG BỘ CHỐNG GHI ĐÈ NGƯỢC (RECONCILIATION):
-          // Nếu có thao tác người dùng (đã dùng HOẶC hoàn lại) gần đây (< 15 phút),
-          // luôn ưu tiên trạng thái mới nhất của người dùng thay vì cache cũ của Google Sheets GViz
-          const cleanCode = String(code || '').trim().toUpperCase();
-          const savedStatus = localStatusMap[cleanCode] || localStatusMap[code];
-          if (savedStatus && savedStatus.updatedAt) {
-            const ageMs = Date.now() - savedStatus.updatedAt;
-            if (ageMs < 15 * 60 * 1000) {
-              isUsed = !!savedStatus.used;
-              if (isUsed && savedStatus.time) {
-                usedTime = savedStatus.time;
-              } else if (!isUsed) {
-                usedTime = "";
-              }
-            }
-          }
-
-          datesSet[dateStr] = true;
-          productsSet[product] = true;
-
-          // rowIndex trong Google Sheet là 1-indexed. Dòng 1 là tiêu đề, nên rows[0] là dòng 2
-          items.push({
-            rowIndex: r + 2,
-            date: dateStr,
-            voucherNum: voucherNum ? ("Mã " + voucherNum) : "",
-            product: product,
-            code: code,
-            isUsed: isUsed,
-            usedTime: usedTime,
-            rawText: rawText
-          });
+        let dateStr = "";
+        let rest = rawText;
+        // Kiểm tra xem dòng có ngày ở đầu hay không (vd: "Ngày 27/09/2026 : ..." hoặc "27/09/2026 : ...")
+        const dateMatch = rawText.match(/^(?:Ngày\\s+)?(\\d{1,2}\\/\\d{1,2}\\/\\d{4})\\s*[:\\-]\\s*(.*)$/i);
+        if (dateMatch) {
+          dateStr = dateMatch[1].trim();
+          rest = dateMatch[2].trim();
+        } else {
+          // Linh hoạt: Nếu dòng không có ngày thì lấy ngày mặc định hệ thống
+          dateStr = defDate;
         }
+
+        let voucherNum = "";
+        let product = "";
+        let code = "";
+
+        const prodCodeMatch = rest.match(/^(?:Mã\\s*Phiếu\\s*mua\\s*hàng\\s*(\\d+)\\s*-\\s*dùng\\s*cho\\s*)?([^:]+?)\\s*:\\s*([A-Za-z0-9]+)\\s*$/i);
+        if (prodCodeMatch) {
+          voucherNum = prodCodeMatch[1] ? prodCodeMatch[1].trim() : "";
+          product = prodCodeMatch[2].trim();
+          code = prodCodeMatch[3].trim();
+        } else {
+          const lastColon = rest.lastIndexOf(':');
+          if (lastColon !== -1) {
+            product = rest.substring(0, lastColon).replace(/^(?:Mã\\s*Phiếu\\s*mua\\s*hàng\\s*\\d+\\s*-\\s*dùng\\s*cho\\s*)/i, '').trim();
+            code = rest.substring(lastColon + 1).trim();
+          }
+        }
+
+        if (!product || !code) continue;
+
+        const colBVal = row.c[1] ? row.c[1].v : false;
+        let isUsed = (colBVal === true || String(colBVal).toUpperCase() === "TRUE" || String(colBVal).toLowerCase() === "đã sử dụng" || String(colBVal).toLowerCase() === "x");
+
+        let usedTime = "";
+        if (row.c[2]) {
+          if (row.c[2].f) {
+            usedTime = String(row.c[2].f);
+          } else if (typeof row.c[2].v === 'string' && row.c[2].v.startsWith('Date(')) {
+            const m = row.c[2].v.match(/Date\\((\\d+),(\\d+),(\\d+)(?:,(\\d+),(\\d+),(\\d+))?\\)/);
+            if (m) {
+              const pad = n => (n < 10 ? '0' + n : n);
+              usedTime = \`\${pad(m[3])}/\${pad(Number(m[2]) + 1)}/\${m[1]} \${pad(m[4] || 0)}:\${pad(m[5] || 0)}\`;
+            }
+          } else if (row.c[2].v) {
+            usedTime = String(row.c[2].v);
+          }
+        }
+
+        // QUY TẮC ĐỒNG BỘ CHỐNG GHI ĐÈ NGƯỢC (RECONCILIATION):
+        // Nếu có thao tác người dùng (đã dùng HOẶC hoàn lại) gần đây (< 15 phút),
+        // luôn ưu tiên trạng thái mới nhất của người dùng thay vì cache cũ của Google Sheets GViz
+        const cleanCode = String(code || '').trim().toUpperCase();
+        const savedStatus = localStatusMap[cleanCode] || localStatusMap[code];
+        if (savedStatus && savedStatus.updatedAt) {
+          const ageMs = Date.now() - savedStatus.updatedAt;
+          if (ageMs < 15 * 60 * 1000) {
+            isUsed = !!savedStatus.used;
+            if (isUsed && savedStatus.time) {
+              usedTime = savedStatus.time;
+            } else if (!isUsed) {
+              usedTime = "";
+            }
+          }
+        }
+
+        datesSet[dateStr] = true;
+        productsSet[product] = true;
+
+        // rowIndex trong Google Sheet là 1-indexed. Dòng 1 là tiêu đề, nên rows[0] là dòng 2
+        items.push({
+          rowIndex: r + 2,
+          date: dateStr,
+          voucherNum: voucherNum ? ("Mã " + voucherNum) : "",
+          product: product,
+          code: code,
+          isUsed: isUsed,
+          usedTime: usedTime,
+          rawText: rawText
+        });
       }
 
-      const dates = Object.keys(datesSet).sort((a, b) => {
-        const pA = a.split("/").map(Number);
-        const pB = b.split("/").map(Number);
-        return new Date(pA[2], pA[1] - 1, pA[0]) - new Date(pB[2], pB[1] - 1, pB[0]);
-      });
+      let dates = sortDateStrings(Object.keys(datesSet));
+      if (!dates.length && items.length) {
+        dates = [defDate];
+      }
 
       onDataLoaded({
         success: true,
@@ -6705,10 +6771,27 @@ CMA_HOA_7721_TC
         uniqueSheet1Items.push(item);
       });
 
+      // Tự động gán ngày mặc định hệ thống cho item nếu không có ngày
+      const defDate = getDefaultSystemDate();
+      (res.items || []).forEach(item => {
+        if (!item.date || !String(item.date).trim()) {
+          item.date = defDate;
+        }
+      });
+
+      // Đảm bảo danh sách dates luôn có ít nhất ngày mặc định hoặc ngày từ items
+      let loadedDates = res.dates || [];
+      if (!loadedDates.length && (res.items || []).length > 0) {
+        loadedDates = sortDateStrings(Array.from(new Set(res.items.map(i => i.date))));
+      }
+      if (!loadedDates.length) {
+        loadedDates = [defDate];
+      }
+
       // Giữ trạng thái hiển thị mã đã mở mắt nếu có
       if (!state.sheet1RevealedCodes) state.sheet1RevealedCodes = {};
       state.items = uniqueSheet1Items;
-      state.dates = res.dates || [];
+      state.dates = loadedDates;
       state.products = res.products || [];
 
       els.sheetInfo.textContent = 'Trang tính: ' + (CONFIG.branchName || res.sheetName || 'PMH');
@@ -6744,13 +6827,10 @@ CMA_HOA_7721_TC
 
     function populateDates() {
       els.dateSelect.innerHTML = '';
+      const defDate = getDefaultSystemDate();
 
-      if (state.dates.length === 0) {
-        const opt = document.createElement('option');
-        opt.value = '';
-        opt.textContent = 'Không có ngày';
-        els.dateSelect.appendChild(opt);
-        return;
+      if (!state.dates || state.dates.length === 0) {
+        state.dates = [defDate];
       }
 
       const allOpt = document.createElement('option');
@@ -6765,18 +6845,16 @@ CMA_HOA_7721_TC
         els.dateSelect.appendChild(opt);
       });
 
-      const now = new Date();
-      const pad = (n) => (n < 10 ? '0' + n : n);
-      const todayStr = pad(now.getDate()) + '/' + pad(now.getMonth() + 1) + '/' + now.getFullYear();
+      const todayStr = defDate;
 
       if (!state.selectedDate) {
         if (state.dates.includes(todayStr)) {
           state.selectedDate = todayStr;
         } else {
-          state.selectedDate = state.dates[0];
+          state.selectedDate = state.dates[0] || 'ALL';
         }
       } else if (state.selectedDate !== 'ALL' && !state.dates.includes(state.selectedDate)) {
-        state.selectedDate = state.dates.includes(todayStr) ? todayStr : state.dates[0];
+        state.selectedDate = state.dates.includes(todayStr) ? todayStr : (state.dates[0] || 'ALL');
       }
 
       els.dateSelect.value = state.selectedDate;
@@ -6786,10 +6864,12 @@ CMA_HOA_7721_TC
       const queryClean = boDauTiengViet(state.searchQuery);
       const selDate = state.selectedDate;
       const statusFilt = state.statusFilter;
+      const defDate = getDefaultSystemDate();
 
       const dateItems = state.items.filter(item => {
         if (!selDate || selDate === 'ALL') return true;
-        return item.date === selDate;
+        const itemDate = item.date || defDate;
+        return itemDate === selDate;
       });
 
       const totalCount = dateItems.length;
@@ -7434,9 +7514,7 @@ CMA_HOA_7721_TC
     });
 
     els.btnToday.addEventListener('click', () => {
-      const now = new Date();
-      const pad = (n) => (n < 10 ? '0' + n : n);
-      const todayStr = pad(now.getDate()) + '/' + pad(now.getMonth() + 1) + '/' + now.getFullYear();
+      const todayStr = getDefaultSystemDate();
       if (state.dates.includes(todayStr)) {
         state.selectedDate = todayStr;
       } else {
